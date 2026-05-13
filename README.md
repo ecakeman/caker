@@ -118,6 +118,7 @@ docker compose up -d
 
 ## 文档依据
 
+- 对话贴代码格式（新建/续写、块后解说）：[docs/code-response-convention.md](docs/code-response-convention.md)
 - 里程碑与分工：`docs/agent_skills_build_guide.md`
 - 协作与提交流程：根目录 [AGENTS.md](AGENTS.md)
 - 四层架构与图节点：`docs/user_attachments_session_a29c06ca28284858b68f5de84ede3306_outputs_agent_skills_deep_research_report.md`
