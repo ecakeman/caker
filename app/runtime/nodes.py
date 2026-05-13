@@ -31,7 +31,7 @@ def inject_user_node(state: GraphState) -> dict:
 
 
 async def llm_node(state: GraphState) -> dict:
-    ai = get_llm().invoke(state["messages"])
+    ai = await get_llm().ainvoke(state["messages"])
     return {"messages": [ai]}
 
 

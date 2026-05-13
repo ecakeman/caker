@@ -5,6 +5,12 @@ from pydantic import BaseModel
 from app.runtime.graph import GRAPH
 from app.runtime.llm import get_llm
 
+from fastapi.responses import StreamingResponse
+
+from app.runtime.graph import iter_graph_stream_events
+from app.runtime.sse import sse_pack
+
+
 router = APIRouter(prefix="/api/v2")
 
 
@@ -63,3 +69,28 @@ async def chat_graph(body: ChatGraphIn) -> ChatGraphOut:
     except Exception as e:
         raise HTTPException(status_code=502, detail=str(e)) from e
     return ChatGraphOut(reply=str(out.get("result", "")))
+
+@router.post("/stream")
+async def stream_chat(body: ChatGraphIn) -> StreamingResponse:
+    async def gen():
+        inputs={
+            "messages": [],
+            "input": body.message,
+            "result": "",
+            "skip_inject_system": False,
+        }
+        try:
+            async for ev in iter_graph_stream_events(inputs):
+                if ev.get("event") != "on_chat_model_stream":
+                    continue
+                chunk = ev.get("data",{}).get("chunk")
+                if chunk is None:
+                    continue
+                content = getattr(chunk,"content",None)
+                if isinstance(content,str) and content:
+                    yield sse_pack("delta", {"text": content})
+            yield sse_pack("done", {})
+        except Exception as e:
+            yield sse_pack("error", {"detail": str(e)})
+
+    return StreamingResponse(gen(),media_type="text/event-stream")

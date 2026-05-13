@@ -1,10 +1,12 @@
 from functools import lru_cache
 
-from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_openai import ChatOpenAI
 
 from app.config import settings
 
+from collections.abc import AsyncIterator
+from langchain_core.language_models.chat_models import BaseChatModel
+from langchain_core.messages import BaseMessage
 
 
 @lru_cache(maxsize=16)
@@ -28,3 +30,8 @@ def get_llm(model: str | None = None) -> BaseChatModel:
 
 def clear_llm_cache() -> None:
     get_llm.cache_clear()
+
+async def stream_messages(messages: list[BaseMessage]) -> AsyncIterator[BaseMessage]:
+    llm=get_llm()
+    async for chunk in llm.astream(messages):
+        yield chunk

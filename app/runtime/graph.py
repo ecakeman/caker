@@ -3,6 +3,9 @@ from langgraph.graph import END, START, StateGraph
 from app.runtime import nodes
 from app.runtime.state import GraphState
 
+from collections.abc import AsyncIterator
+from typing import Any
+
 
 def build_graph():
     g = StateGraph(GraphState)
@@ -21,3 +24,9 @@ def build_graph():
 
 
 GRAPH = build_graph()
+
+async def iter_graph_stream_events(
+    inputs: dict[str,Any]
+)->AsyncIterator[dict[str,Any]]:
+    async for ev in GRAPH.astream_events(inputs, version="v2"):
+        yield ev
