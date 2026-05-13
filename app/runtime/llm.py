@@ -1,10 +1,3 @@
-"""PAI-EAS / OpenAI 兼容网关：用 ChatOpenAI 调用。
-
-与 clean_broker_gateway 一致：环境变量里可写 ``LLM_MODEL_NAME=openai/...``（LiteLLM 风格），
-直连 OpenAI SDK / LangChain 发往 PAI-EAS 时需去掉 ``openai/`` 前缀，否则上游会报 model 不存在。
-参见 clean_broker_gateway/scripts/customer_sim_20.py 中的 ``strip_provider_prefix``。
-"""
-
 from functools import lru_cache
 
 from langchain_core.language_models.chat_models import BaseChatModel
