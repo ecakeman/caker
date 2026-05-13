@@ -2,7 +2,7 @@
 
 在本地复现 [Agent Skills 跟写指南](docs/agent_skills_build_guide.md) 中的里程碑实现；架构说明见 [深度研究报告](docs/user_attachments_session_a29c06ca28284858b68f5de84ede3306_outputs_agent_skills_deep_research_report.md)。
 
-## 里程碑与正式代码路径（M0–M4）
+## 里程碑与正式代码路径（M0–M5）
 
 以下路径为**当前仓库已实现**内容，与指南中个别命名（如 `result_text`）不一致处见各节说明。
 
@@ -76,8 +76,8 @@ curl -s -X POST http://127.0.0.1:8000/api/v2/chat-graph \
 |------|------|
 | [app/runtime/sse.py](app/runtime/sse.py) | `sse_pack`、`sse_comment`（SSE 帧与注释行） |
 | [app/runtime/graph.py](app/runtime/graph.py) | `iter_graph_stream_events`：`GRAPH.astream_events(..., version="v2")` |
-| [app/runtime/llm.py](app/runtime/llm.py) | `stream_messages`：`get_llm().astream(messages)` 薄封装 |
-| [app/runtime/nodes.py](app/runtime/nodes.py) | `llm_node` 使用 `await get_llm().ainvoke(...)`（满足 `astream_events` 对异步调用的要求） |
+| [app/runtime/llm.py](app/runtime/llm.py) | `stream_messages`；`get_llm_with_tools`（`bind_tools`） |
+| [app/runtime/nodes.py](app/runtime/nodes.py) | `llm_node`：`get_llm_with_tools` + `await ...ainvoke`（M5 起绑定工具；满足 `astream_events`） |
 | [app/api/chat.py](app/api/chat.py) | `POST /stream`、`StreamingResponse`；`event: delta` / `done` / `error`，`inputs` 与 `chat-graph` 一致 |
 
 **验证**：
@@ -91,6 +91,29 @@ curl -N -X POST http://127.0.0.1:8000/api/v2/stream \
 预期：多条 `event: delta`（`data` 为 JSON，含 `text`），最后 `event: done`。流式请求须打到 **本机 caker**（如 `127.0.0.1:8000`），不要对上游 LLM 的 `openapi.*` 域名拼 `/api/v2/stream`。
 
 **运维提示**：经 nginx 等反代时，需关闭对 SSE 的缓冲（如 `proxy_buffering off`），否则客户端看不到逐块输出。
+
+### M5 第一个 Tool：`Read`（尚未接 ToolNode）
+
+| 路径 | 说明 |
+|------|------|
+| [app/tools/__init__.py](app/tools/__init__.py) | 包初始化（空文件即可） |
+| [app/tools/base.py](app/tools/base.py) | `build_default_tools()`，当前返回 `[ReadTool()]` |
+| [app/tools/read_tool.py](app/tools/read_tool.py) | `Read`：`BaseTool` + 路径校验（`WORKSPACE_ROOT/demo/…`，M5 固定 `session_id=demo`） |
+| [app/runtime/llm.py](app/runtime/llm.py) | `get_llm_with_tools(tools)` → `bind_tools` |
+| [app/runtime/nodes.py](app/runtime/nodes.py) | `llm_node` 使用 `get_llm_with_tools(_TOOLS)` |
+
+**与指南一致的行为**：图内**仍无 `ToolNode`**；模型若决定读文件，响应里常见 **`tool_calls` 含 `Read`**，**`reply`/正文可能为空**——属 M5 预期，**M6** 再接工具执行与回灌闭环。
+
+**验证（需已配置 `LLM_*`，并准备演示文件）**：
+
+```bash
+mkdir -p /tmp/skills/demo/data && echo "hello world" > /tmp/skills/demo/data/a.txt
+curl -s -X POST http://127.0.0.1:8000/api/v2/chat-graph \
+  -H 'content-type: application/json' \
+  -d '{"message":"请用 Read 工具读 data/a.txt 的前 5 行"}'
+```
+
+若上游模型配合，可在返回 JSON / 日志侧观察到对 `Read` 的调用意图（本阶段不保证自然语言摘要，因工具尚未执行）。
 
 ---
 

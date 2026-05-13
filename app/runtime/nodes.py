@@ -2,9 +2,11 @@ from __future__ import annotations
 
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
-from app.runtime.llm import get_llm
+from app.runtime.llm import get_llm_with_tools
 from app.runtime.state import GraphState
+from app.tools.base import build_default_tools
 
+_TOOLS = build_default_tools()
 
 async def start_node(state: GraphState) -> dict:
     return {}
@@ -31,7 +33,8 @@ def inject_user_node(state: GraphState) -> dict:
 
 
 async def llm_node(state: GraphState) -> dict:
-    ai = await get_llm().ainvoke(state["messages"])
+    llm = get_llm_with_tools(_TOOLS)
+    ai = await llm.ainvoke(state["messages"])
     return {"messages": [ai]}
 
 
@@ -42,3 +45,5 @@ async def end_node(state: GraphState) -> dict:
             result_text = msg.content
             break
     return {"result": result_text}
+
+

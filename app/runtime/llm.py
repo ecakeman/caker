@@ -1,12 +1,13 @@
 from functools import lru_cache
+from collections.abc import AsyncIterator, Sequence
 
 from langchain_openai import ChatOpenAI
-
-from app.config import settings
-
-from collections.abc import AsyncIterator
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import BaseMessage
+from langchain_core.runnables import Runnable
+from langchain_core.tools import BaseTool
+
+from app.config import settings
 
 
 @lru_cache(maxsize=16)
@@ -35,3 +36,6 @@ async def stream_messages(messages: list[BaseMessage]) -> AsyncIterator[BaseMess
     llm=get_llm()
     async for chunk in llm.astream(messages):
         yield chunk
+
+def get_llm_with_tools(tools: Sequence[BaseTool]) -> Runnable:
+    return get_llm().bind_tools(list(tools))
