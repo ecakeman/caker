@@ -7,6 +7,9 @@ __pycache__/
 .ruff_cache/
 var/
 dist/
+
+# 仅本地给 Agent/人看的贴码格式约定，不纳入版本库
+docs/code-response-convention.md
 *.egg-info/
 
 # stray files from mistyped shell redirects
