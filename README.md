@@ -2,7 +2,11 @@
 
 在本地复现 [Agent Skills 跟写指南](docs/agent_skills_build_guide.md) 中的里程碑实现；架构说明见 [深度研究报告](docs/user_attachments_session_a29c06ca28284858b68f5de84ede3306_outputs_agent_skills_deep_research_report.md)。
 
-## 里程碑与正式代码路径（M0–M5）
+**进度一览**：**M0–M5** 已在仓库落地（见下「已完成」各节）。**M6 及以后** 仅保留与指南对齐的**目标摘要**，便于排期；某一 M 做完后，将对应小节改为与 M0–M5 相同的「路径表 + 验证」写法即可。
+
+---
+
+## 已完成里程碑（M0–M5）
 
 以下路径为**当前仓库已实现**内容，与指南中个别命名（如 `result_text`）不一致处见各节说明。
 
@@ -77,7 +81,7 @@ curl -s -X POST http://127.0.0.1:8000/api/v2/chat-graph \
 | [app/runtime/sse.py](app/runtime/sse.py) | `sse_pack`、`sse_comment`（SSE 帧与注释行） |
 | [app/runtime/graph.py](app/runtime/graph.py) | `iter_graph_stream_events`：`GRAPH.astream_events(..., version="v2")` |
 | [app/runtime/llm.py](app/runtime/llm.py) | `stream_messages`；`get_llm_with_tools`（`bind_tools`） |
-| [app/runtime/nodes.py](app/runtime/nodes.py) | `llm_node`：`get_llm_with_tools` + `await ...ainvoke`（M5 起绑定工具；满足 `astream_events`） |
+| [app/runtime/nodes.py](app/runtime/nodes.py) | `llm_node`：`get_llm_with_tools` + `await ...ainvoke`（满足 `astream_events`） |
 | [app/api/chat.py](app/api/chat.py) | `POST /stream`、`StreamingResponse`；`event: delta` / `done` / `error`，`inputs` 与 `chat-graph` 一致 |
 
 **验证**：
@@ -117,9 +121,30 @@ curl -s -X POST http://127.0.0.1:8000/api/v2/chat-graph \
 
 ---
 
+## 规划中里程碑（M6 起，摘要）
+
+细节与文件分工以 [docs/agent_skills_build_guide.md](docs/agent_skills_build_guide.md) 为准；落地后把对应小节上移到「已完成」并补全路径与 `curl`/测试。
+
+| 里程碑 | 目标摘要 |
+|--------|----------|
+| **M6** | `ToolNode` + `route_after_llm`：`llm` 后条件边 **`tools` / `end`**，`tools → llm` 闭环执行 `Read` 并回灌 `ToolMessage`。 |
+| **M7** | `WorkspaceManager`：按 `session_id` 隔离目录、`resolve` 防逃逸；API 注入 `configurable`；各工具改走 manager。 |
+| **M8** | `skills/` + `SkillsManager` + **`call_skill`**：加载 `SKILL.md` 正文（不直接执行）；系统提示注入技能元数据列表。 |
+| **M9** | **`RunPyScript`**：沙箱内执行 `.py`，注入 `SESSION_ID` 等，回传 stdout/stderr/exit_code。 |
+| **M10** | **FileStateStore**：按会话持久化 `messages`；`skip_inject_system` 与 `route_after_start`；多轮「记得上一轮」。 |
+| **M11** | **`result_set` + `apply_result_set`**：非流式正式交卷；流式路径不绑该工具。 |
+| **M12** | **PipelineService**：图跑后台 + SSE chunk **写 PG** + 队列广播；与长连接解耦。 |
+| **M13** | **游标续读**：`after_seq` / `after_event_id` / `after_turn_id` 重连补流。 |
+| **M14** | **`summary` 节点**：超长上下文压缩后再进 `llm`。 |
+| **M15** | **MemPalace + Chroma**：跨会话语义召回；`mempalace_inject` 接入图。 |
+
+---
+
 ## README 维护约定
 
-每完成一个里程碑（M5 及以后），在本节 **「里程碑与正式代码路径」** 中追加对应小节：列出**新增或实质性修改**的文件路径、验证命令；若与 `docs/agent_skills_build_guide.md` 有故意偏差，用一两句写清原因。
+- **已完成**：每攻下一个 M，在「已完成里程碑」中追加一节，格式与 **M0–M5** 一致（路径表、验证、与指南偏差说明）。  
+- **规划中**：某 M 开工前可在上表改一两句范围；**验收通过后**将该行从「规划中」表删除或改为「✓ 已合并」，并把详细内容写进「已完成」。  
+- 协作与 checkpoint 提交约定见根目录 [AGENTS.md](AGENTS.md)。
 
 ---
 
