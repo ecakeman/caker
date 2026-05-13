@@ -166,6 +166,7 @@ docker compose up -d
 
 ## 文档依据
 
+- 协作、checkpoint 与 **「进入下一阶段」须按指南分工贴全码**：根目录 [AGENTS.md](AGENTS.md) §5
 - 里程碑与分工：`docs/agent_skills_build_guide.md`
 - 协作与提交流程：根目录 [AGENTS.md](AGENTS.md)
 - 四层架构与图节点：`docs/user_attachments_session_a29c06ca28284858b68f5de84ede3306_outputs_agent_skills_deep_research_report.md`
