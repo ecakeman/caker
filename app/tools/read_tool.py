@@ -53,3 +53,4 @@ class ReadTool(BaseTool):
         for i, line in enumerate(chunk, start=offset + 1):
             out.append(f"{i:6d}|{line}")
         return "\n".join(out) if out else "(empty range)"
+

@@ -6,6 +6,8 @@ from app.runtime.llm import get_llm_with_tools
 from app.runtime.state import GraphState
 from app.tools.base import build_default_tools
 
+from langgraph.prebuilt import ToolNode
+
 _TOOLS = build_default_tools()
 
 async def start_node(state: GraphState) -> dict:
@@ -47,3 +49,4 @@ async def end_node(state: GraphState) -> dict:
     return {"result": result_text}
 
 
+tools_node = ToolNode(_TOOLS)
