@@ -13,7 +13,7 @@ from app.runtime.sse import sse_pack
 
 def _graph_config(session_id: str | None) -> dict:
     sid = (session_id or "demo").strip() or "demo"
-    return {"configurable": {"session_id": sid, "thread_id": sid}}
+    return {"configurable": {"session_id": sid}}
 
 router = APIRouter(prefix="/api/v2")
 
