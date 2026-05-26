@@ -52,12 +52,14 @@
 | 向量库 | ChromaDB | MemPalace（M15）；可用 `CHROMA_PATH` 嵌入式，不必起 PG |
 | 子进程脚本 | Python 3.11 + Node.js 20 | `RunPyScript`、`RunJsTsScript` |
 
-环境变量（贯穿全程）：
+环境变量（与仓库 [`.env.example`](../.env.example) 一致，OpenAI **兼容**网关通用）：
 
 ```bash
-OPENAI_API_KEY=sk-...
-OPENAI_BASE_URL=https://api.openai.com/v1   # 或自家网关
-OPENAI_MODEL=gpt-4o-mini
+LLM_MODEL_NAME=gpt-4o-mini
+LLM_BASE_URL=https://api.openai.com/v1
+LLM_API_KEY=sk-...
+LLM_TEMPERATURE=0.7
+
 WORKSPACE_ROOT=/tmp/skills
 # 以下 PG / S3 本地路线可留空；需要 docker compose 做 M15 时只起 chroma 即可
 # PG_DSN=
@@ -66,63 +68,78 @@ WORKSPACE_ROOT=/tmp/skills
 CHROMA_PATH=./var/chroma
 ```
 
+> `app/config.py` 字段名为 `llm_model_name` / `llm_base_url` / `llm_api_key`（无 `OPENAI_*` alias）。PAI-EAS、DashScope 等只需改 `LLM_BASE_URL` 与 `LLM_API_KEY`。
+
 ---
 
 ## 2. 项目骨架（M0 之前先建好）
 
+下图以 **`caker` 仓库根** 为准（早期草稿曾写 `mini_skills/` 包裹目录，**实际仓库没有这一层**）。
+
 ```
-mini_skills/
+caker/                            # 仓库根 = 你 clone 下来的目录
 ├── pyproject.toml
-├── .env.example
-├── docker-compose.yaml         # 本地默认只需 Chroma（PG/MinIO 可选）
+├── .env.example                  # LLM_* / WORKSPACE_ROOT / CHROMA_PATH
+├── docker-compose.yaml           # 本地默认只需 Chroma（PG/MinIO 可选）
 ├── README.md
+├── var/                          # M10 起：state.db（.gitignore）
 ├── app/
 │   ├── __init__.py
-│   ├── main.py                 # FastAPI 入口
-│   ├── config.py               # pydantic-settings
+│   ├── main.py                   # M0：FastAPI + /health
+│   ├── config.py                 # M0：pydantic-settings
 │   ├── api/
 │   │   ├── __init__.py
-│   │   └── chat.py             # POST /api/v2/stream 等
+│   │   └── chat.py               # M1+：/echo、/chat-once、/chat-graph、/stream
 │   ├── runtime/
 │   │   ├── __init__.py
-│   │   ├── graph.py            # LangGraph StateGraph
-│   │   ├── nodes.py            # 节点函数
-│   │   ├── routes.py           # 路由函数
-│   │   └── state.py            # State TypedDict
+│   │   ├── state.py              # M3
+│   │   ├── nodes.py              # M3+
+│   │   ├── routes.py             # M6+（M10 增 route_after_start）
+│   │   ├── graph.py              # M3+（M10 接 SqliteSaver）
+│   │   ├── llm.py                # M2
+│   │   └── sse.py                # M4
 │   ├── tools/
 │   │   ├── __init__.py
-│   │   ├── base.py             # 基类、注册表
-│   │   ├── read_tool.py
-│   │   ├── write_tool.py
-│   │   ├── edit_tool.py
-│   │   ├── bash_tool.py
-│   │   ├── call_skill_tool.py
-│   │   └── run_py_script_tool.py
-│   ├── workspace/
+│   │   ├── base.py               # M5+
+│   │   ├── read_tool.py          # M5 ✅
+│   │   ├── call_skill_tool.py    # M8
+│   │   ├── run_py_script_tool.py # M9
+│   │   ├── write_tool.py         # 原报告；本地路线未跟写
+│   │   ├── edit_tool.py          # 原报告；本地路线未跟写
+│   │   └── bash_tool.py          # 原报告；本地路线未跟写
+│   ├── workspace/                # M7 ✅
 │   │   ├── __init__.py
-│   │   └── manager.py          # resolve_workspace_path 等
-│   ├── skills/
+│   │   └── manager.py
+│   ├── skills/                   # M8
 │   │   ├── __init__.py
-│   │   └── manager.py          # SKILL.md 索引/加载
-│   ├── pipeline/               # （本地路线跳过，对应原报告 M12–M13）
-│   ├── state_store/            # （本地路线跳过，M10 用 SqliteSaver）
-│   ├── summary/
+│   │   └── manager.py
+│   ├── pipeline/                 # 原报告 §6；本地路线 **不创建**（已删 M12–M13 跟写）
+│   ├── state_store/              # 原报告 §7；本地 M10 用 SqliteSaver，**不创建**
+│   ├── summary/                  # M14
 │   │   └── handler.py
-│   └── mempalace/
+│   └── mempalace/               # M15
 │       ├── __init__.py
 │       ├── chroma_store.py
 │       └── injector.py
-├── skills/                     # SKILL.md 包
+├── skills/                       # 仓库根：SKILL.md 包（非 app/skills）
 │   └── hello_skill/
 │       ├── SKILL.md
 │       └── run.py
 └── tests/
-    ├── test_m1_echo.py
+    ├── test_m0_health.py
     ├── test_m3_graph.py
     ...
 ```
 
-> 这个骨架你**不必一次建完**。每个 M 只新增它需要的目录/文件。
+**图例**
+
+| 标记 | 含义 |
+|------|------|
+| `M# ✅` | 该里程碑在 caker 主线已落地（以 README「已完成」为准） |
+| `M#` | 跟写目标，尚未实现或进行中 |
+| **不创建** | 原报告有、本地路线故意跳过（勿照抄建目录） |
+
+> 不必一次建全树；每个 M 只新增当节「文件清单」中的路径。
 
 ---
 
@@ -147,18 +164,20 @@ mini_skills/
 ### 关键代码骨架
 
 ```python
-# app/config.py  [我写]
+# app/config.py  [我写]（与当前 caker 仓库一致）
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
-    openai_api_key: str = Field("", alias="OPENAI_API_KEY")
-    openai_base_url: str = Field("https://api.openai.com/v1", alias="OPENAI_BASE_URL")
-    openai_model: str = Field("gpt-4o-mini", alias="OPENAI_MODEL")
-    workspace_root: str = Field("/tmp/skills", alias="WORKSPACE_ROOT")
-    pg_dsn: str = Field("", alias="PG_DSN")
+    llm_model_name: str = ""
+    llm_base_url: str = ""
+    llm_api_key: str = ""
+    llm_temperature: float = Field(default=0.7, ge=0.0, le=2.0)
+    workspace_root: str = Field(default="/tmp/skills")
+    pg_dsn: str = ""
+    chroma_path: str = Field(default="./var/chroma")
 
 settings = Settings()
 ```
@@ -167,7 +186,7 @@ settings = Settings()
 # app/main.py  [一起写]
 from fastapi import FastAPI
 
-app = FastAPI(title="mini-agent-skills")
+app = FastAPI(title="caker")
 
 @app.get("/health")
 async def health():
@@ -247,7 +266,7 @@ curl -s -X POST http://127.0.0.1:8000/api/v2/echo \
 `POST /api/v2/chat-once`：拿到一条 user message，调一次 LLM，返回完整回复字符串。
 
 ### 前置
-M1，且 `OPENAI_API_KEY` 可用。
+M1，且 `.env` 中 `LLM_API_KEY` / `LLM_MODEL_NAME` / `LLM_BASE_URL` 已配置。
 
 ### 文件清单与分工
 
@@ -268,10 +287,10 @@ from app.config import settings
 @lru_cache(maxsize=8)
 def get_llm(model: str | None = None) -> BaseChatModel:
     return ChatOpenAI(
-        model=model or settings.openai_model,
-        api_key=settings.openai_api_key,
-        base_url=settings.openai_base_url,
-        temperature=0.2,
+        model=model or settings.llm_model_name,
+        api_key=settings.llm_api_key,
+        base_url=settings.llm_base_url,
+        temperature=settings.llm_temperature,
     )
 ```
 
@@ -971,6 +990,37 @@ M9。依赖：`pip install langgraph-checkpoint-sqlite`（或 `uv sync`）。
 
 **不做**：`app/state_store/file_backend.py`、手动 `load/save` JSON（原 file 模式留给生产扩展分支）。
 
+### 与 M3–M7 图结构的差异（必读）
+
+M3–M9（**当前 caker 仓库**，SqliteSaver 已接但路由未改时仍如此）：
+
+```text
+START → start → inject_system → inject_user → llm ⇄ tools → end
+              ↑ 固定 add_edge("start", "inject_system")
+```
+
+M10 须 **删掉** `g.add_edge("start", "inject_system")`，改为：
+
+```text
+START → start ──route_after_start──┬→ inject_system → inject_user ─┐
+                                   └→ inject_user（跳过 system）──┘→ llm ⇄ tools → end
+```
+
+| 轮次 | `messages`（检查点恢复后） | `route_after_start` | 经过节点 |
+|------|---------------------------|---------------------|----------|
+| 首轮 | 空 | `inject_system` | start → inject_system → inject_user → … |
+| 次轮起 | 含上轮完整对话 | `inject_user` | start → inject_user → …（**不再**注入 SystemMessage） |
+
+`inject_system` → `inject_user` 的边 **保留**；仅 `start` 出口由固定边改为条件边。M6 的 `llm` / `tools` / `end` 边不变。
+
+### `inject_user_node` 与检查点（必读）
+
+- 每轮 API 仍传 `messages: []` 与本轮 `input`（见下 `inputs`）；**不要**在 `ainvoke` 里手工拼接历史。
+- `SqliteSaver` 按 `configurable.thread_id` 恢复上一轮结束时的 `messages`（含 System / Human / AI / Tool）。
+- `start_node` 仅根据「恢复后 `messages` 是否非空」设置 `skip_inject_system`。
+- **`inject_user_node` 逻辑不用改**：仍为 `HumanMessage(content=state["input"])`。`GraphState.messages` 使用 `add_messages` reducer，会把**本轮**用户句 **追加** 到已恢复历史之后。
+- 常见误区：在 `start_node` 里把历史 messages 再 `return` 一遍 → 与 reducer 重复追加；或第二轮仍走 `inject_system` → 重复 SystemMessage。
+
 ### 关键代码骨架
 
 ```python
@@ -1003,7 +1053,17 @@ CHECKPOINTER = _sqlite_cm.__enter__()
 GRAPH = build_graph().compile(checkpointer=CHECKPOINTER)
 ```
 
-> 包名 `langgraph-checkpoint-sqlite`；导入路径为 `langgraph.checkpoint.sqlite.SqliteSaver`（namespace 包，勿用不存在的 `langgraph_checkpoint_sqlite`）。
+**SqliteSaver 导入（已在 caker 环境验证）**
+
+| 项 | 值 |
+|----|-----|
+| pip 包名 | `langgraph-checkpoint-sqlite`（`pyproject.toml` 里带连字符） |
+| **正确** import | `from langgraph.checkpoint.sqlite import SqliteSaver` |
+| **错误** import | `from langgraph_checkpoint_sqlite import SqliteSaver` → `ModuleNotFoundError` |
+
+自检：`uv run python -c "from langgraph.checkpoint.sqlite import SqliteSaver; print(SqliteSaver)"`
+
+> LangGraph 将 checkpoint 实现做成 **namespace 包**：安装名≠顶层模块名 `langgraph_checkpoint_sqlite`。
 
 ```python
 # app/runtime/nodes.py start_node  [你手敲]
@@ -1053,6 +1113,7 @@ curl -s -X POST http://127.0.0.1:8000/api/v2/chat-graph \
 
 ### 易错点
 - `thread_id` 给检查点；`session_id` 给 Workspace 工具（M7）——本地可同值，语义分开。
+- 只加了 `checkpointer` 却未改 `start` 条件边 → 每轮仍 `inject_system`，与 README「跳过重复 SystemMessage」不一致。
 - 未 `mkdir var/` 时 SQLite 可能 `unable to open database file`。
 - `from_conn_string` 不能写成 `compile(checkpointer=SqliteSaver.from_conn_string(...))` 直接传 context manager，须 `__enter__` 或 `with` 块内 compile。
 - 忘记 `compile(checkpointer=...)` 时，第二轮 `messages` 仍为空。

@@ -192,7 +192,7 @@ curl -s -X POST http://127.0.0.1:8000/api/v2/chat-graph \
 |--------|----------|
 | **M8** | `skills/` + `SkillsManager` + `call_skill`；系统提示注入技能元数据 |
 | **M9** | `RunPyScript`：沙箱内执行 `.py`，环境变量 `SESSION_ID` 等 |
-| **M10** | **SqliteSaver**：检查点持久化到 `var/state.db`，重启不丢会话；`skip_inject_system` 跳过重复 SystemMessage |
+| **M10** | **SqliteSaver**（`var/state.db`）+ `thread_id`；`start` 改条件边（有历史则 `start→inject_user`，跳过 `inject_system`）；`inject_user` 仍只追加本轮 `input` |
 | **M11** | `result_set` + `apply_result_set`（非流式交卷） |
 | **M14** | `summary` 节点：长上下文压缩（前置 M11） |
 | **M15** | MemPalace + Chroma：跨会话语义记忆（前置 M14） |
