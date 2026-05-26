@@ -1,3 +1,6 @@
+from pathlib import Path
+
+from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.graph import END, START, StateGraph
 
 from app.runtime import nodes
@@ -32,10 +35,14 @@ def build_graph():
     )
     g.add_edge("tools", "llm")
     g.add_edge("end", END)
-    return g.compile()
+    return g
 
 
-GRAPH = build_graph()
+Path("var").mkdir(parents=True, exist_ok=True)
+_sqlite_checkpointer_cm = SqliteSaver.from_conn_string("var/state.db")
+CHECKPOINTER = _sqlite_checkpointer_cm.__enter__()
+
+GRAPH = build_graph().compile(checkpointer=CHECKPOINTER)
 
 async def iter_graph_stream_events(
     inputs: dict[str,Any],

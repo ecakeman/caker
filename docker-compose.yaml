@@ -1,5 +1,8 @@
+# 本地跟写默认只需 chroma（M15）。postgres / minio 为原生产向可选组件，可不启动：
+#   docker compose up -d chroma
+
 services:
-  postgres:
+  postgres:  # 可选：Pipeline / PG checkpoint（本地路线跳过）
     image: postgres:16-alpine
     environment:
       POSTGRES_USER: agent
@@ -15,7 +18,7 @@ services:
       timeout: 5s
       retries: 5
 
-  minio:
+  minio:  # 可选：S3 状态存储（本地路线跳过）
     image: minio/minio:latest
     command: server /data --console-address ":9001"
     environment:
@@ -27,7 +30,7 @@ services:
     volumes:
       - miniodata:/data
 
-  chroma:
+  chroma:  # M15 MemPalace
     image: chromadb/chroma:latest
     ports:
       - "8001:8000"

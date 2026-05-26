@@ -3,6 +3,19 @@
 > 配合阅读：[原深度研究报告](/mnt/c/Users/PF-4BA9TH/Desktop/user_attachments_session_a29c06ca28284858b68f5de84ede3306_outputs_agent_skills_deep_research_report.md)
 > 用法：每个里程碑 M# 都能跑出来一个比上一个强一点点的 demo；不绿就别往下走。
 
+### 本地部署范围（caker 默认）
+
+本仓库跟写路线面向**单机本地开发**，不实现原报告中的分布式能力：
+
+| 能力 | 本地路线 | 原报告 / 生产向 |
+|------|----------|-----------------|
+| 多轮历史 | M10：`SqliteSaver`（`var/state.db`）+ `thread_id` | S3 / PG checkpoint、`FileStateStore` |
+| SSE 流式 | M4：请求内 `astream_events`（单连接） | M12 `PipelineService` + PG chunk 日志 |
+| 断线续传 | **不做** | M13 游标 `after_seq` 等 |
+| 向量记忆 | M15：Chroma（`CHROMA_PATH` 或 compose） | 同左，可换托管向量库 |
+
+里程碑 **M0–M11、M14–M15** 跟完即可跑通本地 Agent；**不跟**原指南中的 Pipeline / 游标两节（下文已删）。
+
 ---
 
 ## 0. 怎么用这本指南
@@ -33,9 +46,10 @@
 | Web | FastAPI + uvicorn | 中间件、SSE 都靠它 |
 | Agent 编排 | LangGraph (`langgraph`) | StateGraph、MessagesState、ToolNode |
 | LLM 客户端 | `langchain-openai`（OpenAI 兼容） | base_url 可指向自部署网关 |
-| 关系库 | PostgreSQL 14+ | Pipeline chunk 表、checkpoint |
-| 对象存储 | S3 / MinIO | StateStore file 模式 |
-| 向量库 | ChromaDB | MemPalace 语义记忆 |
+| 检查点 | LangGraph `SqliteSaver`（M10，`var/state.db`） | 本地文件持久化；重启不丢同 `thread_id` 会话 |
+| 关系库 | PostgreSQL 14+ | **可选**；本地路线不用（compose 中可不开） |
+| 对象存储 | S3 / MinIO | **可选**；本地路线不用 |
+| 向量库 | ChromaDB | MemPalace（M15）；可用 `CHROMA_PATH` 嵌入式，不必起 PG |
 | 子进程脚本 | Python 3.11 + Node.js 20 | `RunPyScript`、`RunJsTsScript` |
 
 环境变量（贯穿全程）：
@@ -45,9 +59,10 @@ OPENAI_API_KEY=sk-...
 OPENAI_BASE_URL=https://api.openai.com/v1   # 或自家网关
 OPENAI_MODEL=gpt-4o-mini
 WORKSPACE_ROOT=/tmp/skills
-PG_DSN=postgres://user:pass@localhost:5432/agent_skills
-S3_ENDPOINT=http://localhost:9000
-S3_BUCKET=agent-skills-state
+# 以下 PG / S3 本地路线可留空；需要 docker compose 做 M15 时只起 chroma 即可
+# PG_DSN=
+# S3_ENDPOINT=
+# S3_BUCKET=
 CHROMA_PATH=./var/chroma
 ```
 
@@ -59,7 +74,7 @@ CHROMA_PATH=./var/chroma
 mini_skills/
 ├── pyproject.toml
 ├── .env.example
-├── docker-compose.yaml         # PG + MinIO + Chroma
+├── docker-compose.yaml         # 本地默认只需 Chroma（PG/MinIO 可选）
 ├── README.md
 ├── app/
 │   ├── __init__.py
@@ -89,14 +104,8 @@ mini_skills/
 │   ├── skills/
 │   │   ├── __init__.py
 │   │   └── manager.py          # SKILL.md 索引/加载
-│   ├── pipeline/
-│   │   ├── __init__.py
-│   │   ├── service.py          # 生产/消费/PG 写入
-│   │   └── schema.sql
-│   ├── state_store/
-│   │   ├── __init__.py
-│   │   ├── file_backend.py
-│   │   └── pg_backend.py
+│   ├── pipeline/               # （本地路线跳过，对应原报告 M12–M13）
+│   ├── state_store/            # （本地路线跳过，M10 用 SqliteSaver）
 │   ├── summary/
 │   │   └── handler.py
 │   └── mempalace/
@@ -450,7 +459,7 @@ curl -N -X POST http://127.0.0.1:8000/api/v2/stream \
 - `text/event-stream` 必须 `\n\n` 结尾，少一个换行前端就一直等。
 
 ### 对应原报告
-§3 节点 4 流式区分；§6 PipelineService 的“前置内功”——本 M 只做单连接 SSE，PipelineService 的解耦留到 M12。
+§3 节点 4 流式区分。本地路线：**单连接 SSE 即可**；原报告 §6 Pipeline 解耦不在本仓库跟写。
 
 ---
 
@@ -939,132 +948,118 @@ curl -s -X POST http://127.0.0.1:8000/api/v2/chat-graph \
 
 ---
 
-## M10 历史持久化（file 模式）+ `skip_inject_system`
+## M10 历史持久化（SqliteSaver）+ `skip_inject_system`
 
 ### 目标
-- 第二轮请求自动加载第一轮的对话历史。
-- 有历史时 `start_node` 设 `skip_inject_system=True`，路由跳过 `inject_system`。
+- 同一 `session_id` 的多轮对话能延续上下文（LangGraph 检查点写入 `var/state.db`）。
+- 有历史时 `skip_inject_system=True`，**跳过** `inject_system`，仍走 `inject_user` 写入本轮 `input`。
+- **本地路线**：`SqliteSaver` 零 PG/S3；**重启 uvicorn 后同 `thread_id` 会话仍在**（SQLite 文件在 `var/`，已 `.gitignore`）。
 
 ### 前置
-M9。
+M9。依赖：`pip install langgraph-checkpoint-sqlite`（或 `uv sync`）。
 
 ### 文件清单与分工
 
 | 文件 | 分工 |
 |------|------|
-| `app/state_store/file_backend.py` | `[一起写]` 序列化/反序列化 messages（HumanMessage/AIMessage/SystemMessage/ToolMessage）|
-| `app/runtime/nodes.py` `start_node` `end_node` | `[你手敲]` |
-| `app/runtime/routes.py` `route_after_start` | `[你手敲]` |
-| `app/runtime/graph.py` | `[一起写]` 接条件边 |
+| `pyproject.toml` | `[我写]` 增加 `langgraph-checkpoint-sqlite>=2.0.0` |
+| `app/runtime/graph.py` | `[一起写]` `compile(checkpointer=SqliteSaver)`；`build_graph()` 只 `return g` |
+| `app/runtime/nodes.py` `start_node` | `[你手敲]` 看 `state["messages"]` 是否已有内容设 `skip_inject_system` |
+| `app/runtime/routes.py` `route_after_start` | `[你手敲]` 新建条件路由 |
+| `app/runtime/graph.py` | `[一起写]` `start` 条件边，替换 `start → inject_system` 固定边 |
+| `app/api/chat.py` | `[一起写]` `_graph_config` 同时传 `session_id` 与 `thread_id` |
+
+**不做**：`app/state_store/file_backend.py`、手动 `load/save` JSON（原 file 模式留给生产扩展分支）。
 
 ### 关键代码骨架
 
 ```python
-# app/state_store/file_backend.py  [一起写]
-import json
+# pyproject.toml dependencies  [我写]
+"langgraph-checkpoint-sqlite>=2.0.0",
+```
+
+```python
+# app/runtime/graph.py  [一起写]
 from pathlib import Path
-from langchain_core.messages import (
-    AIMessage, HumanMessage, SystemMessage, ToolMessage, BaseMessage,
-)
+from langgraph.checkpoint.sqlite import SqliteSaver
 
-CLS_MAP = {"human": HumanMessage, "ai": AIMessage,
-           "system": SystemMessage, "tool": ToolMessage}
+def build_graph():
+    g = StateGraph(GraphState)
+    # ... 现有 add_node / add_edge ...
+    g.add_edge(START, "start")
+    g.add_conditional_edges(
+        "start",
+        routes.route_after_start,
+        {"inject_system": "inject_system", "inject_user": "inject_user"},
+    )
+    g.add_edge("inject_system", "inject_user")
+    # inject_user → llm → tools 循环 → end 同 M6
+    return g
 
-def msg_to_dict(m: BaseMessage) -> dict:
-    return {
-        "type": m.type,
-        "content": m.content,
-        "tool_calls": getattr(m, "tool_calls", None),
-        "tool_call_id": getattr(m, "tool_call_id", None),
-        "name": getattr(m, "name", None),
-    }
+Path("var").mkdir(parents=True, exist_ok=True)
+# from_conn_string 是 context manager；模块级需 __enter__ 保持连接
+_sqlite_cm = SqliteSaver.from_conn_string("var/state.db")
+CHECKPOINTER = _sqlite_cm.__enter__()
+GRAPH = build_graph().compile(checkpointer=CHECKPOINTER)
+```
 
-def dict_to_msg(d: dict) -> BaseMessage:
-    cls = CLS_MAP[d["type"]]
-    kwargs = {"content": d["content"]}
-    if d["type"] == "ai" and d.get("tool_calls"):
-        kwargs["tool_calls"] = d["tool_calls"]
-    if d["type"] == "tool":
-        kwargs["tool_call_id"] = d["tool_call_id"]
-        kwargs["name"] = d.get("name", "")
-    return cls(**kwargs)
+> 包名 `langgraph-checkpoint-sqlite`；导入路径为 `langgraph.checkpoint.sqlite.SqliteSaver`（namespace 包，勿用不存在的 `langgraph_checkpoint_sqlite`）。
 
-class FileStateStore:
-    def __init__(self, root: str = "./var/state"):
-        self.root = Path(root); self.root.mkdir(parents=True, exist_ok=True)
-
-    def _path(self, sid: str) -> Path:
-        return self.root / sid / "latest.json"
-
-    def load(self, sid: str) -> list[BaseMessage]:
-        p = self._path(sid)
-        if not p.exists(): return []
-        data = json.loads(p.read_text("utf-8"))
-        return [dict_to_msg(d) for d in data.get("messages", [])]
-
-    def save(self, sid: str, messages: list[BaseMessage]) -> None:
-        p = self._path(sid); p.parent.mkdir(parents=True, exist_ok=True)
-        p.write_text(json.dumps(
-            {"messages": [msg_to_dict(m) for m in messages]},
-            ensure_ascii=False), "utf-8")
-
-state_store = FileStateStore()
+```python
+# app/runtime/nodes.py start_node  [你手敲]
+async def start_node(state: GraphState, config) -> dict:
+    if state.get("messages") and len(state["messages"]) > 0:
+        return {"skip_inject_system": True}
+    return {"skip_inject_system": False}
 ```
 
 ```python
-# app/runtime/nodes.py 增量  [你手敲]
-from app.state_store.file_backend import state_store
-
-async def start_node(state, config):
-    sid = config["configurable"]["session_id"]
-    history = state_store.load(sid)
-    # TODO:
-    # 1. 当前 user 输入应该已经在 state["messages"][-1]
-    # 2. 若 history 非空 -> 返回 {
-    #       "messages": history + [state["messages"][-1]],
-    #       "skip_inject_system": True,
-    #    }
-    # 3. 否则 -> 返回 {"skip_inject_system": False}
-    ...
-
-async def end_node(state, config):
-    sid = config["configurable"]["session_id"]
-    last_ai = state["messages"][-1]
-    state_store.save(sid, state["messages"])
-    return {"result_text": last_ai.content if hasattr(last_ai, "content") else ""}
+# app/runtime/routes.py route_after_start  [你手敲]
+def route_after_start(state: GraphState) -> str:
+    if state.get("skip_inject_system"):
+        return "inject_user"
+    return "inject_system"
 ```
 
 ```python
-# app/runtime/routes.py  [你手敲]
-def route_after_start(state) -> str:
-    return "mempalace_inject" if state.get("skip_inject_system") else "inject_system"
+# app/api/chat.py  [一起写]
+def _graph_config(session_id: str | None) -> dict:
+    sid = (session_id or "demo").strip() or "demo"
+    return {"configurable": {"session_id": sid, "thread_id": sid}}
+
+# 每轮 invoke 仍传空 messages，由检查点按 thread_id 恢复历史：
+inputs = {
+    "messages": [],
+    "input": body.message,
+    "result": "",
+    "skip_inject_system": False,
+}
+await GRAPH.ainvoke(inputs, config=_graph_config(body.session_id))
 ```
 
-```python
-# app/runtime/graph.py 改造  [一起写]
-g.add_conditional_edges("start", route_after_start,
-                        {"inject_system": "inject_system",
-                         "mempalace_inject": "llm"})  # M15 前先直连 llm
-```
+**与 caker 仓库约定**：聚合字段用 `result`；`end_node` **不必**手动 save——检查点每步自动写入 SQLite。
 
 ### 验证
 ```bash
 SID=demo-$(date +%s)
-curl -s -X POST :8000/api/v2/chat-graph \
-  -d "{\"message\":\"我叫张三\",\"session_id\":\"$SID\"}" -H 'content-type: application/json'
-curl -s -X POST :8000/api/v2/chat-graph \
-  -d "{\"message\":\"我叫什么？\",\"session_id\":\"$SID\"}" -H 'content-type: application/json'
+curl -s -X POST http://127.0.0.1:8000/api/v2/chat-graph \
+  -H 'content-type: application/json' \
+  -d "{\"message\":\"我叫张三\",\"session_id\":\"$SID\"}"
+curl -s -X POST http://127.0.0.1:8000/api/v2/chat-graph \
+  -H 'content-type: application/json' \
+  -d "{\"message\":\"我叫什么？\",\"session_id\":\"$SID\"}"
 ```
-预期：第二条能答出「张三」。
-
-观察 `./var/state/<SID>/latest.json`，确认 messages 被序列化。
+预期：第二条 `reply` 能答出「张三」。**重启 uvicorn 后**对同一 `$SID` 再发「我叫什么？」仍应能答出（检查点在 `var/state.db`）。
 
 ### 易错点
-- `LangGraph` 的 `add_messages` reducer 是**追加**，不能在 `start_node` 里 `return {"messages": history}` 期望覆盖；要 `return {"messages": history + [user_msg]}`，并且**初始 invoke 时也只传当前 user 一条**。
-- `ToolMessage` 必须带 `tool_call_id`，不然反序列化重放时 LLM 会拒绝。
+- `thread_id` 给检查点；`session_id` 给 Workspace 工具（M7）——本地可同值，语义分开。
+- 未 `mkdir var/` 时 SQLite 可能 `unable to open database file`。
+- `from_conn_string` 不能写成 `compile(checkpointer=SqliteSaver.from_conn_string(...))` 直接传 context manager，须 `__enter__` 或 `with` 块内 compile。
+- 忘记 `compile(checkpointer=...)` 时，第二轮 `messages` 仍为空。
+- `add_messages` 是追加：每轮只传本轮 `input`，勿在 `ainvoke` 里重复塞全量历史。
 
 ### 对应原报告
-§3 节点 1 start；§7 StateStore（先做 file 模式，PG 在 M12 一起做）。
+§3 节点 1 start；§7 StateStore（本地用 LangGraph SQLite checkpoint，不对标 S3/PG 全量实现）。
 
 ---
 
@@ -1167,233 +1162,6 @@ curl -s -X POST :8000/api/v2/chat-graph \
 §3 节点 6 `apply_result_set`、节点 8 end；§3 路由表 `_route_after_tools`。
 
 ---
-
----
-
-## M12 PipelineService：生产者-消费者解耦
-
-### 目标
-- LLM 执行**不依赖** SSE 连接：`POST /api/v2/stream` 内部把图执行投到后台 task。
-- 每条 SSE 行同时**写入 PG `web_chat_pipeline_chunk`** + **广播到 asyncio.Queue**。
-- 客户端断开重连可从游标继续（M13 做完整恢复，M12 先把生产端跑起来）。
-
-### 前置
-M11；`PG_DSN` 可用；`asyncpg` 已装。
-
-### 文件清单与分工
-
-| 文件 | 分工 |
-|------|------|
-| `app/pipeline/schema.sql` | `[我写]` 建表 + 唯一约束 |
-| `app/pipeline/service.py` | `[一起写]` 我给类骨架（连接池、生产、广播、PG 写入），你填 `_produce` 主循环和入队语义 |
-| `app/api/chat.py` `/stream` | `[一起写]` 改为「投后台任务 + 同连接消费」 |
-| `app/main.py` | `[一起写]` 启动时 init pg pool / 建表 |
-
-### 关键代码骨架
-
-```sql
--- app/pipeline/schema.sql  [我写]
-CREATE TABLE IF NOT EXISTS web_chat_pipeline_chunk (
-    session_id  TEXT NOT NULL,
-    seq         BIGINT NOT NULL,
-    turn_id     TEXT NOT NULL,
-    event_id    TEXT NOT NULL,
-    line        TEXT NOT NULL,
-    created_at  TIMESTAMPTZ DEFAULT NOW(),
-    PRIMARY KEY (session_id, seq)
-);
-CREATE INDEX IF NOT EXISTS idx_chunk_turn ON web_chat_pipeline_chunk(session_id, turn_id);
-```
-
-```python
-# app/pipeline/service.py  [一起写]
-import asyncio, json, uuid
-import asyncpg
-from collections import defaultdict
-from typing import AsyncIterator
-from app.runtime.graph import GRAPH
-from app.runtime.sse import sse_pack
-from langchain_core.messages import HumanMessage
-
-class PipelineService:
-    def __init__(self, dsn: str):
-        self.dsn = dsn
-        self.pool: asyncpg.Pool | None = None
-        self._subs: dict[str, list[asyncio.Queue]] = defaultdict(list)
-        self._producers: dict[str, asyncio.Task] = {}
-
-    async def init(self):
-        self.pool = await asyncpg.create_pool(self.dsn, min_size=1, max_size=8)
-
-    async def _persist(self, sid: str, seq: int, turn_id: str, event_id: str, line: str):
-        async with self.pool.acquire() as conn:
-            await conn.execute(
-                "INSERT INTO web_chat_pipeline_chunk(session_id,seq,turn_id,event_id,line)"
-                " VALUES($1,$2,$3,$4,$5) ON CONFLICT DO NOTHING",
-                sid, seq, turn_id, event_id, line,
-            )
-
-    def _broadcast(self, sid: str, payload: bytes):
-        for q in self._subs[sid]:
-            q.put_nowait(payload)
-
-    async def _produce(self, sid: str, message: str):
-        turn_id = uuid.uuid4().hex
-        seq = await self._next_seq(sid)
-        # TODO: 用 GRAPH.astream_events(...) 拿 LLM token 流
-        # 每个 token / 每个工具事件包成一行 SSE：
-        #   line = sse_pack("delta", {"text": token}).decode()
-        #   await self._persist(sid, seq, turn_id, event_id=uuid.uuid4().hex, line=line)
-        #   self._broadcast(sid, line.encode())
-        #   seq += 1
-        # 结束时 broadcast event=done
-        ...
-
-    async def _next_seq(self, sid: str) -> int:
-        async with self.pool.acquire() as conn:
-            row = await conn.fetchrow(
-                "SELECT COALESCE(MAX(seq), 0) AS s FROM web_chat_pipeline_chunk WHERE session_id=$1",
-                sid)
-            return row["s"] + 1
-
-    def schedule_turn(self, sid: str, message: str) -> None:
-        # 已在跑就不重复投递
-        if sid in self._producers and not self._producers[sid].done():
-            return
-        self._producers[sid] = asyncio.create_task(self._produce(sid, message))
-
-    async def subscribe(self, sid: str) -> AsyncIterator[bytes]:
-        q: asyncio.Queue = asyncio.Queue()
-        self._subs[sid].append(q)
-        try:
-            while True:
-                # TODO: 自动结束：若 producer 已 done 且队列空 -> break
-                payload = await q.get()
-                yield payload
-        finally:
-            self._subs[sid].remove(q)
-
-pipeline = PipelineService(dsn=settings.pg_dsn)
-```
-
-```python
-# app/api/chat.py /stream 改造  [一起写]
-@router.post("/stream")
-async def stream_v2(body: EchoIn):
-    sid = body.session_id or "demo"
-    pipeline.schedule_turn(sid, body.message)
-    async def gen():
-        async for line in pipeline.subscribe(sid):
-            yield line
-    return StreamingResponse(gen(), media_type="text/event-stream")
-```
-
-### 验证
-```bash
-SID=p-$(date +%s)
-
-# 终端 A：消费
-curl -N -X POST :8000/api/v2/stream \
-  -d "{\"message\":\"数到 10\",\"session_id\":\"$SID\"}" \
-  -H 'content-type: application/json'
-
-# 终端 B：在 A 跑到一半时 Ctrl+C，再起一条相同 SID 的请求（M13 才能续读，但应能看到生产仍在）
-psql $PG_DSN -c "SELECT seq, event_id FROM web_chat_pipeline_chunk WHERE session_id='$SID' ORDER BY seq;"
-```
-预期：A 流式完成；PG 表里有 N 条 chunk；即使 A 断开，PG 继续增长直到 producer 完成。
-
-### 易错点
-- `asyncio.create_task` 没人持有 reference 时可能被 GC 掉；必须存进 `self._producers`。
-- 多 worker（uvicorn `--workers 4`）下 `_subs` / `_producers` 是**进程内**的；要支持跨进程订阅得用 PG `LISTEN/NOTIFY` 或 Redis pubsub —— 本指南先单进程。
-- `seq` 用 `MAX(seq)+1` 在并发下会有竞争。生产中改成 `INSERT ... RETURNING seq` 配 `BIGSERIAL` 或者 PG 序列（建议改：本练习里足够）。
-
-### 对应原报告
-§6 PipelineService 全节；§9.3 「Pipeline 即持久化日志」。
-
----
-
-## M13 游标恢复
-
-### 目标
-新增 `POST /api/v1/sessions/{sid}/pipeline`：客户端带 `after_seq` / `after_event_id` / `after_turn_id` 续读历史 chunk + 后续实时 chunk。
-
-### 前置
-M12。
-
-### 文件清单与分工
-
-| 文件 | 分工 |
-|------|------|
-| `app/api/chat.py` | `[你手敲]` 新路由，参数解析 |
-| `app/pipeline/service.py` | `[一起写]` `replay(sid, cursor)` + 拼接实时订阅 |
-
-### 关键代码骨架
-
-```python
-# app/pipeline/service.py 增量  [一起写]
-async def replay(self, sid: str, after_seq: int | None = None,
-                 after_event_id: str | None = None,
-                 after_turn_id: str | None = None) -> AsyncIterator[bytes]:
-    # 1) 先吐历史
-    where, args = "session_id=$1", [sid]
-    if after_seq is not None:
-        where += f" AND seq>${len(args)+1}"; args.append(after_seq)
-    elif after_event_id:
-        where += (f" AND seq > (SELECT seq FROM web_chat_pipeline_chunk "
-                  f"WHERE session_id=$1 AND event_id=${len(args)+1})")
-        args.append(after_event_id)
-    elif after_turn_id:
-        where += (f" AND seq > (SELECT MAX(seq) FROM web_chat_pipeline_chunk "
-                  f"WHERE session_id=$1 AND turn_id=${len(args)+1})")
-        args.append(after_turn_id)
-
-    async with self.pool.acquire() as conn:
-        rows = await conn.fetch(
-            f"SELECT seq,line FROM web_chat_pipeline_chunk WHERE {where} ORDER BY seq", *args)
-    last_seq = after_seq or 0
-    for r in rows:
-        last_seq = r["seq"]; yield r["line"].encode()
-
-    # 2) 接实时（避免漏掉 replay 与 subscribe 之间生成的）
-    async for payload in self.subscribe(sid):
-        yield payload
-```
-
-```python
-# app/api/chat.py  [你手敲]
-@router.post("/api/v1/sessions/{sid}/pipeline")
-async def pipeline_consume(sid: str,
-                           after_seq: int | None = None,
-                           after_event_id: str | None = None,
-                           after_turn_id: str | None = None):
-    async def gen():
-        async for line in pipeline.replay(sid, after_seq, after_event_id, after_turn_id):
-            yield line
-    return StreamingResponse(gen(), media_type="text/event-stream")
-```
-
-### 验证
-```bash
-SID=r-$(date +%s)
-
-# 1) 投一次任务
-curl -N -X POST :8000/api/v2/stream \
-  -d "{\"message\":\"列出 10 个城市\",\"session_id\":\"$SID\"}" \
-  -H 'content-type: application/json' &
-
-# 2) 主动断开（kill 上面），然后续读
-LAST_SEQ=$(psql -tA $PG_DSN -c \
-  "SELECT MAX(seq) FROM web_chat_pipeline_chunk WHERE session_id='$SID';")
-curl -N "http://127.0.0.1:8000/api/v1/sessions/$SID/pipeline?after_seq=$LAST_SEQ"
-```
-预期：续读拿到 `after_seq` 之后的所有 chunk + 当前未发送的实时 chunk，输出与不断开一致。
-
-### 易错点
-- **重复或丢消息**：在 `replay` → `subscribe` 切换的瞬间，新 chunk 可能既写了 PG 又被 broadcast。最简单的去重：在订阅期内记录已 yield 的最大 seq，subscribe 来的旧 seq 跳过。
-- 三种游标**不要同时传**，让前端只用一种；服务端写好优先级（seq > event_id > turn_id）。
-
-### 对应原报告
-§6 「游标恢复」+「自动结束」；§8 阶段 D。
 
 ---
 
@@ -1651,19 +1419,19 @@ dev-dependencies = ["pytest>=8", "httpx>=0.27"]
 | M7 | Workspace 沙箱 | §5 / §9.4 |
 | M8 | call_skill 加载说明 | §4 / §9.2 |
 | M9 | RunPyScript 子进程 | §4 / §5 |
-| M10 | 历史持久化 | §3 节点 1 / §7 |
+| M10 | 多轮历史（SqliteSaver / `var/state.db`） | §3 节点 1 / §7（子集） |
 | M11 | result_set 终态 | §3 节点 6,8 |
-| M12 | Pipeline 解耦 | §6 / §9.3 |
-| M13 | 游标恢复 | §6 |
 | M14 | summary 压缩 | §3 节点 7 |
 | M15 | MemPalace 召回 | §3 节点 3 / §9.5 |
+
+> 原报告 **§6 Pipeline / 游标恢复** 不在本地路线跟写；需要时对照 [深度研究报告](docs/user_attachments_session_a29c06ca28284858b68f5de84ede3306_outputs_agent_skills_deep_research_report.md) 另开分支。
 
 ## 附录 C：调试技巧
 
 - `LANGCHAIN_TRACING_V2=true` + LangSmith 看每个节点的 input/output。
 - 不想接 LangSmith 时，给每个节点开头加 `print(f"[{node}] msgs={len(state['messages'])}")` 是最朴素也最有效的。
 - LangGraph 的 `graph.get_graph().print_ascii()` 能把图结构画到终端。
-- PG 调试：`psql $PG_DSN -c "TABLE web_chat_pipeline_chunk LIMIT 20"` 看序号是否单调递增。
+- 多轮历史：确认 `configurable.thread_id` 与第二轮 `skip_inject_system` 是否生效（`print` `start_node` 的 `len(messages)`）。
 
 ## 附录 D：和原报告的映射读法
 

@@ -2,7 +2,7 @@
 
 在本地复现 [Agent Skills 跟写指南](docs/agent_skills_build_guide.md) 中的里程碑实现；架构说明见 [深度研究报告](docs/user_attachments_session_a29c06ca28284858b68f5de84ede3306_outputs_agent_skills_deep_research_report.md)。
 
-**进度一览**：**M0–M7** 已在仓库落地（见下「已完成」各节）。**M8 及以后** 仅保留与指南对齐的**目标摘要**；某一 M 验收通过后，将对应小节改为与上文相同的「路径表 + 验证」写法。
+**进度一览**：**M0–M7** 已在仓库落地（见下「已完成」各节）。**M8 及以后** 仅保留与指南对齐的**目标摘要**（本地路线 **M0–M11、M14–M15**，不含原 Pipeline / 游标两节）。某一 M 验收通过后，将对应小节改为与上文相同的「路径表 + 验证」写法。
 
 ---
 
@@ -19,7 +19,7 @@
 | [app/config.py](app/config.py) | `pydantic-settings` 读 `.env`（`LLM_*`、`WORKSPACE_ROOT`、存储等） |
 | [app/__init__.py](app/__init__.py) | 包初始化 |
 | [.env.example](.env.example) | 环境变量模板 |
-| [docker-compose.yaml](docker-compose.yaml) | 可选本地依赖（Postgres / MinIO / Chroma） |
+| [docker-compose.yaml](docker-compose.yaml) | 可选依赖（**M15 主要用 Chroma**；Postgres / MinIO 本地路线可不启） |
 | [tests/test_m0_health.py](tests/test_m0_health.py) | `/health` 冒烟测试 |
 
 **验证**：`curl -s http://127.0.0.1:8000/health` → `{"ok":true}`。
@@ -186,18 +186,16 @@ curl -s -X POST http://127.0.0.1:8000/api/v2/chat-graph \
 
 ## 规划中里程碑（M8 起，摘要）
 
-细节见 [docs/agent_skills_build_guide.md](docs/agent_skills_build_guide.md)。
+细节见 [docs/agent_skills_build_guide.md](docs/agent_skills_build_guide.md)（**本地部署**：多轮用 `SqliteSaver`（`var/state.db`），SSE 保持 M4 单连接，不跟 Pipeline / 游标）。
 
 | 里程碑 | 目标摘要 |
 |--------|----------|
 | **M8** | `skills/` + `SkillsManager` + `call_skill`；系统提示注入技能元数据 |
 | **M9** | `RunPyScript`：沙箱内执行 `.py`，环境变量 `SESSION_ID` 等 |
-| **M10** | `FileStateStore`：多轮历史 + `skip_inject_system` |
+| **M10** | **SqliteSaver**：检查点持久化到 `var/state.db`，重启不丢会话；`skip_inject_system` 跳过重复 SystemMessage |
 | **M11** | `result_set` + `apply_result_set`（非流式交卷） |
-| **M12** | `PipelineService`：SSE 与图执行解耦 + PG 持久化 chunk |
-| **M13** | 游标续读 `after_seq` / `after_event_id` / `after_turn_id` |
-| **M14** | `summary` 节点：长上下文压缩 |
-| **M15** | MemPalace + Chroma：跨会话语义记忆 |
+| **M14** | `summary` 节点：长上下文压缩（前置 M11） |
+| **M15** | MemPalace + Chroma：跨会话语义记忆（前置 M14） |
 
 ---
 
@@ -220,7 +218,7 @@ pip install -e .
 uv run uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-可选：`docker compose up -d`（Postgres / MinIO / Chroma，Chroma 映射本机 **8001**）。
+可选：`docker compose up -d chroma`（M15；Chroma 映射本机 **8001**）。Postgres / MinIO 本地路线可不启动。
 
 ---
 

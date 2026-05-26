@@ -13,10 +13,12 @@ class Settings(BaseSettings):
     llm_temperature: float = Field(default=0.7, ge=0.0, le=2.0)
 
     workspace_root: str = Field(default="/tmp/skills")
+    # 本地路线可留空；原 Pipeline/PG 持久化不在跟写范围
     pg_dsn: str = ""
+    # 本地路线可留空；M10 用 SqliteSaver（var/state.db），不用 S3
     s3_endpoint: str = Field(default="http://localhost:9000")
     s3_bucket: str = Field(default="agent-skills-state")
-    chroma_path: str = Field(default="./var/chroma")
+    chroma_path: str = Field(default="./var/chroma")  # M15 MemPalace
 
 
 settings = Settings()
