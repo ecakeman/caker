@@ -1,18 +1,27 @@
 from __future__ import annotations
-import json
-from pathlib import Path
 from langchain_core.tools import BaseTool
 from pydantic import BaseModel, Field
-from app.config import settings
+from app.workspace.manager import WorkspaceError, manager
 class ReadInput(BaseModel):
     rel_path: str = Field(..., description="工作区相对路径（相对会话根目录）")
     offset: int = Field(0, ge=0)
     limit: int = Field(200, ge=1, le=2000)
-
+    
+def _session_id_from_run_manager(run_manager) -> str:
+    if run_manager is None:
+        return "demo"
+    cfg = getattr(run_manager, "config", None) or {}
+    if not isinstance(cfg, dict):
+        return "demo"
+    configurable = cfg.get("configurable") or {}
+    if not isinstance(configurable, dict):
+        return "demo"
+    return str(configurable.get("session_id") or "demo")
 
 class ReadTool(BaseTool):
     name: str = "Read"
-    description: str = "Read a file from the current session workspace under WORKSPACE_ROOT/<session_id>/."
+    description: str = ("Read a file from the current session workspace under"
+    " WORKSPACE_ROOT/<session_id>/.")
     args_schema: type[BaseModel] = ReadInput
 
     def _run(
@@ -24,28 +33,14 @@ class ReadTool(BaseTool):
         run_manager=None,
         **_: object,
     ) -> str:
-        # M5：session 先写死 demo；M7 再从 run_manager / configurable 取 session_id
-        session_id = "demo"
-        root = Path(settings.workspace_root).resolve()
-        ws = (root / session_id).resolve()
+        session_id = _session_id_from_run_manager(run_manager)
         try:
-            target = (ws / rel_path).resolve()
-        except OSError as e:
-            return json.dumps({"error": str(e)}, ensure_ascii=False)
-
-        try:
-            target.relative_to(ws)
-        except ValueError:
-            return json.dumps(
-                {"error": "path escapes workspace"},
-                ensure_ascii=False,
-            )
+            target = manager.resolve(session_id, rel_path)
+        except WorkspaceError as e:
+            return f"<error>{e}</error>"
 
         if not target.is_file():
-            return json.dumps(
-                {"error": f"not a file: {rel_path}"},
-                ensure_ascii=False,
-            )
+            return f"<error>not a file: {rel_path}</error>"
 
         lines = target.read_text(encoding="utf-8", errors="replace").splitlines()
         chunk = lines[offset : offset + limit]

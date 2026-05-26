@@ -38,7 +38,9 @@ def build_graph():
 GRAPH = build_graph()
 
 async def iter_graph_stream_events(
-    inputs: dict[str,Any]
+    inputs: dict[str,Any],
+    *,
+    config: dict[str, Any] | None = None,
 )->AsyncIterator[dict[str,Any]]:
-    async for ev in GRAPH.astream_events(inputs, version="v2"):
+    async for ev in GRAPH.astream_events(inputs, config=config, version="v2"):
         yield ev

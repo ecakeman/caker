@@ -11,6 +11,10 @@ from app.runtime.graph import iter_graph_stream_events
 from app.runtime.sse import sse_pack
 
 
+def _graph_config(session_id: str | None) -> dict:
+    sid = (session_id or "demo").strip() or "demo"
+    return {"configurable": {"session_id": sid}}
+
 router = APIRouter(prefix="/api/v2")
 
 
@@ -33,7 +37,7 @@ class ChatOnceOut(BaseModel):
 
 class ChatGraphIn(BaseModel):
     message: str
-
+    session_id: str | None = None
 
 class ChatGraphOut(BaseModel):
     reply: str
@@ -64,7 +68,8 @@ async def chat_graph(body: ChatGraphIn) -> ChatGraphOut:
                 "input": body.message,
                 "result": "",
                 "skip_inject_system": False,
-            }
+            },
+            config=_graph_config(body.session_id),
         )
     except Exception as e:
         raise HTTPException(status_code=502, detail=str(e)) from e
@@ -79,8 +84,9 @@ async def stream_chat(body: ChatGraphIn) -> StreamingResponse:
             "result": "",
             "skip_inject_system": False,
         }
+        config = _graph_config(body.session_id)
         try:
-            async for ev in iter_graph_stream_events(inputs):
+            async for ev in iter_graph_stream_events(inputs, config=config):
                 if ev.get("event") != "on_chat_model_stream":
                     continue
                 chunk = ev.get("data",{}).get("chunk")
