@@ -2,11 +2,11 @@
 
 在本地复现 [Agent Skills 跟写指南](docs/agent_skills_build_guide.md) 中的里程碑实现；架构说明见 [深度研究报告](docs/user_attachments_session_a29c06ca28284858b68f5de84ede3306_outputs_agent_skills_deep_research_report.md)。概念与代码对照见 [Caker 基础知识手册](docs/caker-base-knowledge.md)。
 
-**进度一览**：**M0–M14** 已在仓库落地（见下「已完成」各节）。**M15** 仅保留与指南对齐的**目标摘要**。某一 M 验收通过后，将对应小节改为与上文相同的「路径表 + 验证」写法。
+**进度一览**：**M0–M12** 已在仓库落地（见下「已完成」各节）。**M13** 仅保留与指南对齐的**目标摘要**。某一 M 验收通过后，将对应小节改为与上文相同的「路径表 + 验证」写法。
 
 ---
 
-## 已完成里程碑（M0–M14）
+## 已完成里程碑（M0–M12）
 
 以下路径为**当前仓库已实现**内容。与指南骨架不一致处（如 `result` 而非 `result_text`、`inject_user` 节点）在各节单独说明。
 
@@ -18,11 +18,13 @@
 | [app/main.py](app/main.py) | FastAPI 应用、`GET /health` |
 | [app/config.py](app/config.py) | `pydantic-settings` 读 `.env`（`LLM_*`、`WORKSPACE_ROOT`、存储等） |
 | [app/__init__.py](app/__init__.py) | 包初始化 |
-| [.env.example](.env.example) | 环境变量模板 |
-| [docker-compose.yaml](docker-compose.yaml) | 可选依赖（**M15 主要用 Chroma**；Postgres / MinIO 本地路线可不启） |
+| [.env.example](.env.example) | 环境变量模板（仅占位符；真实 `BASE_URL` / Key 只写在本地 `.env`） |
+| [docker-compose.yaml](docker-compose.yaml) | 可选依赖（**M13 主要用 Chroma**；Postgres / MinIO 本地路线可不启） |
 | [tests/test_m0_health.py](tests/test_m0_health.py) | `/health` 冒烟测试 |
 
 **验证**：`curl -s http://127.0.0.1:8000/health` → `{"ok":true}`。
+
+**安全**：`.env` 已在 `.gitignore`；仓库内仅保留占位符模板。若曾把真实 `LLM_BASE_URL` / Key 推送到远端，请在控制台轮换密钥，必要时清理 Git 历史。
 
 **启动服务**（在仓库根目录）：
 
@@ -328,7 +330,7 @@ curl -s -X POST http://127.0.0.1:8000/api/v2/chat-graph \
 
 ---
 
-### M14 `summary`（长上下文压缩）
+### M12 `summary`（长上下文压缩）
 
 | 路径 | 说明 |
 |------|------|
@@ -352,13 +354,13 @@ uv run python -c "from app.runtime.graph import build_graph; g=build_graph(); pr
 
 ---
 
-## 规划中里程碑（M15，摘要）
+## 规划中里程碑（M13，摘要）
 
 细节见 [docs/agent_skills_build_guide.md](docs/agent_skills_build_guide.md)。
 
 | 里程碑 | 目标摘要 |
 |--------|----------|
-| **M15** | MemPalace + Chroma：跨会话语义记忆 |
+| **M13** | MemPalace + Chroma：跨会话语义记忆 |
 
 ---
 
@@ -375,13 +377,13 @@ uv run python -c "from app.runtime.graph import build_graph; g=build_graph(); pr
 ```bash
 cd caker
 cp .env.example .env
-# 编辑 .env 填入 LLM_* 与 WORKSPACE_ROOT
+# 编辑 .env：填入你的 LLM_* / EMBEDDING_* / WORKSPACE_ROOT（勿提交 .env）
 python -m venv .venv && source .venv/bin/activate
 pip install -e .
 uv run uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-可选：`docker compose up -d chroma`（M15；Chroma 映射本机 **8001**）。Postgres / MinIO 本地路线可不启动。
+可选：`docker compose up -d chroma`（M13；Chroma 映射本机 **8001**）。Postgres / MinIO 本地路线可不启动。
 
 ---
 

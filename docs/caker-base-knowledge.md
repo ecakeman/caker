@@ -322,7 +322,7 @@ caker 的非流式端点用 `ainvoke`，流式端点用 `astream_events`。
 from langchain_openai import ChatOpenAI
 
 llm = ChatOpenAI(
-    model="qwen3.5-397b-fp8",           # 模型名
+    model="your-llm-model-name",        # 模型名
     api_key="sk-...",                    # API 密钥
     base_url="https://your-gateway/v1",  # 兼容端点
     temperature=0.7,                     # 输出随机性（0=确定，2=随机）

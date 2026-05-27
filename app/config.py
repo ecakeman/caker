@@ -12,6 +12,19 @@ class Settings(BaseSettings):
     llm_api_key: str = ""
     llm_temperature: float = Field(default=0.7, ge=0.0, le=2.0)
 
+    embedding_model_name: str = ""
+    embedding_base_url: str = ""
+    embedding_api_key: str = ""
+    embedding_dimensions: int = Field(default=1024, ge=1)
+
+    @property
+    def embedding_model(self) -> str:
+        """DashScope 兼容模式模型名为 text-embedding-v4，非 openai/ 前缀。"""
+        name = self.embedding_model_name.strip()
+        if name.startswith("openai/"):
+            return name.removeprefix("openai/")
+        return name
+
     workspace_root: str = Field(default="/tmp/skills")
     # 本地路线可留空；原 Pipeline/PG 持久化不在跟写范围
     pg_dsn: str = ""

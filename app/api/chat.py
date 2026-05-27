@@ -8,11 +8,13 @@ from app.runtime.llm import get_llm
 from fastapi.responses import StreamingResponse
 
 from app.runtime.sse import sse_pack
+from fastapi import Header
 
 
-def _graph_config(session_id: str | None) -> dict:
+def _graph_config(session_id: str | None, user_id: str | None = None) -> dict:
     sid = (session_id or "demo").strip() or "demo"
-    return {"configurable": {"session_id": sid, "thread_id": sid}}
+    uid = (user_id or "local").strip() or "local"
+    return {"configurable": {"session_id": sid, "thread_id": sid, "user_id": uid}}
 
 def _graph_inputs(message: str, *, streaming: bool = False) -> dict:
     return {
@@ -63,27 +65,33 @@ async def chat_once(body: ChatOnceIn) -> ChatOnceOut:
     try:
         ai_msg = llm.invoke([HumanMessage(content=body.message)])
     except Exception as e:
-        # 上游（DashScope / PAI-EAS 等）鉴权、模型名、路径错误时，避免只返回 500
-        raise HTTPException(status_code=502, detail=str(e)) from e
+        # 不把上游错误原文返回客户端，避免泄露 URL、Key 片段等
+        raise HTTPException(status_code=502, detail="LLM upstream request failed") from e
     return ChatOnceOut(reply=str(ai_msg.content))
 
 
 @router.post("/chat-graph", response_model=ChatGraphOut)
-async def chat_graph(body: ChatGraphIn) -> ChatGraphOut:
+async def chat_graph(
+    body: ChatGraphIn,
+    x_user_id: str | None = Header(default=None, alias="x-user-id"),
+) -> ChatGraphOut:
     try:
         out = await get_graph().ainvoke(
             _graph_inputs(body.message, streaming=False),
-            config=_graph_config(body.session_id),
+            config=_graph_config(body.session_id,x_user_id),
         )
     except Exception as e:
-        raise HTTPException(status_code=502, detail=str(e)) from e
+        raise HTTPException(status_code=502, detail="Graph upstream request failed") from e
     return ChatGraphOut(reply=str(out.get("result", "")))
 
 @router.post("/stream")
-async def stream_chat(body: ChatGraphIn) -> StreamingResponse:
+async def stream_chat(
+    body: ChatGraphIn,
+    x_user_id: str | None = Header(default=None, alias="x-user-id"),
+) -> StreamingResponse:
     async def gen():
         inputs = _graph_inputs(body.message, streaming=True)
-        config = _graph_config(body.session_id)
+        config = _graph_config(body.session_id, x_user_id)
         try:
             async for ev in iter_graph_stream_events(inputs, config=config):
                 if ev.get("event") != "on_chat_model_stream":
@@ -95,7 +103,7 @@ async def stream_chat(body: ChatGraphIn) -> StreamingResponse:
                 if isinstance(content,str) and content:
                     yield sse_pack("delta", {"text": content})
             yield sse_pack("done", {})
-        except Exception as e:
-            yield sse_pack("error", {"detail": str(e)})
+        except Exception:
+            yield sse_pack("error", {"detail": "stream upstream request failed"})
 
     return StreamingResponse(gen(),media_type="text/event-stream")
