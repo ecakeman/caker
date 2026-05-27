@@ -9,12 +9,27 @@
 
 | 能力 | 本地路线 | 原报告 / 生产向 |
 |------|----------|-----------------|
-| 多轮历史 | M10：`SqliteSaver`（`var/state.db`）+ `thread_id` | S3 / PG checkpoint、`FileStateStore` |
+| 多轮历史 | M10：`AsyncSqliteSaver`（`var/state.db`）+ `thread_id` | S3 / PG checkpoint、`FileStateStore` |
 | SSE 流式 | M4：请求内 `astream_events`（单连接） | M12 `PipelineService` + PG chunk 日志 |
 | 断线续传 | **不做** | M13 游标 `after_seq` 等 |
 | 向量记忆 | M15：Chroma（`CHROMA_PATH` 或 compose） | 同左，可换托管向量库 |
 
 里程碑 **M0–M11、M14–M15** 跟完即可跑通本地 Agent；**不跟**原指南中的 Pipeline / 游标两节（下文已删）。
+
+### caker 仓库约定（与下文骨架的差异）
+
+跟写 **本仓库（caker）** 时，以下约定优先于各节里较早的通用骨架；各 M 节末尾也会用 **「caker」** 标注要点。
+
+| 主题 | 通用骨架 / 原报告 | **caker 现状** |
+|------|-------------------|----------------|
+| 状态字段 | `result_text` | **`result`**；用户句走 **`input`** + **`inject_user_node`**（非把 HumanMessage 塞进首轮 `messages`） |
+| 工具注册 | 各节在 `nodes.py` 里写 `_TOOLS = [...]` | **`app/tools/base.py`** 的 `build_default_tools()`；`nodes.py` 仅 `_TOOLS = build_default_tools()` |
+| 技能包路径 | 有时写 cwd 相对 `skills/` | 仓库根 **`skills/`**（`app/skills/manager.py` 锚到仓库根索引 SKILL.md） |
+| 配置 / `.env` | `OPENAI_*` | **`LLM_*`** → `settings.llm_*`（见 §1） |
+| 图执行 API | — | FastAPI 用 **`await GRAPH.ainvoke` / `astream_events`**（异步） |
+| M7 工作区 | `skills/` symlink「可选」 | M7 可不做；**M9 起在 caker 中为必需**（见 M9） |
+| M8 系统提示 | 纯英文 Agent | **保留中文 Caker 人设** + 英文技能指引 + `Available skills` JSON |
+| M10 检查点 | 文中示例同步 `SqliteSaver` | **M8–M9 运行时未接 checkpointer**；做 M10 时用 **`AsyncSqliteSaver` + `aiosqlite`**（见 M10） |
 
 ---
 
@@ -46,7 +61,7 @@
 | Web | FastAPI + uvicorn | 中间件、SSE 都靠它 |
 | Agent 编排 | LangGraph (`langgraph`) | StateGraph、MessagesState、ToolNode |
 | LLM 客户端 | `langchain-openai`（OpenAI 兼容） | base_url 可指向自部署网关 |
-| 检查点 | LangGraph `SqliteSaver`（M10，`var/state.db`） | 本地文件持久化；重启不丢同 `thread_id` 会话 |
+| 检查点 | LangGraph **`AsyncSqliteSaver`**（M10，`var/state.db`） | 本地文件持久化；须与 **`ainvoke`** 配套（见 M10） |
 | 关系库 | PostgreSQL 14+ | **可选**；本地路线不用（compose 中可不开） |
 | 对象存储 | S3 / MinIO | **可选**；本地路线不用 |
 | 向量库 | ChromaDB | MemPalace（M15）；可用 `CHROMA_PATH` 嵌入式，不必起 PG |
@@ -95,12 +110,12 @@ caker/                            # 仓库根 = 你 clone 下来的目录
 │   │   ├── state.py              # M3
 │   │   ├── nodes.py              # M3+
 │   │   ├── routes.py             # M6+（M10 增 route_after_start）
-│   │   ├── graph.py              # M3+（M10 接 SqliteSaver）
+│   │   ├── graph.py              # M3+（M10 接 AsyncSqliteSaver）
 │   │   ├── llm.py                # M2
 │   │   └── sse.py                # M4
 │   ├── tools/
 │   │   ├── __init__.py
-│   │   ├── base.py               # M5+
+│   │   ├── base.py               # M5+ build_default_tools()（caker 统一注册工具）
 │   │   ├── read_tool.py          # M5 ✅
 │   │   ├── call_skill_tool.py    # M8
 │   │   ├── run_py_script_tool.py # M9
@@ -114,7 +129,7 @@ caker/                            # 仓库根 = 你 clone 下来的目录
 │   │   ├── __init__.py
 │   │   └── manager.py
 │   ├── pipeline/                 # 原报告 §6；本地路线 **不创建**（已删 M12–M13 跟写）
-│   ├── state_store/              # 原报告 §7；本地 M10 用 SqliteSaver，**不创建**
+│   ├── state_store/              # 原报告 §7；本地 M10 用 AsyncSqliteSaver，**不创建**
 │   ├── summary/                  # M14
 │   │   └── handler.py
 │   └── mempalace/               # M15
@@ -354,49 +369,29 @@ from langchain_core.messages import BaseMessage
 
 class GraphState(TypedDict):
     messages: Annotated[list[BaseMessage], add_messages]
-    result_text: str
-    skip_inject_system: bool   # 留给 M10 用，先恒为 False
+    input: str                      # 本轮用户句（caker：由 inject_user_node 写入 messages）
+    result: str                     # 聚合回复（caker 不用 result_text）
+    skip_inject_system: bool        # M10 起使用；M3–M9 先恒为 False
 ```
 
 ```python
-# app/runtime/nodes.py  [你手敲] —— 这是核心练习，自己实现
-from app.runtime.llm import get_llm
-from langchain_core.messages import SystemMessage
-
-# TODO: async def start_node(state, config): 直接 return {} （历史加载留 M10）
-
-# TODO: def inject_system_node(state, config):
-#   注入 SystemMessage("You are a helpful Agent. ...")
-
-# TODO: def llm_node(state, config):
-#   ai = get_llm().invoke(state["messages"])
-#   return {"messages": [ai]}
-
-# TODO: async def end_node(state, config):
-#   把最后一条 AIMessage 的 content 写入 result_text
+# app/runtime/nodes.py  [你手敲] —— 核心练习
+# TODO: async def start_node(state): return {}
+# TODO: def inject_system_node(state): return {"messages": [SystemMessage(...)]}
+# TODO: def inject_user_node(state): return {"messages": [HumanMessage(content=state["input"])]}
+# TODO: async def llm_node(state): ai = await get_llm().ainvoke(...); return {"messages": [ai]}
+# TODO: async def end_node(state): 从 messages 取最后 AIMessage → return {"result": ...}
 ```
 
 ```python
-# app/runtime/graph.py  [你手敲]
-from langgraph.graph import StateGraph, START, END
-from app.runtime.state import GraphState
-from app.runtime import nodes
-
-def build_graph():
-    g = StateGraph(GraphState)
-    g.add_node("start", nodes.start_node)
-    g.add_node("inject_system", nodes.inject_system_node)
-    g.add_node("llm", nodes.llm_node)
-    g.add_node("end", nodes.end_node)
-    g.add_edge(START, "start")
+# app/runtime/graph.py  [你手敲]（caker 最小图含 inject_user）
     g.add_edge("start", "inject_system")
-    g.add_edge("inject_system", "llm")
+    g.add_edge("inject_system", "inject_user")
+    g.add_edge("inject_user", "llm")
     g.add_edge("llm", "end")
-    g.add_edge("end", END)
-    return g.compile()
-
-GRAPH = build_graph()
 ```
+
+**caker**：`chat-graph` 的 `ainvoke` 输入为 `messages: []`、`input: body.message`、`result: ""`，见 M7。
 
 ### 验证
 ```bash
@@ -455,8 +450,13 @@ from langchain_core.messages import HumanMessage
 @router.post("/stream")
 async def stream_chat(body: EchoIn):
     async def gen():
-        inputs = {"messages": [HumanMessage(content=body.message)],
-                  "result_text": "", "skip_inject_system": False}
+        inputs = {
+            "messages": [],
+            "input": body.message,
+            "result": "",
+            "skip_inject_system": False,
+        }
+        # caker：与 chat-graph 相同，走 inject_user；勿把 HumanMessage 直接塞进 messages
         # TODO: 用 GRAPH.astream_events(inputs, version="v2")
         # 把 on_chat_model_stream 的 token 拼成 SSE event=delta
         # 最后吐 event=done
@@ -537,15 +537,17 @@ def get_llm_with_tools(tools):
 ```
 
 ```python
-# app/runtime/nodes.py 改 llm_node  [一起写]
-from app.tools.read_tool import ReadTool
-from app.runtime.llm import get_llm_with_tools
+# app/tools/base.py  [一起写]（caker：工具集中注册）
+def build_default_tools() -> list[BaseTool]:
+    return [ReadTool()]
 
-_TOOLS = [ReadTool()]
+# app/runtime/nodes.py  [一起写]
+from app.tools.base import build_default_tools
+_TOOLS = build_default_tools()
 
-def llm_node(state, config):
+async def llm_node(state, config):
     llm = get_llm_with_tools(_TOOLS)
-    ai = llm.invoke(state["messages"])
+    ai = await llm.ainvoke(state["messages"])
     return {"messages": [ai]}
 ```
 
@@ -583,7 +585,8 @@ M5。
 |------|------|
 | `app/runtime/routes.py` | `[你手敲]` `_route_after_llm` 条件路由 |
 | `app/runtime/graph.py` | `[你手敲]` 加 `tools` 节点和条件边 |
-| `app/runtime/nodes.py` | `[一起写]` `tools_node = ToolNode(_TOOLS)` |
+| `app/tools/base.py` | `[一起写]` `build_default_tools()` 含 `ReadTool` |
+| `app/runtime/nodes.py` | `[一起写]` `_TOOLS = build_default_tools()`；`tools_node = ToolNode(_TOOLS)` |
 
 ### 关键代码骨架
 
@@ -609,12 +612,13 @@ def build_graph():
     g.add_node("start", nodes.start_node)
     g.add_node("inject_system", nodes.inject_system_node)
     g.add_node("llm", nodes.llm_node)
-    g.add_node("tools", ToolNode(nodes._TOOLS))
+    g.add_node("tools", nodes.tools_node)   # caker：在 nodes.py 定义 ToolNode(_TOOLS)
     g.add_node("end", nodes.end_node)
 
     g.add_edge(START, "start")
     g.add_edge("start", "inject_system")
-    g.add_edge("inject_system", "llm")
+    g.add_edge("inject_system", "inject_user")   # caker
+    g.add_edge("inject_user", "llm")
     g.add_conditional_edges("llm", route_after_llm,
                             {"tools": "tools", "end": "end"})
     g.add_edge("tools", "llm")        # 工具回到 llm 继续推理
@@ -677,7 +681,7 @@ class WorkspaceManager:
         # 2. 路径 = self.root / session_id
         # 3. mkdir(parents=True, exist_ok=True)
         # 4. 创建 outputs/、data/ 子目录（读写）
-        # 5. （可选）symlink skills/、books/ 到全局只读包
+        # 5. symlink skills/ → 仓库根 skills/（caker：M7 可省略，M9 必需，见 M9）
         ...
 
     def resolve(self, session_id: str, rel_path: str) -> Path:
@@ -697,19 +701,23 @@ manager = WorkspaceManager()
 ```
 
 ```python
-# app/api/chat.py  [一起写]
-from langgraph.types import Configurable
+# app/api/chat.py  [一起写]（caker）
+def _graph_config(session_id: str | None) -> dict:
+    sid = (session_id or "demo").strip() or "demo"
+    return {"configurable": {"session_id": sid}}   # M10 起再加 thread_id
 
 @router.post("/chat-graph")
-async def chat_graph(body: EchoIn):
-    sid = body.session_id or "demo"
-    cfg = {"configurable": {"session_id": sid}}
-    state = await GRAPH.ainvoke(
-        {"messages": [HumanMessage(content=body.message)],
-         "result_text": "", "skip_inject_system": False},
-        config=cfg,
+async def chat_graph(body: ChatGraphIn) -> ChatGraphOut:
+    out = await GRAPH.ainvoke(
+        {
+            "messages": [],
+            "input": body.message,
+            "result": "",
+            "skip_inject_system": False,
+        },
+        config=_graph_config(body.session_id),
     )
-    return {"reply": state["result_text"]}
+    return ChatGraphOut(reply=str(out.get("result", "")))
 ```
 
 ```python
@@ -781,9 +789,10 @@ M7。
 |------|------|
 | `skills/hello_skill/SKILL.md` | `[一起写]` 我给样例，你抄一份属于自己的 |
 | `skills/hello_skill/run.py` | `[一起写]` `print("hello, world")` 即可 |
-| `app/skills/manager.py` | `[你手敲]` 索引、读取、剥 front matter |
+| `app/skills/manager.py` | `[你手敲]` 索引仓库根 `skills/*/SKILL.md`、剥 front matter |
 | `app/tools/call_skill_tool.py` | `[你手敲]` Tool 实现 |
-| `app/runtime/nodes.py` | `[一起写]` `inject_system_node` 注入技能列表 JSON |
+| `app/tools/base.py` | `[一起写]` 注册 `CallSkillTool` |
+| `app/runtime/nodes.py` | `[一起写]` `inject_system_node` 注入技能列表 JSON（保留中文人设） |
 
 ### 关键代码骨架
 
@@ -814,8 +823,9 @@ from pathlib import Path
 FRONT_MATTER_RE = re.compile(r"^---\s*\n(.*?)\n---\s*\n", re.DOTALL)
 
 class SkillsManager:
-    def __init__(self, root: str = "skills"):
-        self.root = Path(root).resolve()
+    def __init__(self, root: str | Path | None = None):
+        # caker：默认锚到仓库根 skills/，见 app/skills/manager.py
+        self.root = Path(root or _REPO_ROOT / "skills").resolve()
         self._index: dict[str, Path] = {}
 
     def reindex(self) -> None:
@@ -866,23 +876,15 @@ class CallSkillTool(BaseTool):
 ```
 
 ```python
-# app/runtime/nodes.py inject_system_node  [一起写] 增量
-import json
-from langchain_core.messages import SystemMessage
-from app.skills.manager import skills_manager
+# app/tools/base.py  [一起写]
+def build_default_tools() -> list[BaseTool]:
+    return [ReadTool(), CallSkillTool()]
 
-def inject_system_node(state, config):
-    if state.get("skip_inject_system"):
-        return {}
-    skills_meta = json.dumps(skills_manager.list_meta(), ensure_ascii=False)
-    sys = SystemMessage(content=(
-        "You are a helpful Agent.\n"
-        "When you need a skill, call the `call_skill` tool by name to load its instructions, "
-        "then follow them step-by-step using other tools.\n"
-        f"Available skills: {skills_meta}"
-    ))
-    return {"messages": [sys]}
+# app/runtime/nodes.py inject_system_node  [一起写]
+# caker：在原有中文 Caker 人设后追加英文技能指引 + Available skills JSON
 ```
+
+**caker**：`reindex()` 遍历 **`skills/<子目录>/SKILL.md`**（`if not child.is_dir(): continue`）。
 
 ### 验证
 ```bash
@@ -913,8 +915,9 @@ M8。
 
 | 文件 | 分工 |
 |------|------|
+| `app/workspace/manager.py` | `[一起写]` `session_dir` 内 **symlink** `skills/` → 仓库根 `skills/`（caker 必需） |
 | `app/tools/run_py_script_tool.py` | `[你手敲]` 子进程执行、超时、env 注入 |
-| `app/runtime/nodes.py` | `[一起写]` 把工具加进 `_TOOLS` |
+| `app/tools/base.py` | `[一起写]` 注册 `RunPyScriptTool` |
 
 ### 关键代码骨架
 
@@ -937,10 +940,11 @@ class RunPyScriptTool(BaseTool):
     args_schema: type[BaseModel] = RunPyInput
 
     def _run(self, rel_path, args, timeout_sec, *, run_manager=None, **_):
-        sid = (run_manager.config or {}).get("configurable", {}).get("session_id", "demo")
+        # caker：与 ReadTool 相同，用 _session_id_from_run_manager(run_manager)
         # TODO:
-        # 1. 如果 rel_path 不是以 "skills/" 开头 -> 拒绝
-        # 2. target = manager.resolve(sid, rel_path) 并保证存在 .py
+        # 1. rel_path 必须以 "skills/" 开头
+        # 2. target = manager.resolve(session_id, rel_path)  # 路径相对 WORKSPACE_ROOT/<sid>/
+        # 3. cwd=subprocess 用 manager.session_dir(session_id)，勿用仓库根
         # 3. env = {**os.environ, "SESSION_ID": sid, "USER_ID": "..."}（user 留给 M14 改造）
         # 4. proc = subprocess.run([sys.executable, str(target), *args],
         #        capture_output=True, text=True, env=env, timeout=timeout_sec, cwd=workspace)
@@ -952,9 +956,12 @@ class RunPyScriptTool(BaseTool):
 
 ### 验证
 ```bash
+# 确认会话工作区已有 skills 脚本（symlink 后）
+ls -l /tmp/skills/demo/skills/hello_skill/run.py
+
 curl -s -X POST http://127.0.0.1:8000/api/v2/chat-graph \
-  -d '{"message":"用 hello_skill 打个招呼"}' \
-  -H 'content-type: application/json'
+  -H 'content-type: application/json' \
+  -d '{"message":"用 hello_skill 打个招呼","session_id":"demo"}'
 ```
 预期：最终 `reply` 包含 `hello, world` 或对它的中文转述。
 
@@ -967,22 +974,24 @@ curl -s -X POST http://127.0.0.1:8000/api/v2/chat-graph \
 
 ---
 
-## M10 历史持久化（SqliteSaver）+ `skip_inject_system`
+## M10 历史持久化（AsyncSqliteSaver）+ `skip_inject_system`
 
 ### 目标
 - 同一 `session_id` 的多轮对话能延续上下文（LangGraph 检查点写入 `var/state.db`）。
 - 有历史时 `skip_inject_system=True`，**跳过** `inject_system`，仍走 `inject_user` 写入本轮 `input`。
-- **本地路线**：`SqliteSaver` 零 PG/S3；**重启 uvicorn 后同 `thread_id` 会话仍在**（SQLite 文件在 `var/`，已 `.gitignore`）。
+- **本地路线**：`AsyncSqliteSaver` 零 PG/S3；**重启 uvicorn 后同 `thread_id` 会话仍在**（SQLite 文件在 `var/`，已 `.gitignore`）。
 
 ### 前置
-M9。依赖：`pip install langgraph-checkpoint-sqlite`（或 `uv sync`）。
+M9。依赖：`langgraph-checkpoint-sqlite`、`aiosqlite`（或 `uv sync`）。
+
+**caker 现状（M8–M9 已落地时）**：`app/runtime/graph.py` **未**接 checkpointer（`GRAPH = build_graph().compile()`），以便 `ainvoke` / `astream_events` 不因同步 `SqliteSaver` 报错。做 M10 时**一次性**接入 `AsyncSqliteSaver` + `route_after_start`，不要只加 checkpointer 不改边。
 
 ### 文件清单与分工
 
 | 文件 | 分工 |
 |------|------|
-| `pyproject.toml` | `[我写]` 增加 `langgraph-checkpoint-sqlite>=2.0.0` |
-| `app/runtime/graph.py` | `[一起写]` `compile(checkpointer=SqliteSaver)`；`build_graph()` 只 `return g` |
+| `pyproject.toml` | `[我写]` `langgraph-checkpoint-sqlite`、`aiosqlite` |
+| `app/runtime/graph.py` | `[一起写]` `compile(checkpointer=AsyncSqliteSaver)`；`build_graph()` 只 `return g` |
 | `app/runtime/nodes.py` `start_node` | `[你手敲]` 看 `state["messages"]` 是否已有内容设 `skip_inject_system` |
 | `app/runtime/routes.py` `route_after_start` | `[你手敲]` 新建条件路由 |
 | `app/runtime/graph.py` | `[一起写]` `start` 条件边，替换 `start → inject_system` 固定边 |
@@ -992,7 +1001,7 @@ M9。依赖：`pip install langgraph-checkpoint-sqlite`（或 `uv sync`）。
 
 ### 与 M3–M7 图结构的差异（必读）
 
-M3–M9（**当前 caker 仓库**，SqliteSaver 已接但路由未改时仍如此）：
+M3–M9（**做 M10 之前**，含当前 caker 在 M8–M9 阶段）：
 
 ```text
 START → start → inject_system → inject_user → llm ⇄ tools → end
@@ -1016,7 +1025,7 @@ START → start ──route_after_start──┬→ inject_system → inject_use
 ### `inject_user_node` 与检查点（必读）
 
 - 每轮 API 仍传 `messages: []` 与本轮 `input`（见下 `inputs`）；**不要**在 `ainvoke` 里手工拼接历史。
-- `SqliteSaver` 按 `configurable.thread_id` 恢复上一轮结束时的 `messages`（含 System / Human / AI / Tool）。
+- **`AsyncSqliteSaver`** 按 `configurable.thread_id` 恢复上一轮结束时的 `messages`（含 System / Human / AI / Tool）。
 - `start_node` 仅根据「恢复后 `messages` 是否非空」设置 `skip_inject_system`。
 - **`inject_user_node` 逻辑不用改**：仍为 `HumanMessage(content=state["input"])`。`GraphState.messages` 使用 `add_messages` reducer，会把**本轮**用户句 **追加** 到已恢复历史之后。
 - 常见误区：在 `start_node` 里把历史 messages 再 `return` 一遍 → 与 reducer 重复追加；或第二轮仍走 `inject_system` → 重复 SystemMessage。
@@ -1026,44 +1035,35 @@ START → start ──route_after_start──┬→ inject_system → inject_use
 ```python
 # pyproject.toml dependencies  [我写]
 "langgraph-checkpoint-sqlite>=2.0.0",
+"aiosqlite>=0.20",
 ```
 
 ```python
-# app/runtime/graph.py  [一起写]
+# app/runtime/graph.py  [一起写]（caker + FastAPI 异步）
 from pathlib import Path
-from langgraph.checkpoint.sqlite import SqliteSaver
+from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 
 def build_graph():
     g = StateGraph(GraphState)
-    # ... 现有 add_node / add_edge ...
-    g.add_edge(START, "start")
-    g.add_conditional_edges(
-        "start",
-        routes.route_after_start,
-        {"inject_system": "inject_system", "inject_user": "inject_user"},
-    )
-    g.add_edge("inject_system", "inject_user")
-    # inject_user → llm → tools 循环 → end 同 M6
+    # ... 节点同 M6；start 用条件边（见上）...
     return g
 
 Path("var").mkdir(parents=True, exist_ok=True)
-# from_conn_string 是 context manager；模块级需 __enter__ 保持连接
-_sqlite_cm = SqliteSaver.from_conn_string("var/state.db")
-CHECKPOINTER = _sqlite_cm.__enter__()
-GRAPH = build_graph().compile(checkpointer=CHECKPOINTER)
+# AsyncSqliteSaver.from_conn_string 也是 async context manager；
+# 模块级需在 lifespan 或启动钩子里 await __aenter__，或文档化等价写法
+GRAPH = ...  # build_graph().compile(checkpointer=checkpointer)
 ```
 
-**SqliteSaver 导入（已在 caker 环境验证）**
+**AsyncSqliteSaver 导入（caker 须用异步版）**
 
 | 项 | 值 |
 |----|-----|
-| pip 包名 | `langgraph-checkpoint-sqlite`（`pyproject.toml` 里带连字符） |
-| **正确** import | `from langgraph.checkpoint.sqlite import SqliteSaver` |
-| **错误** import | `from langgraph_checkpoint_sqlite import SqliteSaver` → `ModuleNotFoundError` |
+| pip | `langgraph-checkpoint-sqlite`、`aiosqlite` |
+| **正确** | `from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver` |
+| **勿用** | 同步 `SqliteSaver` + `await GRAPH.ainvoke` → `does not support async methods` |
+| **错误** | `from langgraph_checkpoint_sqlite import ...` → `ModuleNotFoundError` |
 
-自检：`uv run python -c "from langgraph.checkpoint.sqlite import SqliteSaver; print(SqliteSaver)"`
-
-> LangGraph 将 checkpoint 实现做成 **namespace 包**：安装名≠顶层模块名 `langgraph_checkpoint_sqlite`。
+自检：`uv run python -c "from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver; print(AsyncSqliteSaver)"`
 
 ```python
 # app/runtime/nodes.py start_node  [你手敲]
@@ -1115,7 +1115,8 @@ curl -s -X POST http://127.0.0.1:8000/api/v2/chat-graph \
 - `thread_id` 给检查点；`session_id` 给 Workspace 工具（M7）——本地可同值，语义分开。
 - 只加了 `checkpointer` 却未改 `start` 条件边 → 每轮仍 `inject_system`，与 README「跳过重复 SystemMessage」不一致。
 - 未 `mkdir var/` 时 SQLite 可能 `unable to open database file`。
-- `from_conn_string` 不能写成 `compile(checkpointer=SqliteSaver.from_conn_string(...))` 直接传 context manager，须 `__enter__` 或 `with` 块内 compile。
+- 同步 `SqliteSaver` 与 `await ainvoke` 不兼容；必须用 **`AsyncSqliteSaver`**。
+- `from_conn_string` 是 context manager，不能直接把 manager 对象传给 `compile()`。
 - 忘记 `compile(checkpointer=...)` 时，第二轮 `messages` 仍为空。
 - `add_messages` 是追加：每轮只传本轮 `input`，勿在 `ainvoke` 里重复塞全量历史。
 
@@ -1128,7 +1129,7 @@ curl -s -X POST http://127.0.0.1:8000/api/v2/chat-graph \
 
 ### 目标
 - 多一个 `result_set(text="...")` 工具，模型用它**正式产出最终回答**。
-- `apply_result_set` 节点把工具结果里的 `text` 取出写入 `state.result_text`，并 `result_set_handled=True`，路由直奔 `end`。
+- `apply_result_set` 节点把工具结果里的 `text` 取出写入 **`state["result"]`**（caker 不用 `result_text`），并 `result_set_handled=True`，路由直奔 `end`。
 - 流式请求时**不暴露**该工具（流式靠 token 流回结果，不需要 `result_set`）。
 
 ### 前置
@@ -1171,7 +1172,7 @@ def apply_result_set_node(state, config):
     last = state["messages"][-1]
     # TODO:
     # 1. 仅当 last 是 ToolMessage 且 last.name == "result_set"
-    # 2. 写 result_text = last.content
+    # 2. 写 result = last.content（caker 字段名 result）
     # 3. result_set_handled = True
     ...
 ```
@@ -1189,7 +1190,7 @@ def route_after_tools(state) -> str:
 # app/runtime/state.py 增量
 class GraphState(TypedDict):
     messages: Annotated[list[BaseMessage], add_messages]
-    result_text: str
+    result: str                    # caker
     result_set_handled: bool
     skip_inject_system: bool
     streaming: bool
@@ -1216,7 +1217,7 @@ curl -s -X POST :8000/api/v2/chat-graph \
 - 状态里 `result_set_handled=True`。
 
 ### 易错点
-- 别让 `apply_result_set` **添加新消息**，它只改 `result_text` 和标志位；否则下一轮历史会有奇怪空 AIMessage。
+- 别让 `apply_result_set` **添加新消息**，它只改 `result` 和标志位；否则下一轮历史会有奇怪空 AIMessage。
 - 流式（M4）路径上**不绑** `result_set`，否则模型会优先调它而不是流式吐字。
 
 ### 对应原报告
@@ -1410,7 +1411,7 @@ async def end_node(state, config):
     state_store.save(sid, state["messages"])
     sm = summarize(state["messages"]).content
     chroma_store.add(uuid.uuid4().hex, sm, {"session_id": sid, "user_id": user_id})
-    return {"result_text": last_ai.content}
+    return {"result": last_ai.content}   # caker
 ```
 
 ### 验证
@@ -1480,7 +1481,7 @@ dev-dependencies = ["pytest>=8", "httpx>=0.27"]
 | M7 | Workspace 沙箱 | §5 / §9.4 |
 | M8 | call_skill 加载说明 | §4 / §9.2 |
 | M9 | RunPyScript 子进程 | §4 / §5 |
-| M10 | 多轮历史（SqliteSaver / `var/state.db`） | §3 节点 1 / §7（子集） |
+| M10 | 多轮历史（AsyncSqliteSaver / `var/state.db`） | §3 节点 1 / §7（子集） |
 | M11 | result_set 终态 | §3 节点 6,8 |
 | M14 | summary 压缩 | §3 节点 7 |
 | M15 | MemPalace 召回 | §3 节点 3 / §9.5 |

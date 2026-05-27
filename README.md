@@ -2,7 +2,7 @@
 
 在本地复现 [Agent Skills 跟写指南](docs/agent_skills_build_guide.md) 中的里程碑实现；架构说明见 [深度研究报告](docs/user_attachments_session_a29c06ca28284858b68f5de84ede3306_outputs_agent_skills_deep_research_report.md)。
 
-**进度一览**：**M0–M7** 已在仓库落地（见下「已完成」各节）。**M8 及以后** 仅保留与指南对齐的**目标摘要**（本地路线 **M0–M11、M14–M15**，不含原 Pipeline / 游标两节）。某一 M 验收通过后，将对应小节改为与上文相同的「路径表 + 验证」写法。
+**进度一览**：**M0–M8** 已在仓库落地（见下「已完成」各节；M8 见 Git `2a90ef4`）。**M9 及以后** 仅保留与指南对齐的**目标摘要**（本地路线 **M0–M11、M14–M15**，不含原 Pipeline / 游标两节）。某一 M 验收通过后，将对应小节改为与上文相同的「路径表 + 验证」写法。
 
 ---
 
@@ -186,13 +186,13 @@ curl -s -X POST http://127.0.0.1:8000/api/v2/chat-graph \
 
 ## 规划中里程碑（M8 起，摘要）
 
-细节见 [docs/agent_skills_build_guide.md](docs/agent_skills_build_guide.md)（**本地部署**：多轮用 `SqliteSaver`（`var/state.db`），SSE 保持 M4 单连接，不跟 Pipeline / 游标）。
+细节见 [docs/agent_skills_build_guide.md](docs/agent_skills_build_guide.md)（**本地部署**：M10 规划为 `AsyncSqliteSaver`；当前 M8–M9 运行时未接 checkpointer；SSE 单连接，不跟 Pipeline / 游标）。
 
 | 里程碑 | 目标摘要 |
 |--------|----------|
 | **M8** | `skills/` + `SkillsManager` + `call_skill`；系统提示注入技能元数据 |
 | **M9** | `RunPyScript`：沙箱内执行 `.py`，环境变量 `SESSION_ID` 等 |
-| **M10** | **SqliteSaver**（`var/state.db`）+ `thread_id`；`start` 改条件边（有历史则 `start→inject_user`，跳过 `inject_system`）；`inject_user` 仍只追加本轮 `input` |
+| **M10** | **AsyncSqliteSaver**（`var/state.db`）+ `thread_id`；`start` 条件边；M8–M9 阶段可先不接 checkpointer |
 | **M11** | `result_set` + `apply_result_set`（非流式交卷） |
 | **M14** | `summary` 节点：长上下文压缩（前置 M11） |
 | **M15** | MemPalace + Chroma：跨会话语义记忆（前置 M14） |

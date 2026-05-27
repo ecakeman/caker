@@ -23,40 +23,54 @@ class WorkspaceManager:
         ws.mkdir(parents=True,exist_ok=True)
         (ws / "data").mkdir(parents=True,exist_ok=True)
         (ws / "outputs").mkdir(parents=True, exist_ok=True)
+
+        skills_link = ws / "skills"
+        if not skills_link.exists():
+            repo_skills = Path(__file__).resolve().parents[2] / "skills"
+            if repo_skills.is_dir():
+                skills_link.symlink_to(repo_skills, target_is_directory=True)
+
         return ws
 
-    def resolve(self,session_id:str,rel_path:str)->Path:
-        rel = rel_path.strip()
+    def resolve(self, session_id: str, rel_path: str) -> Path:
+        rel = rel_path.strip().replace("\\", "/")
         if not rel:
             raise WorkspaceError("empty rel_path")
-        if rel.startswith("/") or rel.startswith("\\"):
+        if rel.startswith("/"):
             raise WorkspaceError("absolute path is not allowed")
         if ".." in Path(rel).parts:
             raise WorkspaceError("path traversal is not allowed")
 
         ws = self.session_dir(session_id)
+        target = ws / rel
+        parts = Path(rel).parts
+
+        # skills/、books/ 经 symlink 指向仓库外；勿 resolve() 再 relative_to(ws)
+        if parts and parts[0] in READONLY_SUBDIRS:
+            return target
+
         try:
-            target = (ws / rel).resolve()
+            resolved = target.resolve()
         except OSError as e:
             raise WorkspaceError(str(e)) from e
-        
+
         try:
-            target.relative_to(ws)
+            resolved.relative_to(ws.resolve())
         except ValueError as e:
             raise WorkspaceError("path escapes workspace") from e
 
-        return target
+        return resolved
 
-    def is_readonly(self,session_id:str,target: Path)->bool:
+    def is_readonly(self, session_id: str, target: Path) -> bool:
         ws = self.session_dir(session_id)
         try:
-            rel = target.resolve().relative_to(ws)
+            rel = target.relative_to(ws)
         except ValueError:
             return True
         parts = rel.parts
         if not parts:
             return False
-        
+
         return parts[0] in READONLY_SUBDIRS
         
 
