@@ -45,7 +45,6 @@ class WorkspaceManager:
         target = ws / rel
         parts = Path(rel).parts
 
-        # skills/、books/ 经 symlink 指向仓库外；勿 resolve() 再 relative_to(ws)
         if parts and parts[0] in READONLY_SUBDIRS:
             return target
 

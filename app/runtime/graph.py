@@ -1,12 +1,16 @@
-from langgraph.graph import END, START, StateGraph
-
-from app.runtime import nodes
-from app.runtime.state import GraphState
+from __future__ import annotations
 
 from collections.abc import AsyncIterator
 from typing import Any
 
-from app.runtime import routes
+from langgraph.checkpoint.base import BaseCheckpointSaver
+from langgraph.graph import END, START, StateGraph
+from langgraph.graph.state import CompiledStateGraph
+
+from app.runtime import nodes, routes
+from app.runtime.state import GraphState
+
+_compiled: CompiledStateGraph | None = None
 
 
 def build_graph():
@@ -19,7 +23,14 @@ def build_graph():
     g.add_node("end", nodes.end_node)
 
     g.add_edge(START, "start")
-    g.add_edge("start", "inject_system")
+    g.add_conditional_edges(
+        "start",
+        routes.route_after_start,
+        {
+            "inject_system": "inject_system",
+            "inject_user": "inject_user",
+        }
+    )
     g.add_edge("inject_system", "inject_user")
     g.add_edge("inject_user", "llm")
     g.add_conditional_edges(
@@ -32,16 +43,25 @@ def build_graph():
     )
     g.add_edge("tools", "llm")
     g.add_edge("end", END)
-    return g.compile()
+    return g
 
 
-GRAPH = build_graph()
+def compile_graph(checkpointer: BaseCheckpointSaver) -> CompiledStateGraph:
+    global _compiled
+    _compiled = build_graph().compile(checkpointer=checkpointer)
+    return _compiled
 
+def get_graph() -> CompiledStateGraph:
+    if _compiled is None:
+        raise RuntimeError(
+            "Graph not compiled. Start uvicorn with app.main:app (lifespan initializes checkpointer)."
+        )
+    return _compiled
 
 async def iter_graph_stream_events(
     inputs: dict[str, Any],
     *,
     config: dict[str, Any] | None = None,
 ) -> AsyncIterator[dict[str, Any]]:
-    async for ev in GRAPH.astream_events(inputs, config=config, version="v2"):
+    async for ev in get_graph().astream_events(inputs, config=config, version="v2"):
         yield ev

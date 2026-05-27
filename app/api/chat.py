@@ -2,18 +2,25 @@ from fastapi import APIRouter, HTTPException
 from langchain_core.messages import HumanMessage
 from pydantic import BaseModel
 
-from app.runtime.graph import GRAPH
+from app.runtime.graph import get_graph, iter_graph_stream_events
 from app.runtime.llm import get_llm
 
 from fastapi.responses import StreamingResponse
 
-from app.runtime.graph import iter_graph_stream_events
 from app.runtime.sse import sse_pack
 
 
 def _graph_config(session_id: str | None) -> dict:
     sid = (session_id or "demo").strip() or "demo"
-    return {"configurable": {"session_id": sid}}
+    return {"configurable": {"session_id": sid, "thread_id": sid}}
+
+def _graph_inputs(message: str) ->dict:
+    return {
+        "messages": [],
+        "input": message,
+        "result": "",
+        "skip_inject_system": False,
+    }
 
 router = APIRouter(prefix="/api/v2")
 
@@ -62,13 +69,8 @@ async def chat_once(body: ChatOnceIn) -> ChatOnceOut:
 @router.post("/chat-graph", response_model=ChatGraphOut)
 async def chat_graph(body: ChatGraphIn) -> ChatGraphOut:
     try:
-        out = await GRAPH.ainvoke(
-            {
-                "messages": [],
-                "input": body.message,
-                "result": "",
-                "skip_inject_system": False,
-            },
+        out = await get_graph().ainvoke(
+            _graph_inputs(body.message),
             config=_graph_config(body.session_id),
         )
     except Exception as e:
@@ -78,12 +80,7 @@ async def chat_graph(body: ChatGraphIn) -> ChatGraphOut:
 @router.post("/stream")
 async def stream_chat(body: ChatGraphIn) -> StreamingResponse:
     async def gen():
-        inputs={
-            "messages": [],
-            "input": body.message,
-            "result": "",
-            "skip_inject_system": False,
-        }
+        inputs = _graph_inputs(body.message)
         config = _graph_config(body.session_id)
         try:
             async for ev in iter_graph_stream_events(inputs, config=config):

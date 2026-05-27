@@ -10,7 +10,10 @@ from app.tools.base import build_default_tools
 _TOOLS = build_default_tools()
 
 async def start_node(state: GraphState) -> dict:
-    return {}
+    if state.get("messages"):
+        return {"skip_inject_system": True}
+    return {"skip_inject_system": False}
+
 
 
 def inject_system_node(state: GraphState) -> dict:

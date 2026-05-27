@@ -345,6 +345,7 @@ name = "caker"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "aiosqlite" },
     { name = "asyncpg" },
     { name = "boto3" },
     { name = "chromadb" },
@@ -364,6 +365,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "aiosqlite", specifier = ">=0.20" },
     { name = "asyncpg", specifier = ">=0.30.0" },
     { name = "boto3", specifier = ">=1.35.0" },
     { name = "chromadb", specifier = ">=0.5.0" },

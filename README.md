@@ -2,11 +2,11 @@
 
 在本地复现 [Agent Skills 跟写指南](docs/agent_skills_build_guide.md) 中的里程碑实现；架构说明见 [深度研究报告](docs/user_attachments_session_a29c06ca28284858b68f5de84ede3306_outputs_agent_skills_deep_research_report.md)。
 
-**进度一览**：**M0–M9** 已在仓库落地（见下「已完成」各节）。**M10 及以后** 仅保留与指南对齐的**目标摘要**（本地路线 **M10–M11、M14–M15**，不含原 Pipeline / 游标两节）。某一 M 验收通过后，将对应小节改为与上文相同的「路径表 + 验证」写法。
+**进度一览**：**M0–M10** 已在仓库落地（见下「已完成」各节）。**M11 及以后** 仅保留与指南对齐的**目标摘要**（本地路线 **M11、M14–M15**，不含原 Pipeline / 游标两节）。某一 M 验收通过后，将对应小节改为与上文相同的「路径表 + 验证」写法。
 
 ---
 
-## 已完成里程碑（M0–M9）
+## 已完成里程碑（M0–M10）
 
 以下路径为**当前仓库已实现**内容。与指南骨架不一致处（如 `result` 而非 `result_text`、`inject_user` 节点）在各节单独说明。
 
@@ -252,13 +252,45 @@ curl -s -X POST http://127.0.0.1:8000/api/v2/chat-graph \
 
 ---
 
-## 规划中里程碑（M10 起，摘要）
+### M10 多轮历史（AsyncSqliteSaver）
 
-细节见 [docs/agent_skills_build_guide.md](docs/agent_skills_build_guide.md)（**本地部署**：M10 规划为 `AsyncSqliteSaver`；当前 **M9 运行时未接** checkpointer；SSE 单连接，不跟 Pipeline / 游标）。
+| 路径 | 说明 |
+|------|------|
+| [app/main.py](app/main.py) | FastAPI `lifespan`：`AsyncSqliteSaver` + `setup()` + `compile_graph` |
+| [app/runtime/graph.py](app/runtime/graph.py) | `start` 条件边；`compile_graph` / `get_graph` |
+| [app/runtime/routes.py](app/runtime/routes.py) | `route_after_start` |
+| [app/runtime/nodes.py](app/runtime/nodes.py) | `start_node` 按恢复后的 `messages` 设 `skip_inject_system` |
+| [app/api/chat.py](app/api/chat.py) | `thread_id` + `session_id`；`get_graph().ainvoke` |
+
+**行为要点**：
+
+- 检查点写入 `var/state.db`（`.gitignore`）；须 **`AsyncSqliteSaver`**，与 `ainvoke` 配套。
+- 每轮 API 仍传 `messages: []`；历史由 `thread_id` 从 SQLite 恢复；次轮起跳过 `inject_system`。
+
+**验证**：
+
+```bash
+uv run uvicorn app.main:app --host 127.0.0.1 --port 8000
+
+SID=demo-m10-$(date +%s)
+curl -s -X POST http://127.0.0.1:8000/api/v2/chat-graph \
+  -H 'content-type: application/json' \
+  -d "{\"message\":\"我叫张三\",\"session_id\":\"$SID\"}"
+curl -s -X POST http://127.0.0.1:8000/api/v2/chat-graph \
+  -H 'content-type: application/json' \
+  -d "{\"message\":\"我叫什么？\",\"session_id\":\"$SID\"}"
+```
+
+预期：第二条能答「张三」；重启 uvicorn 后同 `session_id` 仍可延续。
+
+---
+
+## 规划中里程碑（M11 起，摘要）
+
+细节见 [docs/agent_skills_build_guide.md](docs/agent_skills_build_guide.md)（SSE 单连接，不跟 Pipeline / 游标）。
 
 | 里程碑 | 目标摘要 |
 |--------|----------|
-| **M10** | **AsyncSqliteSaver**（`var/state.db`）+ `thread_id`；`start` 条件边（有历史则 `start→inject_user`，跳过 `inject_system`） |
 | **M11** | `result_set` + `apply_result_set`（非流式交卷） |
 | **M14** | `summary` 节点：长上下文压缩（前置 M11） |
 | **M15** | MemPalace + Chroma：跨会话语义记忆（前置 M14） |
