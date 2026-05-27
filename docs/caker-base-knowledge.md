@@ -675,7 +675,9 @@ vector = embeddings.embed_query("我喜欢Python")
 | `app/api/chat.py`                 | `APIRouter`、`BaseModel`、`StreamingResponse`、yield、`async for`、动态工具过滤                    | M1–M4/M7/M11     |
 | `app/runtime/state.py`            | TypedDict、`Annotated`、`add_messages`                                                    | M3               |
 | `app/runtime/graph.py`            | `StateGraph`、`add_edge`、`add_conditional_edges`、`compile`、`astream_events`、checkpointer | M3/M4/M6/M10/M14 |
-| `app/runtime/nodes.py`            | 节点函数、`SystemMessage`/`HumanMessage`/`AIMessage`、`ToolNode`、summary 节点                   | M3–M8/M14        |
+| `system_prompt.md`                | 系统提示词模板（`{skills_meta}`）；由 `SkillManager.render_system_prompt()` 注入                  | M8+              |
+| `app/skills/manager.py`           | 技能索引 + `load_system_prompt` / `render_system_prompt`                                      | M8+              |
+| `app/runtime/nodes.py`            | 节点函数、`inject_system_node`、`ToolNode`、summary 节点（M14）                                  | M3–M8/M14        |
 | `app/runtime/routes.py`           | 条件路由函数、`route_after_llm`、`route_after_start`、`route_before_llm`                         | M6/M10/M14       |
 | `app/runtime/llm.py`              | `ChatOpenAI`、`bind_tools`、`lru_cache`、嵌入模型                                              | M2/M5/M15        |
 | `app/runtime/sse.py`              | SSE 协议、`event:` / `data:` / `\n\n`                                                      | M4               |

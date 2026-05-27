@@ -28,8 +28,8 @@
 | 配置 / `.env` | `OPENAI_*` | **`LLM_*`** → `settings.llm_*`（见 §1） |
 | 图执行 API | — | FastAPI 用 **`await GRAPH.ainvoke` / `astream_events`**（异步） |
 | M7 工作区 | `skills/` symlink「可选」 | M7 可不做；**M9 起在 caker 中为必需**（见 M9） |
-| M8 系统提示 | 纯英文 Agent | **保留中文 Caker 人设** + 英文技能指引 + `Available skills` JSON |
-| M10 检查点 | 文中示例同步 `SqliteSaver` | **M8–M9 运行时未接 checkpointer**；做 M10 时用 **`AsyncSqliteSaver` + `aiosqlite`**（见 M10） |
+| M8 系统提示 | 纯英文 Agent / 硬编码在 `nodes.py` | 仓库根 **`system_prompt.md`** + `SkillManager.render_system_prompt()`；`{skills_meta}` 动态注入；正文仅面向 LLM（维护说明见 README） |
+| M10 检查点 | 文中示例同步 `SqliteSaver` | **`AsyncSqliteSaver`**（`var/state.db`）+ FastAPI `lifespan`；须与 **`ainvoke`** 配套（见 M10） |
 
 ---
 
@@ -97,6 +97,7 @@ caker/                            # 仓库根 = 你 clone 下来的目录
 ├── .env.example                  # LLM_* / WORKSPACE_ROOT / CHROMA_PATH
 ├── docker-compose.yaml           # 本地默认只需 Chroma（PG/MinIO 可选）
 ├── README.md
+├── system_prompt.md              # M8+：系统提示词模板（{skills_meta} 占位）
 ├── var/                          # M10 起：state.db（.gitignore）
 ├── app/
 │   ├── __init__.py
@@ -792,7 +793,9 @@ M7。
 | `app/skills/manager.py` | `[你手敲]` 索引仓库根 `skills/*/SKILL.md`、剥 front matter |
 | `app/tools/call_skill_tool.py` | `[你手敲]` Tool 实现 |
 | `app/tools/base.py` | `[一起写]` 注册 `CallSkillTool` |
-| `app/runtime/nodes.py` | `[一起写]` `inject_system_node` 注入技能列表 JSON（保留中文人设） |
+| `system_prompt.md` | `[一起写]` 系统提示词模板（面向使用者；`{skills_meta}` 占位） |
+| `app/skills/manager.py` | `[续写]` `load_system_prompt()` / `render_system_prompt()` |
+| `app/runtime/nodes.py` | `[一起写]` `inject_system_node` → `render_system_prompt()` |
 
 ### 关键代码骨架
 
@@ -880,8 +883,20 @@ class CallSkillTool(BaseTool):
 def build_default_tools() -> list[BaseTool]:
     return [ReadTool(), CallSkillTool()]
 
+# app/skills/manager.py  [续写]
+def load_system_prompt(self) -> str:
+    return (_REPO_ROOT / "system_prompt.md").read_text(encoding="utf-8")
+
+def render_system_prompt(self, skills_meta: str | None = None) -> str:
+    meta = skills_meta or json.dumps(self.list_meta(), ensure_ascii=False)
+    tpl = self.load_system_prompt()
+    return tpl.replace("{skills_meta}", meta)
+
 # app/runtime/nodes.py inject_system_node  [一起写]
-# caker：在原有中文 Caker 人设后追加英文技能指引 + Available skills JSON
+def inject_system_node(state: GraphState) -> dict:
+    if state.get("skip_inject_system", False):
+        return {}
+    return {"messages": [SystemMessage(content=skills_manager.render_system_prompt())]}
 ```
 
 **caker**：`reindex()` 遍历 **`skills/<子目录>/SKILL.md`**（`if not child.is_dir(): continue`）。

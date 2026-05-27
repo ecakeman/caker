@@ -73,8 +73,8 @@ curl -s -X POST http://127.0.0.1:8000/api/v2/chat-once \
 
 | 路径 | 说明 |
 |------|------|
-| [app/runtime/state.py](app/runtime/state.py) | `GraphState`：`messages`（`add_messages`）、`input`、`result`、`skip_inject_system` |
-| [app/runtime/nodes.py](app/runtime/nodes.py) | `start` → `inject_system` → `inject_user` → `llm` → `end` |
+| [app/runtime/state.py](app/runtime/state.py) | `GraphState`：`messages`（`add_messages`）、`input`、`result`、`skip_inject_system`（M11 起增 `result_set_handled`、`streaming`） |
+| [app/runtime/nodes.py](app/runtime/nodes.py) | `start` →（条件）`inject_system` / `inject_user` → `llm` → `end`（M10 条件边；M6 起含 `tools`） |
 | [app/runtime/graph.py](app/runtime/graph.py) | `StateGraph`、`build_graph()`、`GRAPH` |
 | [app/api/chat.py](app/api/chat.py) | `ChatGraphIn` / `ChatGraphOut`、`POST /chat-graph` |
 
@@ -184,25 +184,37 @@ curl -s -X POST http://127.0.0.1:8000/api/v2/chat-graph \
 
 ---
 
-### M8 `call_skill` + SkillsManager
+### M8 `call_skill` + SkillManager + 系统提示词
 
 | 路径 | 说明 |
 |------|------|
+| [system_prompt.md](system_prompt.md) | 系统提示词模板（`{skills_meta}` 占位）；`SkillManager.render_system_prompt()` 注入 |
 | [skills/hello_skill/SKILL.md](skills/hello_skill/SKILL.md) | 示例技能包（front matter + 操作说明） |
 | [skills/hello_skill/run.py](skills/hello_skill/run.py) | 占位脚本（M9 执行） |
 | [app/skills/manager.py](app/skills/manager.py) | 索引仓库根 `skills/*/SKILL.md`；`list_meta` / `load_body`（剥 front matter） |
 | [app/tools/call_skill_tool.py](app/tools/call_skill_tool.py) | `call_skill` 返回 instructions JSON |
 | [app/tools/base.py](app/tools/base.py) | `build_default_tools()` 注册 `Read` + `CallSkill` |
-| [app/runtime/nodes.py](app/runtime/nodes.py) | 系统提示注入 `Available skills`（保留中文 Caker 人设） |
+| [app/runtime/nodes.py](app/runtime/nodes.py) | `inject_system_node` → `render_system_prompt()` 加载 [system_prompt.md](system_prompt.md) |
 
 **行为要点**：
 
 - 技能正文在 `call_skill` 时按需加载，系统提示只含元数据 JSON。
-- `SkillsManager` 默认锚到仓库根 `skills/`，不依赖 uvicorn 工作目录。
+- `SkillManager` 默认锚到仓库根 `skills/`，不依赖 uvicorn 工作目录。
+
+**系统提示词维护**（面向开发者，不注入 LLM）：
+
+| 项 | 说明 |
+|----|------|
+| 文件 | 仓库根 [system_prompt.md](system_prompt.md)，与 `skills/` 平级；正文**仅**面向对话中的 Caker，不含部署说明 |
+| 注入 | `inject_system_node()` → `skills_manager.render_system_prompt()` → `SystemMessage`；占位符 `{skills_meta}` 由 `list_meta()` 替换 |
+| 与 [AGENTS.md](AGENTS.md) | AGENTS 管协作与改仓库授权；system_prompt 管工具使用与工作区行为 |
+| 修改后 | 编辑 `system_prompt.md` 并重启 uvicorn；已有 `thread_id` 的多轮会话仍保留首轮 SystemMessage（M10） |
 
 **验证**：
 
 ```bash
+uv run --extra dev pytest tests/test_system_prompt.py -q
+
 curl -s -X POST http://127.0.0.1:8000/api/v2/chat-graph \
   -H 'content-type: application/json' \
   -d '{"message":"用 hello_skill 跟我打个招呼","session_id":"demo"}'

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import re
 from pathlib import Path
 
@@ -63,6 +64,20 @@ class SkillManager:
         text = path.read_text(encoding="utf-8",errors="replace")
         _,body = _parse_front_matter(text)
         return body.strip()
+
+    def load_system_prompt(self) -> str:
+        path = _REPO_ROOT / "system_prompt.md"
+        if not path.is_file():
+            raise FileNotFoundError(f"system prompt not found: {path}")
+        return path.read_text(encoding="utf-8")
+
+    def render_system_prompt(self, skills_meta: str | None = None) -> str:
+        if skills_meta is None:
+            skills_meta = json.dumps(self.list_meta(), ensure_ascii=False)
+        template = self.load_system_prompt()
+        if "{skills_meta}" not in template:
+            raise ValueError("system_prompt.md must contain {skills_meta} placeholder")
+        return template.replace("{skills_meta}", skills_meta)
 
 skills_manager = SkillManager()
 skills_manager.reindex()
