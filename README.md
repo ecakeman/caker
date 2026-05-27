@@ -2,11 +2,11 @@
 
 在本地复现 [Agent Skills 跟写指南](docs/agent_skills_build_guide.md) 中的里程碑实现；架构说明见 [深度研究报告](docs/user_attachments_session_a29c06ca28284858b68f5de84ede3306_outputs_agent_skills_deep_research_report.md)。概念与代码对照见 [Caker 基础知识手册](docs/caker-base-knowledge.md)。
 
-**进度一览**：**M0–M11** 已在仓库落地（见下「已完成」各节）。**M14 及以后** 仅保留与指南对齐的**目标摘要**（本地路线 **M14–M15**，不含原 Pipeline / 游标两节）。某一 M 验收通过后，将对应小节改为与上文相同的「路径表 + 验证」写法。
+**进度一览**：**M0–M14** 已在仓库落地（见下「已完成」各节）。**M15** 仅保留与指南对齐的**目标摘要**。某一 M 验收通过后，将对应小节改为与上文相同的「路径表 + 验证」写法。
 
 ---
 
-## 已完成里程碑（M0–M11）
+## 已完成里程碑（M0–M14）
 
 以下路径为**当前仓库已实现**内容。与指南骨架不一致处（如 `result` 而非 `result_text`、`inject_user` 节点）在各节单独说明。
 
@@ -305,7 +305,7 @@ curl -s -X POST http://127.0.0.1:8000/api/v2/chat-graph \
 | [app/tools/base.py](app/tools/base.py) | `build_default_tools(include_result_set=...)` |
 | [app/runtime/llm.py](app/runtime/llm.py) | `get_tools_for_state(streaming=...)` |
 | [app/runtime/nodes.py](app/runtime/nodes.py) | `apply_result_set_node`；`llm_node` 按 `streaming` 绑工具 |
-| [app/runtime/routes.py](app/runtime/routes.py) | `route_after_tools` → `end` / `llm` |
+| [app/runtime/routes.py](app/runtime/routes.py) | `route_after_tools` → `end` / `summary` / `llm` |
 | [app/runtime/graph.py](app/runtime/graph.py) | `tools` → `apply_result_set` → 条件边 |
 | [app/api/chat.py](app/api/chat.py) | `/chat-graph`：`streaming=False`；`/stream`：`streaming=True` |
 | [system_prompt.md](system_prompt.md) | 增加 `result_set` 工具说明 |
@@ -328,14 +328,37 @@ curl -s -X POST http://127.0.0.1:8000/api/v2/chat-graph \
 
 ---
 
-## 规划中里程碑（M14 起，摘要）
+### M14 `summary`（长上下文压缩）
 
-细节见 [docs/agent_skills_build_guide.md](docs/agent_skills_build_guide.md)（SSE 单连接，不跟 Pipeline / 游标）。
+| 路径 | 说明 |
+|------|------|
+| [app/summary/handler.py](app/summary/handler.py) | `tiktoken` 估算；`need_summary` / `summarize` |
+| [app/runtime/nodes.py](app/runtime/nodes.py) | `summary_node`：`RemoveMessage` + 摘要 + 本轮 `input` |
+| [app/runtime/routes.py](app/runtime/routes.py) | `route_after_tools` 超阈值 → `summary` |
+| [app/runtime/graph.py](app/runtime/graph.py) | `summary` → `llm` |
+
+**行为要点**：
+
+- 触发：`estimate_tokens(messages) >= MAX_INPUT_TOKENS * SUMMARY_COND_RATIO`（默认 8000×0.6）。
+- 在 `apply_result_set` 之后、`llm` 之前；已 `result_set_handled` 时直接 `end`。
+- 摘要会丢失工具中间细节，只保留对话级语义。
+
+**验证**：
+
+```bash
+uv run --extra dev pytest tests/test_m14_summary.py -q
+uv run python -c "from app.runtime.graph import build_graph; g=build_graph(); print('summary' in g.nodes)"
+```
+
+---
+
+## 规划中里程碑（M15，摘要）
+
+细节见 [docs/agent_skills_build_guide.md](docs/agent_skills_build_guide.md)。
 
 | 里程碑 | 目标摘要 |
 |--------|----------|
-| **M14** | `summary` 节点：长上下文压缩 |
-| **M15** | MemPalace + Chroma：跨会话语义记忆（前置 M14） |
+| **M15** | MemPalace + Chroma：跨会话语义记忆 |
 
 ---
 

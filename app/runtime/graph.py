@@ -21,6 +21,7 @@ def build_graph():
     g.add_node("llm", nodes.llm_node)
     g.add_node("tools", nodes.tools_node)
     g.add_node("end", nodes.end_node)
+    g.add_node("summary", nodes.summary_node)
     g.add_node("apply_result_set", nodes.apply_result_set_node)
 
     g.add_edge(START, "start")
@@ -49,8 +50,10 @@ def build_graph():
         {
             "end": "end",
             "llm": "llm",
+            "summary": "summary",
         },
     )
+    g.add_edge("summary", "llm")
     g.add_edge("end", END)
     return g
 

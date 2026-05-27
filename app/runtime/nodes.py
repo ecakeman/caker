@@ -8,6 +8,9 @@ from app.runtime.state import GraphState
 from app.skills.manager import skills_manager
 from app.tools.base import build_default_tools
 
+from langgraph.graph.message import REMOVE_ALL_MESSAGES, RemoveMessage
+
+from app.summary.handler import summarize
 _TOOLS_FOR_NODE = build_default_tools(include_result_set=True)
 
 
@@ -61,3 +64,15 @@ async def end_node(state: GraphState) -> dict:
 
 
 tools_node = ToolNode(_TOOLS_FOR_NODE)
+
+
+async def summary_node(state: GraphState, config) -> dict:
+    summary_msg = summarize(state["messages"])
+    last_user = HumanMessage(content=state["input"])
+    return {
+        "messages":[
+            RemoveMessage(id=REMOVE_ALL_MESSAGES),
+            summary_msg,
+            last_user,
+        ]
+    }

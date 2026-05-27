@@ -39,5 +39,5 @@ def test_apply_result_set_ignores_other_tools():
 
 
 def test_route_after_tools():
-    assert route_after_tools({"result_set_handled": True}) == "end"  # type: ignore[arg-type]
-    assert route_after_tools({"result_set_handled": False}) == "llm"  # type: ignore[arg-type]
+    assert route_after_tools({"result_set_handled": True, "messages": []}) == "end"  # type: ignore[arg-type]
+    assert route_after_tools({"result_set_handled": False, "messages": []}) == "llm"  # type: ignore[arg-type]
