@@ -2,11 +2,11 @@
 
 在本地复现 [Agent Skills 跟写指南](docs/agent_skills_build_guide.md) 中的里程碑实现；架构说明见 [深度研究报告](docs/user_attachments_session_a29c06ca28284858b68f5de84ede3306_outputs_agent_skills_deep_research_report.md)。
 
-**进度一览**：**M0–M8** 已在仓库落地（见下「已完成」各节；M8 见 Git `2a90ef4`）。**M9 及以后** 仅保留与指南对齐的**目标摘要**（本地路线 **M0–M11、M14–M15**，不含原 Pipeline / 游标两节）。某一 M 验收通过后，将对应小节改为与上文相同的「路径表 + 验证」写法。
+**进度一览**：**M0–M9** 已在仓库落地（见下「已完成」各节）。**M10 及以后** 仅保留与指南对齐的**目标摘要**（本地路线 **M10–M11、M14–M15**，不含原 Pipeline / 游标两节）。某一 M 验收通过后，将对应小节改为与上文相同的「路径表 + 验证」写法。
 
 ---
 
-## 已完成里程碑（M0–M7）
+## 已完成里程碑（M0–M9）
 
 以下路径为**当前仓库已实现**内容。与指南骨架不一致处（如 `result` 而非 `result_text`、`inject_user` 节点）在各节单独说明。
 
@@ -184,15 +184,81 @@ curl -s -X POST http://127.0.0.1:8000/api/v2/chat-graph \
 
 ---
 
-## 规划中里程碑（M8 起，摘要）
+### M8 `call_skill` + SkillsManager
 
-细节见 [docs/agent_skills_build_guide.md](docs/agent_skills_build_guide.md)（**本地部署**：M10 规划为 `AsyncSqliteSaver`；当前 M8–M9 运行时未接 checkpointer；SSE 单连接，不跟 Pipeline / 游标）。
+| 路径 | 说明 |
+|------|------|
+| [skills/hello_skill/SKILL.md](skills/hello_skill/SKILL.md) | 示例技能包（front matter + 操作说明） |
+| [skills/hello_skill/run.py](skills/hello_skill/run.py) | 占位脚本（M9 执行） |
+| [app/skills/manager.py](app/skills/manager.py) | 索引仓库根 `skills/*/SKILL.md`；`list_meta` / `load_body`（剥 front matter） |
+| [app/tools/call_skill_tool.py](app/tools/call_skill_tool.py) | `call_skill` 返回 instructions JSON |
+| [app/tools/base.py](app/tools/base.py) | `build_default_tools()` 注册 `Read` + `CallSkill` |
+| [app/runtime/nodes.py](app/runtime/nodes.py) | 系统提示注入 `Available skills`（保留中文 Caker 人设） |
+
+**行为要点**：
+
+- 技能正文在 `call_skill` 时按需加载，系统提示只含元数据 JSON。
+- `SkillsManager` 默认锚到仓库根 `skills/`，不依赖 uvicorn 工作目录。
+
+**验证**：
+
+```bash
+curl -s -X POST http://127.0.0.1:8000/api/v2/chat-graph \
+  -H 'content-type: application/json' \
+  -d '{"message":"用 hello_skill 跟我打个招呼","session_id":"demo"}'
+```
+
+预期：出现 `call_skill("hello_skill")`；M9 前可能对 `RunPyScript` 失败（正常）。
+
+**提交**：`2a90ef4`。
+
+---
+
+### M9 `RunPyScript`
+
+| 路径 | 说明 |
+|------|------|
+| [app/tools/run_py_script_tool.py](app/tools/run_py_script_tool.py) | `RunPyScript`：子进程执行 `skills/**/*.py`，返回 `exit` / `stdout` / `stderr` |
+| [app/tools/base.py](app/tools/base.py) | 注册 `RunPyScriptTool` |
+| [app/workspace/manager.py](app/workspace/manager.py) | `session_dir` 内 `skills/` → 仓库根 `skills/` 的 symlink；`resolve` 对 `skills/` 不做 `resolve()` 越界误判 |
+
+**行为要点**：
+
+- `rel_path` 必须以 `skills/` 开头；`cwd` 为会话根 `WORKSPACE_ROOT/<session_id>/`。
+- 环境变量：`SESSION_ID`、 `USER_ID=local`。
+- 工具经 `app/tools/base.py` 注册，`nodes.py` 通过 `build_default_tools()` 使用（非在 `nodes.py` 内手写列表）。
+
+**验证**：
+
+```bash
+# 单元：脚本可执行
+uv run python -c "
+from app.tools.run_py_script_tool import RunPyScriptTool
+import json
+class RM:
+    config = {'configurable': {'session_id': 'demo'}}
+print(json.loads(RunPyScriptTool()._run('skills/hello_skill/run.py', run_manager=RM())))
+"
+
+# 端到端
+curl -s -X POST http://127.0.0.1:8000/api/v2/chat-graph \
+  -H 'content-type: application/json' \
+  -d '{"message":"用 hello_skill 打个招呼","session_id":"demo"}'
+```
+
+预期：`RunPyScript` 的 `stdout` 含 `hello, world`（或模型在 `reply` 中转述）；`exit` 为 0。
+
+**提交**：`5f86823`。
+
+---
+
+## 规划中里程碑（M10 起，摘要）
+
+细节见 [docs/agent_skills_build_guide.md](docs/agent_skills_build_guide.md)（**本地部署**：M10 规划为 `AsyncSqliteSaver`；当前 **M9 运行时未接** checkpointer；SSE 单连接，不跟 Pipeline / 游标）。
 
 | 里程碑 | 目标摘要 |
 |--------|----------|
-| **M8** | `skills/` + `SkillsManager` + `call_skill`；系统提示注入技能元数据 |
-| **M9** | `RunPyScript`：沙箱内执行 `.py`，环境变量 `SESSION_ID` 等 |
-| **M10** | **AsyncSqliteSaver**（`var/state.db`）+ `thread_id`；`start` 条件边；M8–M9 阶段可先不接 checkpointer |
+| **M10** | **AsyncSqliteSaver**（`var/state.db`）+ `thread_id`；`start` 条件边（有历史则 `start→inject_user`，跳过 `inject_system`） |
 | **M11** | `result_set` + `apply_result_set`（非流式交卷） |
 | **M14** | `summary` 节点：长上下文压缩（前置 M11） |
 | **M15** | MemPalace + Chroma：跨会话语义记忆（前置 M14） |
