@@ -1,6 +1,6 @@
 # caker
 
-在本地复现 [Agent Skills 跟写指南](docs/agent_skills_build_guide.md) 中的里程碑实现；架构说明见 [深度研究报告](docs/user_attachments_session_a29c06ca28284858b68f5de84ede3306_outputs_agent_skills_deep_research_report.md)。
+在本地复现 [Agent Skills 跟写指南](docs/agent_skills_build_guide.md) 中的里程碑实现；架构说明见 [深度研究报告](docs/user_attachments_session_a29c06ca28284858b68f5de84ede3306_outputs_agent_skills_deep_research_report.md)。概念与代码对照见 [Caker 基础知识手册](docs/caker-base-knowledge.md)。
 
 **进度一览**：**M0–M10** 已在仓库落地（见下「已完成」各节）。**M11 及以后** 仅保留与指南对齐的**目标摘要**（本地路线 **M11、M14–M15**，不含原 Pipeline / 游标两节）。某一 M 验收通过后，将对应小节改为与上文相同的「路径表 + 验证」写法。
 
