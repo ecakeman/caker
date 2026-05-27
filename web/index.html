@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="h-full">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Caker</title>
+    <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              gray: {
+                850: "#262626",
+                950: "#0a0a0a",
+              },
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      body {
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      }
+      .message-content {
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+    </style>
+  </head>
+  <body
+    class="h-full bg-white text-gray-900 dark:bg-[#171717] dark:text-gray-100"
+  >
+    <div id="health-banner" class="hidden bg-amber-100 text-amber-900 dark:bg-amber-900/40 dark:text-amber-100 px-4 py-2 text-sm text-center">
+      无法连接后端，请确认 uvicorn 已启动。
+    </div>
+
+    <div class="flex h-[100dvh] overflow-hidden">
+      <div
+        id="sidebar-overlay"
+        class="fixed inset-0 z-30 bg-black/40 hidden md:hidden"
+        aria-hidden="true"
+      ></div>
+
+      <aside
+        id="sidebar"
+        class="fixed md:static inset-y-0 left-0 z-40 flex w-72 flex-col border-e border-gray-100 bg-gray-50 dark:border-gray-850/50 dark:bg-gray-950 -translate-x-full md:translate-x-0 transition-transform duration-200"
+      >
+        <div class="flex items-center gap-2 px-3 pt-3 pb-2">
+          <div
+            class="flex size-8 items-center justify-center rounded-xl bg-gray-900 text-sm font-semibold text-white dark:bg-gray-100 dark:text-gray-900"
+          >
+            C
+          </div>
+          <span class="text-lg font-semibold tracking-tight">Caker</span>
+          <button
+            id="btn-close-sidebar"
+            type="button"
+            class="md:hidden ml-auto rounded-lg p-1.5 hover:bg-gray-200 dark:hover:bg-gray-850"
+            aria-label="关闭侧栏"
+          >
+            ✕
+          </button>
+        </div>
+
+        <div class="px-2 pb-2">
+          <button
+            id="btn-new-chat"
+            type="button"
+            class="flex w-full items-center gap-3 rounded-2xl px-2.5 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-900 transition"
+          >
+            <span class="text-base">✎</span>
+            <span>新对话</span>
+          </button>
+        </div>
+
+        <div id="chat-list" class="flex-1 overflow-y-auto px-2 space-y-0.5"></div>
+
+        <div class="border-t border-gray-100 dark:border-gray-850/50 p-3 space-y-2">
+          <div class="text-xs text-gray-500 dark:text-gray-400 px-1">
+            User ID（MemPalace）
+          </div>
+          <input
+            id="input-user-id"
+            type="text"
+            class="w-full rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-sm dark:border-gray-800 dark:bg-gray-900 outline-none focus:ring-2 focus:ring-gray-300 dark:focus:ring-gray-700"
+            placeholder="local"
+          />
+          <button
+            id="btn-settings"
+            type="button"
+            class="flex w-full items-center gap-2 rounded-xl px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-900"
+          >
+            ⚙ 设置
+          </button>
+        </div>
+      </aside>
+
+      <main class="flex min-w-0 flex-1 flex-col">
+        <header
+          class="flex items-center gap-3 border-b border-gray-100 px-4 py-3 dark:border-gray-850/50"
+        >
+          <button
+            id="btn-open-sidebar"
+            type="button"
+            class="md:hidden rounded-lg p-2 hover:bg-gray-100 dark:hover:bg-gray-850"
+            aria-label="打开侧栏"
+          >
+            ☰
+          </button>
+          <h1 id="chat-title" class="flex-1 truncate text-sm font-medium">新对话</h1>
+          <label
+            class="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 cursor-pointer"
+          >
+            <input id="toggle-streaming" type="checkbox" class="rounded" checked />
+            流式
+          </label>
+          <span
+            id="status-dot"
+            class="size-2 rounded-full bg-gray-300 dark:bg-gray-600"
+            title="连接状态"
+          ></span>
+        </header>
+
+        <div class="relative flex-1 overflow-hidden">
+          <div
+            id="empty-state"
+            class="absolute inset-0 flex flex-col items-center justify-center px-4 text-center text-gray-400 dark:text-gray-500 pointer-events-none"
+          >
+            <p class="text-2xl font-medium text-gray-800 dark:text-gray-200 mb-2">Caker</p>
+            <p class="text-sm max-w-md">
+              基于 LangGraph 的 Agent Skills 运行时。发送消息开始对话；会话列表保存在浏览器本地。
+            </p>
+          </div>
+          <div id="messages" class="h-full overflow-y-auto px-4 py-6"></div>
+        </div>
+
+        <div class="border-t border-gray-100 dark:border-gray-850/50 p-4">
+          <div class="mx-auto max-w-3xl">
+            <div
+              class="flex items-end gap-2 rounded-2xl border border-gray-200 bg-white px-3 py-2 shadow-sm dark:border-gray-800 dark:bg-gray-900"
+            >
+              <textarea
+                id="composer"
+                rows="1"
+                placeholder="输入消息… Enter 发送，Shift+Enter 换行"
+                class="max-h-40 min-h-[2.5rem] flex-1 resize-none bg-transparent py-2 text-sm outline-none"
+              ></textarea>
+              <button
+                id="btn-stop"
+                type="button"
+                class="hidden shrink-0 rounded-xl px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-850"
+              >
+                停止
+              </button>
+              <button
+                id="btn-send"
+                type="button"
+                class="shrink-0 rounded-xl bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-40 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200"
+              >
+                发送
+              </button>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <div
+      id="settings-modal"
+      class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-4"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl dark:bg-gray-900">
+        <h2 class="text-lg font-semibold mb-4">设置</h2>
+        <div class="space-y-4 text-sm">
+          <label class="flex items-center justify-between gap-4">
+            <span>流式输出</span>
+            <input id="settings-streaming" type="checkbox" class="rounded" />
+          </label>
+          <label class="block">
+            <span class="text-gray-500 dark:text-gray-400">主题</span>
+            <select
+              id="settings-theme"
+              class="mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 dark:border-gray-800 dark:bg-gray-950"
+            >
+              <option value="system">跟随系统</option>
+              <option value="light">浅色</option>
+              <option value="dark">深色</option>
+            </select>
+          </label>
+        </div>
+        <div class="mt-6 flex justify-end">
+          <button
+            id="btn-settings-close"
+            type="button"
+            class="rounded-xl px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-850"
+          >
+            关闭
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="/js/app.js"></script>
+  </body>
+</html>

@@ -422,9 +422,28 @@ cp .env.example .env
 python -m venv .venv && source .venv/bin/activate
 pip install -e .
 uv run uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+# 浏览器打开 http://127.0.0.1:8000/ 使用 Web 聊天界面
 ```
 
 可选：`docker compose up -d chroma`（M13；Chroma 映射本机 **8001**）。Postgres / MinIO 本地路线可不启动。
+
+---
+
+## Web UI（Open WebUI 风格 · 轻量版）
+
+浏览器聊天界面，视觉参考 [Open WebUI](https://github.com/open-webui/open-webui)，仅对接 caker 现有 API（薄客户端，会话元数据在 **localStorage**）。
+
+| 路径 | 说明 |
+|------|------|
+| [web/index.html](web/index.html) | 单页布局：侧栏 + 对话区 + 输入框 |
+| [web/js/api.js](web/js/api.js) | `/health`、`/api/v2/stream`（SSE）、`/api/v2/chat-graph` |
+| [web/js/sessions.js](web/js/sessions.js) | 本地会话列表与设置 |
+| [web/js/app.js](web/js/app.js) | UI 逻辑 |
+| [app/main.py](app/main.py) | `StaticFiles` 托管 `web/`，根路径 `/` 打开 UI |
+
+**功能**：新对话 / 切换会话 / 删除本地记录；**流式**开关；**User ID**（`x-user-id`，MemPalace）；浅/深色主题。不含登录、模型选择、文档上传等 OWUI 能力。
+
+**验收**：流式对话；同 `session_id` 多轮续上下文（M10）；改 User ID 后新会话可测 MemPalace（M13）；`GET /health` 正常时顶栏绿点。
 
 ---
 
