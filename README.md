@@ -2,11 +2,11 @@
 
 在本地复现 [Agent Skills 跟写指南](docs/agent_skills_build_guide.md) 中的里程碑实现；架构说明见 [深度研究报告](docs/user_attachments_session_a29c06ca28284858b68f5de84ede3306_outputs_agent_skills_deep_research_report.md)。概念与代码对照见 [Caker 基础知识手册](docs/caker-base-knowledge.md)。
 
-**进度一览**：**M0–M12** 已在仓库落地（见下「已完成」各节）。**M13** 仅保留与指南对齐的**目标摘要**。某一 M 验收通过后，将对应小节改为与上文相同的「路径表 + 验证」写法。
+**进度一览**：**M0–M13** 已在仓库落地（见下「已完成」各节）。与 [跟写指南](docs/agent_skills_build_guide.md) 编号对照：本 README 的 **M12 = 指南 M14（summary）**，**M13 = 指南 M15（MemPalace）**。
 
 ---
 
-## 已完成里程碑（M0–M12）
+## 已完成里程碑（M0–M13）
 
 以下路径为**当前仓库已实现**内容。与指南骨架不一致处（如 `result` 而非 `result_text`、`inject_user` 节点）在各节单独说明。
 
@@ -354,13 +354,54 @@ uv run python -c "from app.runtime.graph import build_graph; g=build_graph(); pr
 
 ---
 
-## 规划中里程碑（M13，摘要）
+### M13 MemPalace（跨会话语义记忆）
 
-细节见 [docs/agent_skills_build_guide.md](docs/agent_skills_build_guide.md)。
+| 路径 | 说明 |
+|------|------|
+| [app/mempalace/chroma_store.py](app/mempalace/chroma_store.py) | `PersistentClient`（`CHROMA_PATH`）；`OpenAIEmbeddingFunction`；`add` / `search` |
+| [app/mempalace/injector.py](app/mempalace/injector.py) | `should_inject`、`build_bootstrap`（JSON `HumanMessage`） |
+| [app/mempalace/__init__.py](app/mempalace/__init__.py) | 包初始化 |
+| [app/config.py](app/config.py) | `embedding_*`、`chroma_path` |
+| [.env.example](.env.example) | `EMBEDDING_MODEL_NAME` / `EMBEDDING_BASE_URL` / `EMBEDDING_API_KEY` / `EMBEDDING_DIMENSIONS` |
+| [app/runtime/nodes.py](app/runtime/nodes.py) | `mempalace_inject_node`；`end_node` 写入 Chroma |
+| [app/runtime/graph.py](app/runtime/graph.py) | `inject_user` → `mempalace_inject` → `llm` |
+| [app/api/chat.py](app/api/chat.py) | 请求头 `x-user-id` → `configurable.user_id`（`chat-graph` / `stream`） |
+| [tests/test_m13_mempalace.py](tests/test_m13_mempalace.py) | 注入条件与节点单测 |
 
-| 里程碑 | 目标摘要 |
-|--------|----------|
-| **M13** | MemPalace + Chroma：跨会话语义记忆 |
+**行为要点**：
+
+- **写入**：每轮 `end_node` 对当前 `messages` 做 `summarize()`，以 UUID 为 id upsert 到 collection `mempalace`，元数据含 `session_id`、`user_id`。
+- **召回**：每轮用户句注入后、`llm` 前执行 `mempalace_inject`；按 `user_id` 过滤向量检索，命中则插入一条 `{"mempalace": true, "wakeup", "recall": [...]}` 的 `HumanMessage`（同轮不重复注入）。
+- **嵌入**：走 **OpenAI 兼容 Embedding API**（见 `.env` 的 `EMBEDDING_*`），**不**下载本地 `all-MiniLM-L6-v2`。若曾用默认嵌入建过库，首次切换会自动删旧 collection 重建。
+- **与 M10 区别**：M10 同 `session_id` 的多轮在 SQLite；M13 同 **`user_id`**、不同 `session_id` 可跨会话召回。
+- **可选**：`docker compose up -d chroma` 为独立 Chroma 服务（端口 8001）；当前实现默认 **进程内** `PersistentClient` 写 `./var/chroma`，可不启 compose。
+
+**与指南差异**：指南称 M15；本仓库 README 序号为 M13。未实现 L0 结构化 JSON 文件（指南可选练手项）。
+
+**验证**：
+
+```bash
+uv run --extra dev pytest tests/test_m13_mempalace.py -q
+
+# 需在 .env 配置 EMBEDDING_*（见 .env.example）
+USER=u-demo
+SID1=mp1-$(date +%s)
+SID2=mp2-$(date +%s)
+
+curl -s -X POST http://127.0.0.1:8000/api/v2/chat-graph \
+  -H 'content-type: application/json' -H "x-user-id: $USER" \
+  -d "{\"message\":\"我家猫叫小酥，是灰色的。只回复：好的\",\"session_id\":\"$SID1\"}"
+
+sleep 2
+
+curl -s -X POST http://127.0.0.1:8000/api/v2/chat-graph \
+  -H 'content-type: application/json' -H "x-user-id: $USER" \
+  -d "{\"message\":\"我家猫是什么颜色的？\",\"session_id\":\"$SID2\"}"
+```
+
+预期：第二次 `reply` 能提到灰色/小酥（依赖召回与模型采信软上下文）。
+
+**提交**：`b279bee`。
 
 ---
 
