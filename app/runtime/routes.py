@@ -11,3 +11,8 @@ def route_after_start(state : GraphState):
     if state.get("skip_inject_system"):
         return "inject_user"
     return "inject_system"
+
+def route_after_tools(state : GraphState):
+    if state.get("result_set_handled"):
+        return "end"
+    return "llm"

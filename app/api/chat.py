@@ -14,12 +14,14 @@ def _graph_config(session_id: str | None) -> dict:
     sid = (session_id or "demo").strip() or "demo"
     return {"configurable": {"session_id": sid, "thread_id": sid}}
 
-def _graph_inputs(message: str) ->dict:
+def _graph_inputs(message: str, *, streaming: bool = False) -> dict:
     return {
         "messages": [],
         "input": message,
         "result": "",
         "skip_inject_system": False,
+        "result_set_handled": False,
+        "streaming": streaming,
     }
 
 router = APIRouter(prefix="/api/v2")
@@ -70,7 +72,7 @@ async def chat_once(body: ChatOnceIn) -> ChatOnceOut:
 async def chat_graph(body: ChatGraphIn) -> ChatGraphOut:
     try:
         out = await get_graph().ainvoke(
-            _graph_inputs(body.message),
+            _graph_inputs(body.message, streaming=False),
             config=_graph_config(body.session_id),
         )
     except Exception as e:
@@ -80,7 +82,7 @@ async def chat_graph(body: ChatGraphIn) -> ChatGraphOut:
 @router.post("/stream")
 async def stream_chat(body: ChatGraphIn) -> StreamingResponse:
     async def gen():
-        inputs = _graph_inputs(body.message)
+        inputs = _graph_inputs(body.message, streaming=True)
         config = _graph_config(body.session_id)
         try:
             async for ev in iter_graph_stream_events(inputs, config=config):

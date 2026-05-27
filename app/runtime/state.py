@@ -9,3 +9,5 @@ class GraphState(TypedDict):
     input: str
     result: str
     skip_inject_system: bool
+    result_set_handled: bool
+    streaming: bool

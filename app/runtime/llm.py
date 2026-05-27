@@ -6,6 +6,7 @@ from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import BaseMessage
 from langchain_core.runnables import Runnable
 from langchain_core.tools import BaseTool
+from app.tools.base import build_default_tools
 
 from app.config import settings
 
@@ -39,3 +40,6 @@ async def stream_messages(messages: list[BaseMessage]) -> AsyncIterator[BaseMess
 
 def get_llm_with_tools(tools: Sequence[BaseTool]) -> Runnable:
     return get_llm().bind_tools(list(tools))
+
+def get_tools_for_state(*, streaming: bool) -> list[BaseTool]:
+    return build_default_tools(include_result_set=not streaming)

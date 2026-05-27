@@ -2,11 +2,11 @@
 
 在本地复现 [Agent Skills 跟写指南](docs/agent_skills_build_guide.md) 中的里程碑实现；架构说明见 [深度研究报告](docs/user_attachments_session_a29c06ca28284858b68f5de84ede3306_outputs_agent_skills_deep_research_report.md)。概念与代码对照见 [Caker 基础知识手册](docs/caker-base-knowledge.md)。
 
-**进度一览**：**M0–M10** 已在仓库落地（见下「已完成」各节）。**M11 及以后** 仅保留与指南对齐的**目标摘要**（本地路线 **M11、M14–M15**，不含原 Pipeline / 游标两节）。某一 M 验收通过后，将对应小节改为与上文相同的「路径表 + 验证」写法。
+**进度一览**：**M0–M11** 已在仓库落地（见下「已完成」各节）。**M14 及以后** 仅保留与指南对齐的**目标摘要**（本地路线 **M14–M15**，不含原 Pipeline / 游标两节）。某一 M 验收通过后，将对应小节改为与上文相同的「路径表 + 验证」写法。
 
 ---
 
-## 已完成里程碑（M0–M10）
+## 已完成里程碑（M0–M11）
 
 以下路径为**当前仓库已实现**内容。与指南骨架不一致处（如 `result` 而非 `result_text`、`inject_user` 节点）在各节单独说明。
 
@@ -297,14 +297,44 @@ curl -s -X POST http://127.0.0.1:8000/api/v2/chat-graph \
 
 ---
 
-## 规划中里程碑（M11 起，摘要）
+### M11 `result_set` + `apply_result_set`
+
+| 路径 | 说明 |
+|------|------|
+| [app/tools/result_set_tool.py](app/tools/result_set_tool.py) | `result_set(text)` 交卷工具 |
+| [app/tools/base.py](app/tools/base.py) | `build_default_tools(include_result_set=...)` |
+| [app/runtime/llm.py](app/runtime/llm.py) | `get_tools_for_state(streaming=...)` |
+| [app/runtime/nodes.py](app/runtime/nodes.py) | `apply_result_set_node`；`llm_node` 按 `streaming` 绑工具 |
+| [app/runtime/routes.py](app/runtime/routes.py) | `route_after_tools` → `end` / `llm` |
+| [app/runtime/graph.py](app/runtime/graph.py) | `tools` → `apply_result_set` → 条件边 |
+| [app/api/chat.py](app/api/chat.py) | `/chat-graph`：`streaming=False`；`/stream`：`streaming=True` |
+| [system_prompt.md](system_prompt.md) | 增加 `result_set` 工具说明 |
+
+**行为要点**：
+
+- 非流式：`result_set` 写入 `state["result"]` 后直达 `end`；流式不绑该工具。
+- `apply_result_set` 只改 `result` 与标志位，不追加 `messages`。
+
+**验证**：
+
+```bash
+mkdir -p /tmp/skills/demo/data && echo "hello world" > /tmp/skills/demo/data/a.txt
+uv run --extra dev pytest tests/test_m11_result_set.py -q
+
+curl -s -X POST http://127.0.0.1:8000/api/v2/chat-graph \
+  -H 'content-type: application/json' \
+  -d '{"message":"读 data/a.txt 然后用 result_set 给我最终答案","session_id":"demo-m11"}'
+```
+
+---
+
+## 规划中里程碑（M14 起，摘要）
 
 细节见 [docs/agent_skills_build_guide.md](docs/agent_skills_build_guide.md)（SSE 单连接，不跟 Pipeline / 游标）。
 
 | 里程碑 | 目标摘要 |
 |--------|----------|
-| **M11** | `result_set` + `apply_result_set`（非流式交卷） |
-| **M14** | `summary` 节点：长上下文压缩（前置 M11） |
+| **M14** | `summary` 节点：长上下文压缩 |
 | **M15** | MemPalace + Chroma：跨会话语义记忆（前置 M14） |
 
 ---

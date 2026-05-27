@@ -21,6 +21,7 @@ def build_graph():
     g.add_node("llm", nodes.llm_node)
     g.add_node("tools", nodes.tools_node)
     g.add_node("end", nodes.end_node)
+    g.add_node("apply_result_set", nodes.apply_result_set_node)
 
     g.add_edge(START, "start")
     g.add_conditional_edges(
@@ -41,7 +42,15 @@ def build_graph():
             "end": "end",
         },
     )
-    g.add_edge("tools", "llm")
+    g.add_edge("tools", "apply_result_set")
+    g.add_conditional_edges(
+        "apply_result_set",
+        routes.route_after_tools,
+        {
+            "end": "end",
+            "llm": "llm",
+        },
+    )
     g.add_edge("end", END)
     return g
 
