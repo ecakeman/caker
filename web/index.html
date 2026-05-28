@@ -66,6 +66,69 @@
       .dark .message-content.md-body :not(pre) > code {
         background: rgba(255, 255, 255, 0.1);
       }
+      .composer-shell {
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+      }
+      .composer-shell:focus-within {
+        border-color: rgb(163 163 163);
+        box-shadow: 0 0 0 1px rgb(163 163 163 / 0.35);
+      }
+      .dark .composer-shell:focus-within {
+        border-color: rgb(82 82 82);
+        box-shadow: 0 0 0 1px rgb(82 82 82 / 0.5);
+      }
+      .composer-attach-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 2rem;
+        height: 2rem;
+        flex-shrink: 0;
+        border-radius: 9999px;
+        border: 1px solid rgb(229 229 229);
+        color: rgb(64 64 64);
+        background: transparent;
+        transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+      }
+      .composer-attach-btn:hover:not(:disabled) {
+        background: rgb(245 245 245);
+        border-color: rgb(212 212 212);
+      }
+      .composer-attach-btn:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+      }
+      .dark .composer-attach-btn {
+        border-color: rgb(64 64 64);
+        color: rgb(212 212 212);
+      }
+      .dark .composer-attach-btn:hover:not(:disabled) {
+        background: rgb(38 38 38);
+        border-color: rgb(82 82 82);
+      }
+      .attachment-chip {
+        max-width: 100%;
+      }
+      @keyframes attach-spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      .composer-attach-btn[aria-busy="true"] svg.attach-icon {
+        display: none;
+      }
+      .composer-attach-btn[aria-busy="true"] .attach-spinner {
+        display: block;
+      }
+      .composer-attach-btn .attach-spinner {
+        display: none;
+        width: 1rem;
+        height: 1rem;
+        border: 2px solid currentColor;
+        border-right-color: transparent;
+        border-radius: 9999px;
+        animation: attach-spin 0.65s linear infinite;
+      }
     </style>
   </head>
   <body
@@ -120,6 +183,60 @@
           id="sidebar-footer"
           class="relative z-10 shrink-0 border-t border-gray-100 bg-gray-50 p-3 space-y-2 dark:border-gray-850/50 dark:bg-gray-950"
         >
+          <div
+            id="workspace-panel"
+            class="rounded-xl border border-gray-200 bg-white p-2.5 text-xs dark:border-gray-800 dark:bg-gray-900"
+          >
+            <div class="mb-1.5 flex items-center justify-between gap-2">
+              <span class="font-medium text-gray-700 dark:text-gray-200">工作区</span>
+              <span
+                id="workspace-status"
+                class="rounded-md px-1.5 py-0.5 text-[10px] font-medium text-gray-400 bg-gray-100 dark:bg-gray-800"
+              >
+                —
+              </span>
+            </div>
+            <div id="workspace-meta" class="space-y-0.5 text-gray-600 dark:text-gray-300 leading-relaxed">
+              <p>选择对话后显示用户与会话。</p>
+            </div>
+            <p class="mt-1.5 text-[10px] text-gray-400 dark:text-gray-500">工作目录</p>
+            <button
+              type="button"
+              id="workspace-session-path"
+              class="mt-0.5 w-full break-all rounded-lg bg-gray-50 px-2 py-1.5 text-left font-mono text-[10px] leading-relaxed text-gray-600 hover:bg-gray-100 disabled:cursor-default disabled:hover:bg-gray-50 dark:bg-gray-950 dark:text-gray-300 dark:hover:bg-gray-900 dark:disabled:hover:bg-gray-950"
+              title=""
+              disabled
+            >
+              —
+            </button>
+            <p id="workspace-file-count" class="mt-1.5 text-gray-500 dark:text-gray-400"></p>
+            <ul
+              id="workspace-file-list"
+              class="mt-1 max-h-20 space-y-0.5 overflow-y-auto text-[10px] text-gray-500 dark:text-gray-400 hidden"
+            ></ul>
+            <p id="workspace-hint" class="mt-1.5 text-[10px] leading-relaxed text-gray-400 dark:text-gray-500">
+              上传文件会进入 <span class="font-mono">data/uploads/</span>。「打开资源管理器」在本机（运行
+              uvicorn 的那台电脑）打开对应目录。
+            </p>
+            <div class="mt-2 flex flex-wrap gap-1.5">
+              <button
+                id="btn-copy-workspace"
+                type="button"
+                class="rounded-lg border border-gray-200 px-2.5 py-1 text-gray-700 hover:bg-gray-50 disabled:opacity-40 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-850"
+                disabled
+              >
+                复制路径
+              </button>
+              <button
+                id="btn-open-workspace"
+                type="button"
+                class="rounded-lg border border-gray-200 px-2.5 py-1 text-gray-700 hover:bg-gray-50 disabled:opacity-40 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-850"
+                disabled
+              >
+                打开资源管理器
+              </button>
+            </div>
+          </div>
           <button
             id="btn-toggle-users"
             type="button"
@@ -184,11 +301,38 @@
         <div class="relative flex-1 overflow-hidden">
           <div
             id="empty-state"
-            class="absolute inset-0 flex flex-col items-center justify-center px-4 text-center text-gray-400 dark:text-gray-500 pointer-events-none"
+            class="absolute inset-0 flex flex-col items-center justify-center px-6 pointer-events-none"
           >
-            <p class="text-2xl font-medium text-gray-800 dark:text-gray-200 mb-2">Caker</p>
-            <p class="text-sm max-w-md">
-              基于 LangGraph 的 Agent Skills 运行时。支持文件读写、脚本执行与技能扩展；会话数据保存在服务端 <code class="text-xs">var/web/</code>，换浏览器连接同一后端即可继续。
+            <div class="max-w-md w-full text-center">
+              <p class="text-3xl font-semibold tracking-tight text-gray-800 dark:text-gray-100">
+                Caker
+              </p>
+              <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                本地 Agent Skills 运行时 · LangGraph
+              </p>
+            </div>
+            <ul
+              class="mt-8 max-w-md w-full space-y-2.5 text-left text-sm text-gray-600 dark:text-gray-300"
+            >
+              <li class="flex gap-2.5 rounded-xl border border-gray-100 bg-white/80 px-3 py-2.5 dark:border-gray-800 dark:bg-gray-900/60">
+                <span class="shrink-0 text-base" aria-hidden="true">💬</span>
+                <span>输入问题即可对话；右上角可开关<strong class="font-medium text-gray-800 dark:text-gray-200">流式</strong>输出。</span>
+              </li>
+              <li class="flex gap-2.5 rounded-xl border border-gray-100 bg-white/80 px-3 py-2.5 dark:border-gray-800 dark:bg-gray-900/60">
+                <span class="shrink-0 text-base" aria-hidden="true">📎</span>
+                <span>输入框左侧 <strong class="font-medium text-gray-800 dark:text-gray-200">+</strong> 上传文件到当前会话 <code class="rounded bg-gray-100 px-1 text-xs dark:bg-gray-800">data/uploads/</code>，Agent 可用 read 读取。</span>
+              </li>
+              <li class="flex gap-2.5 rounded-xl border border-gray-100 bg-white/80 px-3 py-2.5 dark:border-gray-800 dark:bg-gray-900/60">
+                <span class="shrink-0 text-base" aria-hidden="true">📁</span>
+                <span>左下<strong class="font-medium text-gray-800 dark:text-gray-200">工作区</strong>显示用户与会话目录，可复制路径或在资源管理器中打开。</span>
+              </li>
+              <li class="flex gap-2.5 rounded-xl border border-gray-100 bg-white/80 px-3 py-2.5 dark:border-gray-800 dark:bg-gray-900/60">
+                <span class="shrink-0 text-base" aria-hidden="true">🧠</span>
+                <span>对话记忆在服务端 <code class="rounded bg-gray-100 px-1 text-xs dark:bg-gray-800">var/state.db</code>；列表与设置在 <code class="rounded bg-gray-100 px-1 text-xs dark:bg-gray-800">var/web/</code>，换浏览器连同一后端可继续。</span>
+              </li>
+            </ul>
+            <p class="mt-6 max-w-md text-center text-xs text-gray-400 dark:text-gray-500">
+              从侧栏新建对话，或直接在下方输入第一条消息
             </p>
           </div>
           <div id="messages" class="h-full overflow-y-auto px-4 py-6"></div>
@@ -201,46 +345,71 @@
               class="mb-2 hidden text-xs text-gray-500 dark:text-gray-400"
             ></p>
             <div
-              id="attachment-bar"
-              class="mb-2 hidden flex flex-wrap gap-2"
-            ></div>
-            <div
-              class="flex items-end gap-2 rounded-2xl border border-gray-200 bg-white px-3 py-2 shadow-sm dark:border-gray-800 dark:bg-gray-900"
+              class="composer-shell rounded-3xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900"
             >
-              <input
-                id="file-input"
-                type="file"
-                multiple
-                class="hidden"
-              />
-              <button
-                id="btn-attach"
-                type="button"
-                title="添加文件"
-                class="shrink-0 rounded-xl px-2.5 py-2 text-lg leading-none text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-850"
+              <div
+                id="attachment-bar"
+                class="hidden border-b border-gray-100 px-3 pt-3 pb-2 dark:border-gray-800"
               >
-                +
-              </button>
-              <textarea
-                id="composer"
-                rows="1"
-                placeholder="输入消息… Enter 发送，Shift+Enter 换行"
-                class="max-h-40 min-h-[2.5rem] flex-1 resize-none bg-transparent py-2 text-sm outline-none"
-              ></textarea>
-              <button
-                id="btn-stop"
-                type="button"
-                class="hidden shrink-0 rounded-xl px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-850"
-              >
-                停止
-              </button>
-              <button
-                id="btn-send"
-                type="button"
-                class="shrink-0 rounded-xl bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-40 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200"
-              >
-                发送
-              </button>
+                <p
+                  id="attachment-hint"
+                  class="mb-2 text-xs text-gray-500 dark:text-gray-400"
+                >
+                  已保存到当前会话工作区，发送后 Agent 可用 read 读取
+                </p>
+                <div id="attachment-chips" class="flex flex-wrap gap-2"></div>
+              </div>
+              <div class="flex items-end gap-2 px-2 py-2">
+                <input
+                  id="file-input"
+                  type="file"
+                  multiple
+                  class="hidden"
+                />
+                <button
+                  id="btn-attach"
+                  type="button"
+                  title="添加文件到工作区 data/uploads/"
+                  aria-label="添加文件到工作区"
+                  class="composer-attach-btn mb-0.5"
+                >
+                  <svg
+                    class="attach-icon h-[18px] w-[18px]"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M21.44 11.05l-8.49 8.49a4 4 0 0 1-5.66-5.66l8.49-8.49a2 2 0 0 1 2.83 2.83l-8.49 8.49a1 1 0 0 1-1.41-1.41l8.48-8.47"
+                    />
+                  </svg>
+                  <span class="attach-spinner" aria-hidden="true"></span>
+                </button>
+                <textarea
+                  id="composer"
+                  rows="1"
+                  placeholder="输入消息… Enter 发送，Shift+Enter 换行"
+                  class="max-h-40 min-h-[2.5rem] flex-1 resize-none bg-transparent py-2.5 text-sm outline-none"
+                ></textarea>
+                <button
+                  id="btn-stop"
+                  type="button"
+                  class="mb-0.5 hidden shrink-0 rounded-xl px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-850"
+                >
+                  停止
+                </button>
+                <button
+                  id="btn-send"
+                  type="button"
+                  class="mb-0.5 shrink-0 rounded-xl bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-40 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200"
+                >
+                  发送
+                </button>
+              </div>
             </div>
           </div>
         </div>

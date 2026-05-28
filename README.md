@@ -1,6 +1,6 @@
 # caker
 
-在本地复现 [Agent Skills 跟写指南](docs/agent_skills_build_guide.md) 中的里程碑实现；架构说明见 [深度研究报告](docs/user_attachments_session_a29c06ca28284858b68f5de84ede3306_outputs_agent_skills_deep_research_report.md)。概念与代码对照见 [Caker 基础知识手册](docs/caker-base-knowledge.md)。
+在本地复现 [Agent Skills 跟写指南](docs/agent_skills_build_guide.md) 中的里程碑实现；**使用 Web 界面**见 [用户指南](docs/user-guide.md)。文档总索引：[docs/README.md](docs/README.md)。架构说明见 [深度研究报告](docs/user_attachments_session_a29c06ca28284858b68f5de84ede3306_outputs_agent_skills_deep_research_report.md)。概念与代码对照见 [Caker 基础知识手册](docs/caker-base-knowledge.md)。
 
 **进度一览**：**M0–M13** 已在仓库落地（见下「已完成」各节）。与 [跟写指南](docs/agent_skills_build_guide.md) 编号对照：本 README 的 **M12 = 指南 M14（summary）**，**M13 = 指南 M15（MemPalace）**。
 
@@ -434,19 +434,19 @@ uv run uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 
 ## Web UI（Open WebUI 风格 · 轻量版）
 
-浏览器聊天界面，视觉参考 [Open WebUI](https://github.com/open-webui/open-webui)，仅对接 caker 现有 API（薄客户端，会话元数据在 **localStorage**）。
+浏览器聊天界面，视觉参考 [Open WebUI](https://github.com/open-webui/open-webui)。**操作说明**见 [docs/user-guide.md](docs/user-guide.md)。
 
 | 路径 | 说明 |
 |------|------|
-| [web/index.html](web/index.html) | 单页布局：侧栏 + 对话区 + 输入框 |
-| [web/js/api.js](web/js/api.js) | `/health`、`/api/v2/stream`（SSE）、`/api/v2/chat-graph` |
-| [web/js/sessions.js](web/js/sessions.js) | 本地会话列表与设置 |
-| [web/js/app.js](web/js/app.js) | UI 逻辑 |
-| [app/main.py](app/main.py) | `StaticFiles` 托管 `web/`，根路径 `/` 打开 UI |
+| [web/index.html](web/index.html) | 单页：侧栏、工作区面板、对话区 |
+| [web/js/app.js](web/js/app.js) | UI、上传、工作区、流式 SSE |
+| [web/js/store-api.js](web/js/store-api.js) | `var/web` 用户/会话 API、工作区、上传 |
+| [app/api/web_data.py](app/api/web_data.py) | `/api/v2/web/*` |
+| [app/main.py](app/main.py) | 静态托管 `web/`，`/` 打开 UI |
 
-**功能**：新对话 / 切换会话 / 删除本地记录；**流式**开关；**User ID**（`x-user-id`，MemPalace）；浅/深色主题。不含登录、模型选择、文档上传等 OWUI 能力。
+**能力摘要**：多用户；会话列表（服务端 `var/web/`）；**+ 上传**到 `data/uploads/`；侧栏**工作区**（列文件、复制路径、本机打开资源管理器）；流式 + 工具/压缩状态；`x-user-id` 隔离工作区与 MemPalace。不含登录、模型商店等完整 OWUI 能力。
 
-**验收**：流式对话；同 `session_id` 多轮续上下文（M10）；改 User ID 后新会话可测 MemPalace（M13）；`GET /health` 正常时顶栏绿点。
+**验收**：流式对话；上传后 Agent `read` 能读；同 `session_id` 多轮续聊；工作区「打开资源管理器」在本机 WSL/Win/Mac 可用；`GET /health` 绿点。
 
 ---
 

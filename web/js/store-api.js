@@ -92,6 +92,32 @@ export async function saveSession(session) {
  * @param {string} sessionId
  * @param {FileList | File[]} files
  */
+export async function fetchWorkspace(userId, sessionId) {
+  const params = new URLSearchParams({
+    user_id: userId,
+    session_id: sessionId,
+  });
+  const res = await fetch(`/api/v2/web/workspace?${params}`);
+  await throwIfNotOk(res);
+  return res.json();
+}
+
+/**
+ * @param {string} userId
+ * @param {string} sessionId
+ */
+export async function revealWorkspace(userId, sessionId) {
+  const params = new URLSearchParams({
+    user_id: userId,
+    session_id: sessionId,
+  });
+  const res = await fetch(`/api/v2/web/workspace/reveal?${params}`, {
+    method: "POST",
+  });
+  await throwIfNotOk(res);
+  return res.json();
+}
+
 export async function uploadSessionFiles(userId, sessionId, files) {
   const params = new URLSearchParams({ user_id: userId });
   const form = new FormData();

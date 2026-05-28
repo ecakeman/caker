@@ -2,10 +2,11 @@ from __future__ import annotations
 
 from typing import Any
 
+from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import BaseTool
 from pydantic import BaseModel, Field, create_model
 
-from app.mcp.context import context_from_run_manager
+from app.mcp.context import context_from_runnable_config
 from typing import TYPE_CHECKING
 
 from app.mcp.types import McpToolDefinition
@@ -52,8 +53,14 @@ def make_langchain_tool(registry: "ToolRegistry", definition: McpToolDefinition)
         description: str = tool_desc
         args_schema: type[BaseModel] = schema_cls
 
-        def _run(self, *, run_manager=None, **kwargs: Any) -> str:
-            ctx = context_from_run_manager(run_manager)
+        def _run(
+            self,
+            *,
+            run_manager=None,
+            config: RunnableConfig | None = None,
+            **kwargs: Any,
+        ) -> str:
+            ctx = context_from_runnable_config(config)
             result = registry.call_tool_sync(tool_name, kwargs, ctx)
             return result.text
 

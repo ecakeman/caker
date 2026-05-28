@@ -13,7 +13,12 @@ import {
   titleFromMessage,
   upsertSession,
 } from "./sessions.js";
-import { importLegacy, uploadSessionFiles } from "./store-api.js";
+import {
+  fetchWorkspace,
+  importLegacy,
+  revealWorkspace,
+  uploadSessionFiles,
+} from "./store-api.js";
 import { addUser, loadUsers, refreshUsers, removeUserLocal } from "./users.js";
 
 /** @type {AbortController | null} */
@@ -62,8 +67,23 @@ const els = {
   btnAttach: $("btn-attach"),
   fileInput: $("file-input"),
   attachmentBar: $("attachment-bar"),
+  attachmentChips: $("attachment-chips"),
+  attachmentHint: $("attachment-hint"),
   streamStatus: $("stream-status"),
+  workspaceStatus: $("workspace-status"),
+  workspaceMeta: $("workspace-meta"),
+  workspaceSessionPath: $("workspace-session-path"),
+  workspaceFileCount: $("workspace-file-count"),
+  workspaceFileList: $("workspace-file-list"),
+  workspaceHint: $("workspace-hint"),
+  btnCopyWorkspace: $("btn-copy-workspace"),
+  btnOpenWorkspace: $("btn-open-workspace"),
 };
+
+/** @type {{ session_path?: string, workspace_root?: string, files?: { rel_path: string, filename: string }[] } | null} */
+let workspaceInfo = null;
+
+const FILE_ICON_SVG = `<svg class="h-4 w-4 shrink-0 text-gray-500 dark:text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>`;
 
 function applyTheme(theme) {
   const root = document.documentElement;
@@ -253,6 +273,229 @@ async function selectUser(userId) {
   else clearCurrentChat();
 }
 
+function formatBytes(n) {
+  if (!n || n < 1024) return `${n || 0} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+  return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function renderWorkspaceMeta(userId, sessionId) {
+  if (!els.workspaceMeta) return;
+  els.workspaceMeta.replaceChildren();
+  const userLine = document.createElement("p");
+  userLine.textContent = `用户 ${userId}`;
+  const sessionLine = document.createElement("p");
+  sessionLine.className = "truncate font-mono text-[10px] text-gray-500 dark:text-gray-400";
+  sessionLine.title = sessionId;
+  sessionLine.textContent = `会话 ${sessionId}`;
+  els.workspaceMeta.append(userLine, sessionLine);
+}
+
+function workspacePathForClipboard() {
+  return workspaceInfo?.session_path_windows || workspaceInfo?.session_path || "";
+}
+
+function workspacePathTitle() {
+  const linux = workspaceInfo?.session_path || "";
+  const win = workspaceInfo?.session_path_windows;
+  if (linux && win) {
+    return `WSL: ${linux}\nWindows 资源管理器: ${win}`;
+  }
+  return linux;
+}
+
+function setWorkspacePanelLoading() {
+  if (els.workspaceStatus) {
+    els.workspaceStatus.textContent = "加载中";
+    els.workspaceStatus.className =
+      "rounded-md px-1.5 py-0.5 text-[10px] font-medium text-amber-700 bg-amber-50 dark:text-amber-200 dark:bg-amber-950/50";
+  }
+  if (els.btnCopyWorkspace) els.btnCopyWorkspace.disabled = true;
+  if (els.btnOpenWorkspace) els.btnOpenWorkspace.disabled = true;
+}
+
+function setWorkspacePanelIdle() {
+  workspaceInfo = null;
+  if (els.workspaceStatus) {
+    els.workspaceStatus.textContent = "未选择";
+    els.workspaceStatus.className =
+      "rounded-md px-1.5 py-0.5 text-[10px] font-medium text-gray-400 bg-gray-100 dark:bg-gray-800";
+  }
+  if (els.workspaceMeta) {
+    els.workspaceMeta.innerHTML =
+      "<p>选择或新建对话后，将显示用户与会话。</p>";
+  }
+  if (els.workspaceSessionPath) {
+    els.workspaceSessionPath.textContent = "（尚无工作目录）";
+    els.workspaceSessionPath.title = "";
+    els.workspaceSessionPath.disabled = true;
+  }
+  if (els.workspaceFileCount) els.workspaceFileCount.textContent = "";
+  if (els.workspaceFileList) {
+    els.workspaceFileList.innerHTML = "";
+    els.workspaceFileList.classList.add("hidden");
+  }
+  if (els.btnCopyWorkspace) els.btnCopyWorkspace.disabled = true;
+  if (els.btnOpenWorkspace) els.btnOpenWorkspace.disabled = true;
+}
+
+async function copyTextToClipboard(text) {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+  const ta = document.createElement("textarea");
+  ta.value = text;
+  ta.style.position = "fixed";
+  ta.style.left = "-9999px";
+  document.body.appendChild(ta);
+  ta.select();
+  document.execCommand("copy");
+  document.body.removeChild(ta);
+}
+
+async function refreshWorkspacePanel() {
+  if (!activeUserId || !currentSession?.id) {
+    setWorkspacePanelIdle();
+    return;
+  }
+
+  setWorkspacePanelLoading();
+  try {
+    workspaceInfo = await fetchWorkspace(activeUserId, currentSession.id);
+    const path = workspaceInfo.session_path || "";
+    const rel = workspaceInfo.session_rel || path;
+    const files = workspaceInfo.files || [];
+    const uploads = files.filter((f) => f.rel_path?.startsWith("data/uploads/"));
+
+    if (els.workspaceStatus) {
+      els.workspaceStatus.textContent = "已就绪";
+      els.workspaceStatus.className =
+        "rounded-md px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 bg-emerald-50 dark:text-emerald-200 dark:bg-emerald-950/40";
+    }
+    renderWorkspaceMeta(activeUserId, currentSession.id);
+    if (els.workspaceSessionPath) {
+      els.workspaceSessionPath.textContent = rel;
+      els.workspaceSessionPath.title = workspacePathTitle();
+      els.workspaceSessionPath.disabled = !path;
+    }
+    if (els.workspaceFileCount) {
+      if (uploads.length) {
+        const total = uploads.reduce((s, f) => s + (f.bytes || 0), 0);
+        els.workspaceFileCount.textContent = `已上传 ${uploads.length} 个文件（约 ${formatBytes(total)}），位于 data/uploads/`;
+      } else if (files.length) {
+        els.workspaceFileCount.textContent = `目录内有 ${files.length} 个文件，尚无 uploads；请用输入框左侧 + 上传`;
+      } else {
+        els.workspaceFileCount.textContent = "目录为空；用输入框左侧 + 将文件保存到 data/uploads/";
+      }
+    }
+    if (els.workspaceHint && workspaceInfo.hint) {
+      els.workspaceHint.textContent = workspaceInfo.hint;
+    }
+    if (els.workspaceFileList) {
+      els.workspaceFileList.innerHTML = "";
+      const show = uploads.length ? uploads : files.slice(0, 8);
+      if (show.length) {
+        els.workspaceFileList.classList.remove("hidden");
+        for (const f of show) {
+          const li = document.createElement("li");
+          li.className = "truncate font-mono";
+          li.textContent = `${f.rel_path} (${formatBytes(f.bytes)})`;
+          li.title = f.rel_path;
+          els.workspaceFileList.appendChild(li);
+        }
+        if (files.length > show.length) {
+          const more = document.createElement("li");
+          more.textContent = `… 另有 ${files.length - show.length} 个文件`;
+          els.workspaceFileList.appendChild(more);
+        }
+      } else {
+        els.workspaceFileList.classList.add("hidden");
+      }
+    }
+    if (els.btnCopyWorkspace) els.btnCopyWorkspace.disabled = !path;
+    if (els.btnOpenWorkspace) els.btnOpenWorkspace.disabled = !path;
+    syncPendingFromWorkspaceFiles(uploads);
+  } catch (err) {
+    workspaceInfo = null;
+    if (els.workspaceStatus) {
+      els.workspaceStatus.textContent = "失败";
+      els.workspaceStatus.className =
+        "rounded-md px-1.5 py-0.5 text-[10px] font-medium text-red-700 bg-red-50 dark:text-red-200 dark:bg-red-950/40";
+    }
+    if (els.workspaceMeta) {
+      els.workspaceMeta.textContent = "无法加载工作区。若提示 Not Found，请重启 uvicorn 后再刷新页面。";
+    }
+    if (els.workspaceSessionPath) {
+      els.workspaceSessionPath.textContent = err.message || "加载失败";
+      els.workspaceSessionPath.title = "";
+      els.workspaceSessionPath.disabled = true;
+    }
+    if (els.workspaceFileCount) els.workspaceFileCount.textContent = "";
+    if (els.workspaceFileList) {
+      els.workspaceFileList.innerHTML = "";
+      els.workspaceFileList.classList.add("hidden");
+    }
+    if (els.btnCopyWorkspace) els.btnCopyWorkspace.disabled = true;
+    if (els.btnOpenWorkspace) els.btnOpenWorkspace.disabled = true;
+  }
+}
+
+async function copyWorkspacePath() {
+  const path = workspacePathForClipboard();
+  if (!path) return;
+  try {
+    await copyTextToClipboard(path);
+    const label = workspaceInfo?.session_path_windows ? "已复制 Windows 路径" : "已复制工作区路径";
+    setStreamStatus(label);
+    window.setTimeout(() => setStreamStatus(""), 2200);
+  } catch {
+    alert(path);
+  }
+}
+
+async function openWorkspaceFolder() {
+  if (!activeUserId || !currentSession?.id || !workspaceInfo?.session_path) return;
+  try {
+    setStreamStatus("正在打开资源管理器…");
+    const data = await revealWorkspace(activeUserId, currentSession.id);
+    if (data.session_path_windows) {
+      workspaceInfo.session_path_windows = data.session_path_windows;
+      if (els.workspaceSessionPath) {
+        els.workspaceSessionPath.title = workspacePathTitle();
+      }
+    }
+    const shown = data.session_path_windows || data.session_path || "";
+    setStreamStatus(`已在资源管理器中打开：${shown}`);
+    window.setTimeout(() => setStreamStatus(""), 3500);
+  } catch (err) {
+    setStreamStatus("");
+    const win = workspaceInfo?.session_path_windows;
+    const linux = workspaceInfo?.session_path;
+    const fallback = win
+      ? `无法自动打开：${err.message || "未知错误"}\n\n请手动在资源管理器地址栏粘贴：\n${win}`
+      : `无法自动打开：${err.message || "未知错误"}\n\n请确认服务运行在 WSL 内，且已安装 explorer.exe / wslpath。\n\nWSL 路径：\n${linux}`;
+    try {
+      await copyTextToClipboard(win || linux || "");
+      alert(`${fallback}\n\n（路径已复制到剪贴板）`);
+    } catch {
+      alert(fallback);
+    }
+  }
+}
+
+/** @param {{ rel_path: string, filename: string }[]} serverFiles */
+function syncPendingFromWorkspaceFiles(serverFiles) {
+  const uploads = serverFiles.filter((f) => f.rel_path.startsWith("data/uploads/"));
+  if (!uploads.length) return;
+  for (const f of uploads) {
+    if (!pendingAttachments.some((a) => a.relPath === f.rel_path)) {
+      pendingAttachments.push({ relPath: f.rel_path, filename: f.filename });
+    }
+  }
+  renderAttachmentBar();
+}
+
 async function selectSession(id) {
   const s = await fetchSession(activeUserId, id);
   if (!s || s.userId !== activeUserId) return;
@@ -261,15 +504,19 @@ async function selectSession(id) {
   if (els.chatTitle) els.chatTitle.textContent = s.title;
   renderMessages(s.messages || []);
   renderChatList();
+  await refreshWorkspacePanel();
   closeSidebar();
 }
 
 function clearCurrentChat() {
   currentSession = null;
+  pendingAttachments = [];
+  renderAttachmentBar();
   void setActiveSessionForUser(activeUserId, null);
   if (els.chatTitle) els.chatTitle.textContent = "新对话";
   renderMessages([]);
   renderChatList();
+  void refreshWorkspacePanel();
 }
 
 async function startNewChat() {
@@ -278,6 +525,7 @@ async function startNewChat() {
   if (els.chatTitle) els.chatTitle.textContent = "新对话";
   renderMessages([]);
   renderChatList();
+  await refreshWorkspacePanel();
   closeSidebar();
   els.composer?.focus();
 }
@@ -351,6 +599,7 @@ async function deleteUser(userId) {
   } else {
     renderUserList();
     renderChatList();
+    void refreshWorkspacePanel();
   }
 }
 
@@ -366,57 +615,117 @@ async function submitAddUser() {
   await selectUser(result.user.id);
 }
 
+function setAttachBusy(busy) {
+  if (els.btnAttach) {
+    els.btnAttach.disabled = busy;
+    els.btnAttach.setAttribute("aria-busy", busy ? "true" : "false");
+  }
+}
+
 function renderAttachmentBar() {
-  if (!els.attachmentBar) return;
-  els.attachmentBar.innerHTML = "";
+  if (!els.attachmentBar || !els.attachmentChips) return;
+  els.attachmentChips.innerHTML = "";
   if (!pendingAttachments.length) {
     els.attachmentBar.classList.add("hidden");
     return;
   }
   els.attachmentBar.classList.remove("hidden");
+  if (els.attachmentHint) {
+    els.attachmentHint.textContent =
+      `已保存到工作区（${pendingAttachments.length} 个文件），发送后 Agent 可用 read 读取`;
+  }
+
   for (const att of pendingAttachments) {
-    const chip = document.createElement("span");
+    const chip = document.createElement("div");
     chip.className =
-      "inline-flex items-center gap-1 rounded-lg bg-gray-100 px-2 py-1 text-xs text-gray-700 dark:bg-gray-800 dark:text-gray-200";
-    const label = document.createElement("span");
-    label.textContent = att.filename;
+      "attachment-chip inline-flex max-w-full items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 py-1.5 pl-2 pr-1 text-left dark:border-gray-700 dark:bg-gray-850/80";
+    chip.innerHTML = FILE_ICON_SVG;
+
+    const textWrap = document.createElement("div");
+    textWrap.className = "min-w-0 flex-1";
+    const name = document.createElement("div");
+    name.className = "truncate text-sm font-medium text-gray-800 dark:text-gray-100";
+    name.textContent = att.filename;
+    name.title = att.filename;
+    const path = document.createElement("div");
+    path.className = "truncate text-xs text-gray-500 dark:text-gray-400";
+    path.textContent = att.relPath;
+    path.title = att.relPath;
+    textWrap.appendChild(name);
+    textWrap.appendChild(path);
+    chip.appendChild(textWrap);
+
     const rm = document.createElement("button");
     rm.type = "button";
-    rm.className = "text-gray-400 hover:text-gray-700 dark:hover:text-gray-200";
-    rm.textContent = "×";
+    rm.className =
+      "shrink-0 rounded-lg p-1 text-gray-400 hover:bg-gray-200 hover:text-gray-700 dark:hover:bg-gray-800 dark:hover:text-gray-200";
+    rm.setAttribute("aria-label", `移除 ${att.filename}`);
+    rm.innerHTML =
+      '<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>';
     rm.addEventListener("click", () => {
       pendingAttachments = pendingAttachments.filter((a) => a.relPath !== att.relPath);
       renderAttachmentBar();
     });
-    chip.appendChild(label);
     chip.appendChild(rm);
-    els.attachmentBar.appendChild(chip);
+    els.attachmentChips.appendChild(chip);
   }
 }
 
 async function handleFilesSelected(fileList) {
   if (!fileList?.length) return;
-  if (!currentSession) await startNewChat();
-  if (!currentSession) return;
   if (!activeUserId?.trim()) {
     alert("请先选择或添加用户");
     return;
   }
+
+  if (!currentSession) {
+    await startNewChat();
+  }
+  if (!currentSession) return;
+
+  currentSession.userId = activeUserId;
+  setAttachBusy(true);
+  setStreamStatus("正在上传到工作区…");
+
   try {
     const data = await uploadSessionFiles(activeUserId, currentSession.id, fileList);
+    let added = 0;
     for (const f of data.files ?? []) {
       if (!pendingAttachments.some((a) => a.relPath === f.rel_path)) {
-        pendingAttachments.push({ relPath: f.rel_path, filename: f.filename });
+        pendingAttachments.push({
+          relPath: f.rel_path,
+          filename: f.filename,
+          bytes: f.bytes,
+        });
+        added += 1;
       }
+    }
+    renderAttachmentBar();
+    await refreshWorkspacePanel();
+    if (data.verify && !data.verify.ok && (data.files?.length ?? 0) > 0) {
+      alert(`上传校验失败，以下路径不可用：\n${(data.verify.missing || []).join("\n")}`);
+    }
+    if (added > 0) {
+      setStreamStatus(`已加入工作区 ${added} 个文件`);
+      window.setTimeout(() => {
+        if (els.streamStatus?.textContent?.startsWith("已加入工作区")) {
+          setStreamStatus("");
+        }
+      }, 2800);
+    } else {
+      setStreamStatus("");
     }
     if (data.errors?.length) {
       alert(`部分文件未上传：\n${data.errors.join("\n")}`);
     }
-    renderAttachmentBar();
+    els.composer?.focus();
   } catch (err) {
+    setStreamStatus("");
     alert(`上传失败：${err.message || "未知错误"}`);
+  } finally {
+    setAttachBusy(false);
+    if (els.fileInput) els.fileInput.value = "";
   }
-  if (els.fileInput) els.fileInput.value = "";
 }
 
 async function sendMessage() {
@@ -459,6 +768,24 @@ async function sendMessage() {
   autoResizeComposer();
   renderMessages(currentSession.messages);
   await persistCurrent();
+
+  if (attachmentPaths.length) {
+    try {
+      const ws = await fetchWorkspace(activeUserId, currentSession.id);
+      const missing = attachmentPaths.filter(
+        (p) => !(ws.files || []).some((f) => f.rel_path === p)
+      );
+      if (missing.length) {
+        alert(
+          `以下文件不在当前工作区，请重新用 + 上传：\n${missing.join("\n")}\n\n工作区：${ws.session_path}`
+        );
+        return;
+      }
+    } catch (err) {
+      alert(`无法校验附件：${err.message || "未知错误"}`);
+      return;
+    }
+  }
 
   const body = {
     message: text,
@@ -619,6 +946,12 @@ async function boot() {
       }
     });
 
+    els.btnCopyWorkspace?.addEventListener("click", () => void copyWorkspacePath());
+    els.btnOpenWorkspace?.addEventListener("click", () => openWorkspaceFolder());
+    els.workspaceSessionPath?.addEventListener("click", () => {
+      if (!els.workspaceSessionPath?.disabled) openWorkspaceFolder();
+    });
+
     els.btnAttach?.addEventListener("click", () => els.fileInput?.click());
     els.fileInput?.addEventListener("change", () => {
       void handleFilesSelected(els.fileInput?.files);
@@ -653,6 +986,7 @@ async function boot() {
     });
 
     renderUserList();
+    void refreshWorkspacePanel();
 
     const savedSessionId = getActiveSessionIdForUser(activeUserId);
     if (savedSessionId) {

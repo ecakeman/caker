@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+import os
+import shutil
+import subprocess
+from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, File, HTTPException, UploadFile
@@ -7,6 +11,12 @@ from pydantic import BaseModel, Field
 
 from app.web_store.store import WebStoreError, store
 from app.web_store.upload import UploadError, save_upload
+from app.web_store.workspace_info import (
+    get_session_workspace_info,
+    session_path_for_clipboard,
+    session_path_for_file_manager,
+    verify_rel_paths_exist,
+)
 
 router = APIRouter(prefix="/api/v2/web")
 
@@ -113,6 +123,70 @@ async def import_legacy(body: LegacyImportIn) -> dict:
     return {"ok": True, "imported": counts}
 
 
+def _reveal_folder_in_os(path: str) -> dict[str, str]:
+    """Open folder on the host where uvicorn runs (Explorer / Finder / xdg-open)."""
+    resolved = str(Path(path).resolve())
+    clipboard_path = session_path_for_clipboard(path)
+
+    explorer = shutil.which("explorer.exe")
+    if explorer:
+        target = session_path_for_file_manager(path)
+        if target:
+            subprocess.Popen(
+                [explorer, target],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+            return {"opened_with": "explorer", "windows_path": clipboard_path}
+
+    if os.name == "darwin":
+        opener = shutil.which("open")
+        if opener:
+            subprocess.Popen([opener, resolved], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            return {"opened_with": "open", "windows_path": clipboard_path}
+
+    opener = shutil.which("xdg-open")
+    if opener:
+        subprocess.Popen([opener, resolved], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        return {"opened_with": "xdg-open", "windows_path": clipboard_path}
+
+    raise RuntimeError("no file manager available on this host")
+
+
+@router.get("/workspace")
+async def get_workspace(user_id: str, session_id: str) -> dict:
+    try:
+        info = get_session_workspace_info(user_id.strip(), session_id.strip())
+    except WorkspaceError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    uploads = [f for f in info["files"] if f["rel_path"].startswith("data/uploads/")]
+    return {
+        "ok": True,
+        **info,
+        "upload_count": len(uploads),
+        "hint": "Agent 的 read/write/glob 仅作用于该会话目录；附件请放在 data/uploads/",
+    }
+
+
+@router.post("/workspace/reveal")
+async def reveal_workspace(user_id: str, session_id: str) -> dict:
+    try:
+        info = get_session_workspace_info(user_id.strip(), session_id.strip())
+        reveal = _reveal_folder_in_os(info["session_path"])
+    except WorkspaceError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except RuntimeError as e:
+        raise HTTPException(status_code=501, detail=str(e)) from e
+    return {
+        "ok": True,
+        "session_path": info["session_path"],
+        "session_path_windows": info.get("session_path_windows")
+        or reveal.get("windows_path")
+        or "",
+        **reveal,
+    }
+
+
 @router.post("/sessions/{session_id}/upload")
 async def upload_session_files(
     session_id: str,
@@ -139,4 +213,5 @@ async def upload_session_files(
     if not uploaded and errors:
         raise HTTPException(status_code=400, detail="; ".join(errors))
 
-    return {"ok": True, "files": uploaded, "errors": errors}
+    verify = verify_rel_paths_exist(user_id, session_id, [f["rel_path"] for f in uploaded])
+    return {"ok": True, "files": uploaded, "errors": errors, "verify": verify}
