@@ -1,6 +1,6 @@
 # Caker 用户指南
 
-面向**在浏览器里使用 Caker** 的人。开发与里程碑见 [README](../README.md)、[文档索引](README.md)。
+面向**在浏览器里使用 Caker** 的人。项目入口见 [README](../README.md)；理念见 [设计理念](design.md)；开发验收见 [里程碑进度](milestones.md)、[文档索引](README.md)。
 
 ## 1. 启动与访问
 
@@ -108,5 +108,6 @@ var/workspace/<user_id>/<session_id>/
 ## 8. 相关文档
 
 - [文档索引](README.md)
-- [README 快速开始与 API 验证](../README.md)
-- [跟写指南](agent_skills_build_guide.md)（开发者）
+- [README 快速开始](../README.md)
+- [设计理念](design.md)
+- [里程碑进度](milestones.md)（开发者验收）
