@@ -1,20 +1,34 @@
-import { checkHealth, chatGraph, streamChat } from "./api.js";
+import { checkHealth, chatGraph, deleteSessionRemote, deleteUserRemote, streamChat } from "./api.js";
 import {
   createSession,
-  deleteSession,
-  getSession,
-  loadSessions,
+  fetchSession,
+  getActiveSessionIdForUser,
+  loadSessionsForUser,
   loadSettings,
+  refreshSessionsForUser,
+  refreshSettings,
+  removeSessionFromCache,
   saveSettings,
+  setActiveSessionForUser,
   titleFromMessage,
   upsertSession,
 } from "./sessions.js";
+import { importLegacy, uploadSessionFiles } from "./store-api.js";
+import { addUser, loadUsers, refreshUsers, removeUserLocal } from "./users.js";
 
 /** @type {AbortController | null} */
 let abortController = null;
 
 /** @type {import('./sessions.js').ChatSession | null} */
 let currentSession = null;
+
+/** @type {string} */
+let activeUserId = "local";
+
+let usersExpanded = true;
+
+/** @type {{ relPath: string, filename: string }[]} */
+let pendingAttachments = [];
 
 const $ = (id) => document.getElementById(id);
 
@@ -32,7 +46,6 @@ const els = {
   btnNewChat: $("btn-new-chat"),
   btnOpenSidebar: $("btn-open-sidebar"),
   btnCloseSidebar: $("btn-close-sidebar"),
-  inputUserId: $("input-user-id"),
   toggleStreaming: $("toggle-streaming"),
   statusDot: $("status-dot"),
   settingsModal: $("settings-modal"),
@@ -40,6 +53,15 @@ const els = {
   btnSettingsClose: $("btn-settings-close"),
   settingsStreaming: $("settings-streaming"),
   settingsTheme: $("settings-theme"),
+  btnToggleUsers: $("btn-toggle-users"),
+  usersChevron: $("users-chevron"),
+  userList: $("user-list"),
+  inputNewUser: $("input-new-user"),
+  btnAddUser: $("btn-add-user"),
+  addUserRow: $("add-user-row"),
+  btnAttach: $("btn-attach"),
+  fileInput: $("file-input"),
+  attachmentBar: $("attachment-bar"),
 };
 
 function applyTheme(theme) {
@@ -69,10 +91,22 @@ function setGenerating(on) {
   els.btnSend?.classList.toggle("hidden", on);
 }
 
-function escapeHtml(text) {
-  const d = document.createElement("div");
-  d.textContent = text;
-  return d.innerHTML;
+function renderMessageContent(el, msg) {
+  const isUser = msg.role === "user";
+  el.className = "message-content";
+  if (isUser) {
+    el.classList.add("user-plain");
+    el.textContent = msg.content;
+    return;
+  }
+  el.classList.add("md-body");
+  const raw = msg.content || "";
+  if (typeof marked !== "undefined" && typeof DOMPurify !== "undefined") {
+    const html = marked.parse(raw, { async: false });
+    el.innerHTML = DOMPurify.sanitize(html);
+  } else {
+    el.textContent = raw;
+  }
 }
 
 /** @param {import('./sessions.js').Message[]} messages */
@@ -99,8 +133,7 @@ function renderMessages(messages) {
       : "max-w-[85%] rounded-2xl rounded-bl-md bg-gray-100 px-4 py-2.5 text-sm text-gray-900 dark:bg-gray-850 dark:text-gray-100";
 
     const content = document.createElement("div");
-    content.className = "message-content";
-    content.innerHTML = escapeHtml(msg.content);
+    renderMessageContent(content, msg);
     bubble.appendChild(content);
     row.appendChild(bubble);
     wrap.appendChild(row);
@@ -110,9 +143,46 @@ function renderMessages(messages) {
   els.messages.scrollTop = els.messages.scrollHeight;
 }
 
+function renderUserList() {
+  if (!els.userList) return;
+  const users = loadUsers();
+  els.userList.innerHTML = "";
+  els.userList.classList.toggle("hidden", !usersExpanded);
+
+  for (const u of users) {
+    const row = document.createElement("div");
+    row.className =
+      "group flex w-full items-center gap-1 rounded-xl px-2 py-1.5 text-sm " +
+      (u.id === activeUserId
+        ? "bg-gray-200 dark:bg-gray-800 font-medium"
+        : "hover:bg-gray-100 dark:hover:bg-gray-900");
+
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "flex-1 truncate text-left text-sm";
+    btn.textContent = u.id;
+    btn.addEventListener("click", () => void selectUser(u.id));
+
+    const del = document.createElement("button");
+    del.type = "button";
+    del.className =
+      "shrink-0 rounded px-1 text-gray-400 opacity-60 hover:text-red-500 hover:opacity-100 group-hover:opacity-100 text-xs";
+    del.textContent = "×";
+    del.setAttribute("aria-label", "删除用户");
+    del.addEventListener("click", (e) => {
+      e.stopPropagation();
+      void deleteUser(u.id);
+    });
+
+    row.appendChild(btn);
+    row.appendChild(del);
+    els.userList.appendChild(row);
+  }
+}
+
 function renderChatList() {
   if (!els.chatList) return;
-  const sessions = loadSessions();
+  const sessions = loadSessionsForUser(activeUserId);
   const activeId = currentSession?.id;
   els.chatList.innerHTML = "";
 
@@ -135,47 +205,67 @@ function renderChatList() {
     title.className = "flex-1 truncate";
     title.textContent = s.title;
 
-    const del = document.createElement("span");
+    const del = document.createElement("button");
+    del.type = "button";
     del.className =
-      "hidden group-hover:inline text-gray-400 hover:text-red-500 text-xs px-1";
+      "shrink-0 rounded px-1 text-gray-400 opacity-60 hover:text-red-500 hover:opacity-100 group-hover:opacity-100 text-xs";
     del.textContent = "×";
-    del.setAttribute("role", "button");
     del.setAttribute("aria-label", "删除");
     del.addEventListener("click", (e) => {
       e.stopPropagation();
-      if (!confirm("删除此对话？（仅本地记录）")) return;
-      deleteSession(s.id);
-      if (currentSession?.id === s.id) {
-        startNewChat();
-      } else {
-        renderChatList();
-      }
+      void deleteSessionWithConfirm(s.id);
     });
 
     btn.appendChild(title);
     btn.appendChild(del);
-    btn.addEventListener("click", () => selectSession(s.id));
+    btn.addEventListener("click", () => void selectSession(s.id));
     els.chatList.appendChild(btn);
   }
 }
 
-function selectSession(id) {
-  const s = getSession(id);
-  if (!s) return;
+async function selectUser(userId) {
+  activeUserId = userId;
+  await saveSettings({ activeUserId });
+  renderUserList();
+  await refreshSessionsForUser(userId);
+
+  const savedSessionId = getActiveSessionIdForUser(userId);
+  if (savedSessionId) {
+    try {
+      await selectSession(savedSessionId);
+      return;
+    } catch {
+      /* session missing on server */
+    }
+  }
+
+  const sessions = loadSessionsForUser(userId);
+  if (sessions.length) await selectSession(sessions[0].id);
+  else clearCurrentChat();
+}
+
+async function selectSession(id) {
+  const s = await fetchSession(activeUserId, id);
+  if (!s || s.userId !== activeUserId) return;
   currentSession = s;
-  saveSettings({ activeId: id });
+  await setActiveSessionForUser(activeUserId, id);
   if (els.chatTitle) els.chatTitle.textContent = s.title;
-  renderMessages(s.messages);
+  renderMessages(s.messages || []);
   renderChatList();
   closeSidebar();
 }
 
-function startNewChat() {
-  const settings = loadSettings();
-  const userId = els.inputUserId?.value.trim() || settings.userId || "local";
-  currentSession = createSession(userId);
-  upsertSession(currentSession);
-  saveSettings({ activeId: currentSession.id });
+function clearCurrentChat() {
+  currentSession = null;
+  void setActiveSessionForUser(activeUserId, null);
+  if (els.chatTitle) els.chatTitle.textContent = "新对话";
+  renderMessages([]);
+  renderChatList();
+}
+
+async function startNewChat() {
+  currentSession = await createSession(activeUserId);
+  await setActiveSessionForUser(activeUserId, currentSession.id);
   if (els.chatTitle) els.chatTitle.textContent = "新对话";
   renderMessages([]);
   renderChatList();
@@ -183,70 +273,226 @@ function startNewChat() {
   els.composer?.focus();
 }
 
-function persistCurrent() {
+async function persistCurrent() {
   if (!currentSession) return;
-  upsertSession(currentSession);
+  const localMessages = currentSession.messages;
+  const saved = await upsertSession(currentSession);
+  // 保留内存中的 messages 引用，避免流式 onDelta 写到已脱离的旧对象上
+  if (localMessages?.length) {
+    saved.messages = localMessages;
+  }
+  currentSession = saved;
   renderChatList();
 }
 
+async function deleteSessionWithConfirm(sessionId) {
+  if (
+    !confirm(
+      "删除此对话？将清除服务端聊天记录、checkpoint 与工作区目录。"
+    )
+  ) {
+    return;
+  }
+
+  try {
+    await deleteSessionRemote(sessionId, activeUserId);
+  } catch (err) {
+    alert(`删除失败：${err.message || "未知错误"}`);
+    return;
+  }
+
+  removeSessionFromCache(activeUserId, sessionId);
+  if (currentSession?.id === sessionId) {
+    const remaining = loadSessionsForUser(activeUserId);
+    if (remaining.length) await selectSession(remaining[0].id);
+    else clearCurrentChat();
+  } else {
+    renderChatList();
+  }
+}
+
+async function deleteUser(userId) {
+  const users = loadUsers();
+  if (users.length <= 1) {
+    alert("至少保留一个用户。");
+    return;
+  }
+
+  if (
+    !confirm(
+      `删除用户「${userId}」？将删除该用户全部对话、checkpoint、向量记忆与工作区，且不可恢复。`
+    )
+  ) {
+    return;
+  }
+
+  try {
+    await deleteUserRemote(userId);
+  } catch (err) {
+    alert(`删除失败：${err.message || "未知错误"}`);
+    return;
+  }
+
+  removeUserLocal(userId);
+  await refreshUsers();
+
+  if (activeUserId === userId) {
+    const next = loadUsers()[0];
+    if (next) await selectUser(next.id);
+  } else {
+    renderUserList();
+    renderChatList();
+  }
+}
+
+async function submitAddUser() {
+  const raw = els.inputNewUser?.value ?? "";
+  const result = await addUser(raw);
+  if (!result.ok) {
+    alert(result.error);
+    return;
+  }
+  if (els.inputNewUser) els.inputNewUser.value = "";
+  renderUserList();
+  await selectUser(result.user.id);
+}
+
+function renderAttachmentBar() {
+  if (!els.attachmentBar) return;
+  els.attachmentBar.innerHTML = "";
+  if (!pendingAttachments.length) {
+    els.attachmentBar.classList.add("hidden");
+    return;
+  }
+  els.attachmentBar.classList.remove("hidden");
+  for (const att of pendingAttachments) {
+    const chip = document.createElement("span");
+    chip.className =
+      "inline-flex items-center gap-1 rounded-lg bg-gray-100 px-2 py-1 text-xs text-gray-700 dark:bg-gray-800 dark:text-gray-200";
+    const label = document.createElement("span");
+    label.textContent = att.filename;
+    const rm = document.createElement("button");
+    rm.type = "button";
+    rm.className = "text-gray-400 hover:text-gray-700 dark:hover:text-gray-200";
+    rm.textContent = "×";
+    rm.addEventListener("click", () => {
+      pendingAttachments = pendingAttachments.filter((a) => a.relPath !== att.relPath);
+      renderAttachmentBar();
+    });
+    chip.appendChild(label);
+    chip.appendChild(rm);
+    els.attachmentBar.appendChild(chip);
+  }
+}
+
+async function handleFilesSelected(fileList) {
+  if (!fileList?.length) return;
+  if (!currentSession) await startNewChat();
+  if (!currentSession) return;
+  if (!activeUserId?.trim()) {
+    alert("请先选择或添加用户");
+    return;
+  }
+  try {
+    const data = await uploadSessionFiles(activeUserId, currentSession.id, fileList);
+    for (const f of data.files ?? []) {
+      if (!pendingAttachments.some((a) => a.relPath === f.rel_path)) {
+        pendingAttachments.push({ relPath: f.rel_path, filename: f.filename });
+      }
+    }
+    if (data.errors?.length) {
+      alert(`部分文件未上传：\n${data.errors.join("\n")}`);
+    }
+    renderAttachmentBar();
+  } catch (err) {
+    alert(`上传失败：${err.message || "未知错误"}`);
+  }
+  if (els.fileInput) els.fileInput.value = "";
+}
+
 async function sendMessage() {
-  const text = els.composer?.value.trim();
-  if (!text || !currentSession) return;
+  const text = els.composer?.value.trim() ?? "";
+  const attachmentPaths = pendingAttachments.map((a) => a.relPath);
+  if (!text && !attachmentPaths.length) return;
+  if (!currentSession) await startNewChat();
+  if (!currentSession) return;
 
-  const settings = loadSettings();
-  const userId = els.inputUserId?.value.trim() || settings.userId || "local";
-  currentSession.userId = userId;
-  saveSettings({ userId });
+  if (!activeUserId?.trim()) {
+    alert("请先选择或添加用户");
+    return;
+  }
 
-  const userMsg = { role: "user", content: text, ts: Date.now() };
+  currentSession.userId = activeUserId;
+
+  let displayContent = text;
+  if (attachmentPaths.length) {
+    const lines = attachmentPaths.map((p) => `[文件] ${p}`);
+    displayContent = text ? `${text}\n${lines.join("\n")}` : lines.join("\n");
+  }
+
+  const userMsg = { role: "user", content: displayContent, ts: Date.now() };
+  currentSession.messages = currentSession.messages || [];
   currentSession.messages.push(userMsg);
   if (currentSession.messages.filter((m) => m.role === "user").length === 1) {
-    currentSession.title = titleFromMessage(text);
+    currentSession.title = titleFromMessage(text || attachmentPaths[0] || "附件");
     if (els.chatTitle) els.chatTitle.textContent = currentSession.title;
   }
 
-  const assistantMsg = { role: "assistant", content: "", ts: Date.now() };
-  currentSession.messages.push(assistantMsg);
+  currentSession.messages.push({
+    role: "assistant",
+    content: "",
+    ts: Date.now(),
+  });
+  const assistantIdx = currentSession.messages.length - 1;
   els.composer.value = "";
+  pendingAttachments = [];
+  renderAttachmentBar();
   autoResizeComposer();
   renderMessages(currentSession.messages);
-  persistCurrent();
+  await persistCurrent();
 
-  const body = { message: text, session_id: currentSession.id };
+  const body = {
+    message: text,
+    session_id: currentSession.id,
+    attachments: attachmentPaths,
+  };
+  const settings = loadSettings();
   const streaming = els.toggleStreaming?.checked ?? settings.streaming;
 
   abortController = new AbortController();
   setGenerating(true);
 
+  const assistant = () => currentSession.messages[assistantIdx];
+
   try {
     if (streaming) {
       await streamChat(body, {
-        userId,
+        userId: activeUserId,
         signal: abortController.signal,
         onDelta: (chunk) => {
-          assistantMsg.content += chunk;
+          assistant().content += chunk;
           renderMessages(currentSession.messages);
         },
       });
     } else {
-      assistantMsg.content = await chatGraph(body, {
-        userId,
+      assistant().content = await chatGraph(body, {
+        userId: activeUserId,
         signal: abortController.signal,
       });
       renderMessages(currentSession.messages);
     }
   } catch (err) {
+    const msg = assistant();
     if (err.name === "AbortError") {
-      if (!assistantMsg.content) assistantMsg.content = "（已停止）";
+      if (!msg.content) msg.content = "（已停止）";
     } else {
-      assistantMsg.content =
-        assistantMsg.content || `请求失败：${err.message || "未知错误"}`;
+      msg.content = msg.content || `请求失败：${err.message || "未知错误"}`;
     }
     renderMessages(currentSession.messages);
   } finally {
     abortController = null;
     setGenerating(false);
-    persistCurrent();
+    await persistCurrent();
     els.composer?.focus();
   }
 }
@@ -274,14 +520,22 @@ function closeSettings() {
   els.settingsModal?.classList.remove("flex");
 }
 
-function syncSettingsFromModal() {
+async function syncSettingsFromModal() {
   const streaming = els.settingsStreaming?.checked ?? true;
   const theme = /** @type {'system'|'light'|'dark'} */ (
     els.settingsTheme?.value || "system"
   );
-  saveSettings({ streaming, theme });
+  await saveSettings({ streaming, theme });
   if (els.toggleStreaming) els.toggleStreaming.checked = streaming;
   applyTheme(theme);
+}
+
+function toggleUsersPanel() {
+  usersExpanded = !usersExpanded;
+  if (els.usersChevron) els.usersChevron.textContent = usersExpanded ? "▼" : "▶";
+  els.userList?.classList.toggle("hidden", !usersExpanded);
+  els.addUserRow?.classList.toggle("hidden", !usersExpanded);
+  renderUserList();
 }
 
 async function initHealth() {
@@ -297,63 +551,116 @@ async function initHealth() {
   }
 }
 
-function boot() {
-  const settings = loadSettings();
-  applyTheme(settings.theme);
-  if (els.inputUserId) els.inputUserId.value = settings.userId;
-  if (els.toggleStreaming) els.toggleStreaming.checked = settings.streaming;
-
-  els.btnNewChat?.addEventListener("click", startNewChat);
-  els.btnSend?.addEventListener("click", sendMessage);
-  els.btnStop?.addEventListener("click", stopGeneration);
-  els.btnOpenSidebar?.addEventListener("click", openSidebar);
-  els.btnCloseSidebar?.addEventListener("click", closeSidebar);
-  els.sidebarOverlay?.addEventListener("click", closeSidebar);
-
-  els.composer?.addEventListener("input", autoResizeComposer);
-  els.composer?.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    }
-  });
-
-  els.inputUserId?.addEventListener("change", () => {
-    saveSettings({ userId: els.inputUserId.value.trim() || "local" });
-  });
-
-  els.toggleStreaming?.addEventListener("change", () => {
-    saveSettings({ streaming: els.toggleStreaming.checked });
-    if (els.settingsStreaming) {
-      els.settingsStreaming.checked = els.toggleStreaming.checked;
-    }
-  });
-
-  els.btnSettings?.addEventListener("click", openSettings);
-  els.btnSettingsClose?.addEventListener("click", () => {
-    syncSettingsFromModal();
-    closeSettings();
-  });
-  els.settingsStreaming?.addEventListener("change", syncSettingsFromModal);
-  els.settingsTheme?.addEventListener("change", syncSettingsFromModal);
-  els.settingsModal?.addEventListener("click", (e) => {
-    if (e.target === els.settingsModal) {
-      syncSettingsFromModal();
-      closeSettings();
-    }
-  });
-
-  const sessions = loadSessions();
-  if (settings.activeId && getSession(settings.activeId)) {
-    selectSession(settings.activeId);
-  } else if (sessions.length) {
-    selectSession(sessions[0].id);
-  } else {
-    startNewChat();
+async function importLegacyFromBrowserIfNeeded() {
+  const sessionsKey = "caker.web.sessions";
+  const usersKey = "caker.web.users";
+  const settingsKey = "caker.web.settings";
+  if (!localStorage.getItem(sessionsKey) && !localStorage.getItem(usersKey)) {
+    return;
   }
-
-  initHealth();
-  setInterval(initHealth, 30000);
+  try {
+    const sessions = JSON.parse(localStorage.getItem(sessionsKey) || "[]");
+    const users = JSON.parse(localStorage.getItem(usersKey) || "[]");
+    const settings = JSON.parse(localStorage.getItem(settingsKey) || "null");
+    await importLegacy({ sessions, users, settings: settings || undefined });
+    localStorage.removeItem(sessionsKey);
+    localStorage.removeItem(usersKey);
+    localStorage.removeItem(settingsKey);
+  } catch (e) {
+    console.warn("legacy import failed", e);
+  }
 }
 
-boot();
+async function boot() {
+  try {
+    await importLegacyFromBrowserIfNeeded();
+    await refreshSettings();
+    await refreshUsers();
+
+    const settings = loadSettings();
+    applyTheme(settings.theme);
+    if (els.toggleStreaming) els.toggleStreaming.checked = settings.streaming;
+
+    activeUserId = settings.activeUserId;
+    const users = loadUsers();
+    if (!users.some((u) => u.id === activeUserId)) {
+      activeUserId = users[0]?.id || "local";
+      await saveSettings({ activeUserId });
+    }
+
+    await refreshSessionsForUser(activeUserId);
+
+    els.btnNewChat?.addEventListener("click", () => void startNewChat());
+    els.btnSend?.addEventListener("click", () => void sendMessage());
+    els.btnStop?.addEventListener("click", stopGeneration);
+    els.btnOpenSidebar?.addEventListener("click", openSidebar);
+    els.btnCloseSidebar?.addEventListener("click", closeSidebar);
+    els.sidebarOverlay?.addEventListener("click", closeSidebar);
+    els.btnToggleUsers?.addEventListener("click", toggleUsersPanel);
+    els.btnAddUser?.addEventListener("click", () => void submitAddUser());
+    els.inputNewUser?.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        void submitAddUser();
+      }
+    });
+
+    els.btnAttach?.addEventListener("click", () => els.fileInput?.click());
+    els.fileInput?.addEventListener("change", () => {
+      void handleFilesSelected(els.fileInput?.files);
+    });
+
+    els.composer?.addEventListener("input", autoResizeComposer);
+    els.composer?.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        void sendMessage();
+      }
+    });
+
+    els.toggleStreaming?.addEventListener("change", () => {
+      void saveSettings({ streaming: els.toggleStreaming.checked }).then(() => {
+        if (els.settingsStreaming) {
+          els.settingsStreaming.checked = els.toggleStreaming.checked;
+        }
+      });
+    });
+
+    els.btnSettings?.addEventListener("click", openSettings);
+    els.btnSettingsClose?.addEventListener("click", () => {
+      void syncSettingsFromModal().then(closeSettings);
+    });
+    els.settingsStreaming?.addEventListener("change", () => void syncSettingsFromModal());
+    els.settingsTheme?.addEventListener("change", () => void syncSettingsFromModal());
+    els.settingsModal?.addEventListener("click", (e) => {
+      if (e.target === els.settingsModal) {
+        void syncSettingsFromModal().then(closeSettings);
+      }
+    });
+
+    renderUserList();
+
+    const savedSessionId = getActiveSessionIdForUser(activeUserId);
+    if (savedSessionId) {
+      try {
+        await selectSession(savedSessionId);
+      } catch {
+        const userSessions = loadSessionsForUser(activeUserId);
+        if (userSessions.length) await selectSession(userSessions[0].id);
+        else clearCurrentChat();
+      }
+    } else {
+      const userSessions = loadSessionsForUser(activeUserId);
+      if (userSessions.length) await selectSession(userSessions[0].id);
+      else clearCurrentChat();
+    }
+
+    initHealth();
+    setInterval(initHealth, 30000);
+  } catch (err) {
+    alert(`加载失败：${err.message || "无法连接服务端"}`);
+    console.error(err);
+  }
+}
+
+void boot();

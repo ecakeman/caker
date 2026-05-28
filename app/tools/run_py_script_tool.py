@@ -8,19 +8,8 @@ import sys
 from langchain_core.tools import BaseTool
 from pydantic import BaseModel, Field
 
+from app.tools.configurable import ids_from_run_manager
 from app.workspace.manager import WorkspaceError, manager
-
-
-def _session_id_from_run_manager(run_manager) -> str:
-    if run_manager is None:
-        return "demo"
-    cfg = getattr(run_manager, "config", None) or {}
-    if not isinstance(cfg, dict):
-        return "demo"
-    configurable = cfg.get("configurable") or {}
-    if not isinstance(configurable, dict):
-        return "demo"
-    return str(configurable.get("session_id") or "demo")
 
 
 class RunPyInput(BaseModel):
@@ -46,7 +35,7 @@ class RunPyScriptTool(BaseTool):
         run_manager=None,
         **_: object,
     ) -> str:
-        session_id = _session_id_from_run_manager(run_manager)
+        user_id, session_id = ids_from_run_manager(run_manager)
         rel = rel_path.strip().replace("\\", "/")
         if not rel.startswith("skills/"):
             return json.dumps(
@@ -55,7 +44,7 @@ class RunPyScriptTool(BaseTool):
             )
 
         try:
-            target = manager.resolve(session_id, rel)
+            target = manager.resolve(user_id, session_id, rel)
         except WorkspaceError as e:
             return json.dumps({"error": str(e)}, ensure_ascii=False)
 
@@ -65,11 +54,11 @@ class RunPyScriptTool(BaseTool):
                 ensure_ascii=False,
             )
 
-        ws = manager.session_dir(session_id)
+        ws = manager.session_dir(user_id, session_id)
         env = {
             **os.environ,
             "SESSION_ID": session_id,
-            "USER_ID": "local",
+            "USER_ID": user_id,
         }
         cmd = [sys.executable, str(target), *(args or [])]
 

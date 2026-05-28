@@ -20,30 +20,33 @@ def test_load_system_prompt_has_required_sections():
     assert "工具" in text
     assert "技能" in text
     assert "{skills_meta}" in text
+    assert "{tools_meta}" in text
+    assert "MemPalace" not in text
     assert "部署位置" not in text
-    assert "inject_system_node" not in text
 
 
-def test_render_system_prompt_replaces_skills_meta():
-    meta = json.dumps([{"name": "hello_skill", "description": "demo", "version": ""}])
-    rendered = skills_manager.render_system_prompt(skills_meta=meta)
+def test_render_system_prompt_replaces_placeholders():
+    skills = json.dumps([{"name": "demo-hello", "description": "demo", "version": ""}])
+    rendered = skills_manager.render_system_prompt(skills_meta=skills)
     assert "{skills_meta}" not in rendered
-    assert "hello_skill" in rendered
+    assert "{tools_meta}" not in rendered
+    assert "demo-hello" in rendered
+    assert "**read**" in rendered or "- **read**" in rendered
     assert "使用流程" in rendered
-    assert "部署位置" not in rendered
 
 
-def test_render_system_prompt_missing_placeholder_raises(monkeypatch):
+def test_render_system_prompt_missing_skills_placeholder_raises(monkeypatch):
     monkeypatch.setattr(
         skills_manager,
         "load_system_prompt",
-        lambda: "no placeholder here",
+        lambda: "no skills {tools_meta} only",
     )
     with pytest.raises(ValueError, match="skills_meta"):
         skills_manager.render_system_prompt(skills_meta="[]")
 
 
 def test_inject_system_node_returns_system_message():
+    skills_manager.reindex()
     out = inject_system_node(
         {
             "messages": [],
@@ -56,7 +59,7 @@ def test_inject_system_node_returns_system_message():
     msg = out["messages"][0]
     assert isinstance(msg, SystemMessage)
     assert "Caker" in msg.content
-    assert "hello_skill" in msg.content or "[]" in msg.content
+    assert "demo-hello" in msg.content or "file-extract" in msg.content
 
 
 def test_inject_system_node_skips_when_flagged():

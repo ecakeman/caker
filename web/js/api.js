@@ -1,4 +1,4 @@
-/** @typedef {{ message: string, session_id?: string }} ChatBody */
+/** @typedef {{ message?: string, session_id?: string, attachments?: string[] }} ChatBody */
 
 /**
  * @param {Response} res
@@ -23,13 +23,25 @@ export async function checkHealth() {
 }
 
 /**
+ * @param {string} userId
+ */
+function requireUserId(userId) {
+  const uid = (userId || "").trim();
+  if (!uid) throw new Error("请先选择或添加用户");
+  return uid;
+}
+
+/**
  * @param {ChatBody} body
- * @param {{ userId?: string, signal?: AbortSignal }} opts
+ * @param {{ userId: string, signal?: AbortSignal }} opts
  * @returns {Promise<string>}
  */
-export async function chatGraph(body, opts = {}) {
-  const headers = { "Content-Type": "application/json" };
-  if (opts.userId) headers["x-user-id"] = opts.userId;
+export async function chatGraph(body, opts) {
+  const userId = requireUserId(opts.userId);
+  const headers = {
+    "Content-Type": "application/json",
+    "x-user-id": userId,
+  };
 
   const res = await fetch("/api/v2/chat-graph", {
     method: "POST",
@@ -63,14 +75,17 @@ function parseSseBlock(block) {
 /**
  * @param {ChatBody} body
  * @param {{
- *   userId?: string,
+ *   userId: string,
  *   signal?: AbortSignal,
  *   onDelta?: (text: string) => void,
  * }} opts
  */
-export async function streamChat(body, opts = {}) {
-  const headers = { "Content-Type": "application/json" };
-  if (opts.userId) headers["x-user-id"] = opts.userId;
+export async function streamChat(body, opts) {
+  const userId = requireUserId(opts.userId);
+  const headers = {
+    "Content-Type": "application/json",
+    "x-user-id": userId,
+  };
 
   const res = await fetch("/api/v2/stream", {
     method: "POST",
@@ -108,3 +123,32 @@ export async function streamChat(body, opts = {}) {
     }
   }
 }
+
+/**
+ * @param {string} sessionId
+ * @param {string} userId
+ */
+export async function deleteSessionRemote(sessionId, userId) {
+  const uid = requireUserId(userId);
+  const params = new URLSearchParams({ user_id: uid });
+  const res = await fetch(`/api/v2/sessions/${encodeURIComponent(sessionId)}?${params}`, {
+    method: "DELETE",
+  });
+  await throwIfNotOk(res);
+  return res.json();
+}
+
+/**
+ * @param {string} userId
+ */
+export async function deleteUserRemote(userId) {
+  const uid = requireUserId(userId);
+  const res = await fetch(`/api/v2/users/${encodeURIComponent(uid)}`, {
+    method: "DELETE",
+  });
+  await throwIfNotOk(res);
+  return res.json();
+}
+
+/** @deprecated 使用 deleteUserRemote */
+export const deleteUserMemory = deleteUserRemote;

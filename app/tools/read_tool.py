@@ -1,27 +1,24 @@
 from __future__ import annotations
+
 from langchain_core.tools import BaseTool
 from pydantic import BaseModel, Field
+
+from app.tools.configurable import ids_from_run_manager
 from app.workspace.manager import WorkspaceError, manager
+
+
 class ReadInput(BaseModel):
     rel_path: str = Field(..., description="工作区相对路径（相对会话根目录）")
     offset: int = Field(0, ge=0)
     limit: int = Field(200, ge=1, le=2000)
-    
-def _session_id_from_run_manager(run_manager) -> str:
-    if run_manager is None:
-        return "demo"
-    cfg = getattr(run_manager, "config", None) or {}
-    if not isinstance(cfg, dict):
-        return "demo"
-    configurable = cfg.get("configurable") or {}
-    if not isinstance(configurable, dict):
-        return "demo"
-    return str(configurable.get("session_id") or "demo")
+
 
 class ReadTool(BaseTool):
     name: str = "Read"
-    description: str = ("Read a file from the current session workspace under"
-    " WORKSPACE_ROOT/<session_id>/.")
+    description: str = (
+        "Read a file from the current session workspace under "
+        "WORKSPACE_ROOT/<user_id>/<session_id>/."
+    )
     args_schema: type[BaseModel] = ReadInput
 
     def _run(
@@ -33,9 +30,9 @@ class ReadTool(BaseTool):
         run_manager=None,
         **_: object,
     ) -> str:
-        session_id = _session_id_from_run_manager(run_manager)
+        user_id, session_id = ids_from_run_manager(run_manager)
         try:
-            target = manager.resolve(session_id, rel_path)
+            target = manager.resolve(user_id, session_id, rel_path)
         except WorkspaceError as e:
             return f"<error>{e}</error>"
 
@@ -48,4 +45,3 @@ class ReadTool(BaseTool):
         for i, line in enumerate(chunk, start=offset + 1):
             out.append(f"{i:6d}|{line}")
         return "\n".join(out) if out else "(empty range)"
-

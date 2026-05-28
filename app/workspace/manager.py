@@ -1,27 +1,35 @@
 from __future__ import annotations
 
 import re
+import shutil
 from pathlib import Path
 
 from app.config import settings
 
 READONLY_SUBDIRS = {"skills", "books"}
-_SESSION_ID_RE = re.compile(r"^[A-Za-z0-9_-]+$")
+_ID_RE = re.compile(r"^[A-Za-z0-9_-]+$")
+
 
 class WorkspaceError(Exception):
     """Workspace 路径校验失败。"""
 
+
 class WorkspaceManager:
-    def __init__(self,root:str|None=None)->None:
-        self.root=Path(root or settings.workspace_root).resolve()
+    def __init__(self, root: str | None = None) -> None:
+        self.root = Path(root or settings.workspace_root).resolve()
 
-    def session_dir(self,session_id:str)->Path:
-        if not _SESSION_ID_RE.fullmatch(session_id):
-            raise WorkspaceError(f"invalid session_id: {session_id}")
+    @staticmethod
+    def _validate_id(name: str, label: str) -> None:
+        if not _ID_RE.fullmatch(name):
+            raise WorkspaceError(f"invalid {label}: {name}")
 
-        ws = self.root / session_id
-        ws.mkdir(parents=True,exist_ok=True)
-        (ws / "data").mkdir(parents=True,exist_ok=True)
+    def session_dir(self, user_id: str, session_id: str) -> Path:
+        self._validate_id(user_id, "user_id")
+        self._validate_id(session_id, "session_id")
+
+        ws = self.root / user_id / session_id
+        ws.mkdir(parents=True, exist_ok=True)
+        (ws / "data").mkdir(parents=True, exist_ok=True)
         (ws / "outputs").mkdir(parents=True, exist_ok=True)
 
         skills_link = ws / "skills"
@@ -32,7 +40,7 @@ class WorkspaceManager:
 
         return ws
 
-    def resolve(self, session_id: str, rel_path: str) -> Path:
+    def resolve(self, user_id: str, session_id: str, rel_path: str) -> Path:
         rel = rel_path.strip().replace("\\", "/")
         if not rel:
             raise WorkspaceError("empty rel_path")
@@ -41,7 +49,7 @@ class WorkspaceManager:
         if ".." in Path(rel).parts:
             raise WorkspaceError("path traversal is not allowed")
 
-        ws = self.session_dir(session_id)
+        ws = self.session_dir(user_id, session_id)
         target = ws / rel
         parts = Path(rel).parts
 
@@ -60,8 +68,8 @@ class WorkspaceManager:
 
         return resolved
 
-    def is_readonly(self, session_id: str, target: Path) -> bool:
-        ws = self.session_dir(session_id)
+    def is_readonly(self, user_id: str, session_id: str, target: Path) -> bool:
+        ws = self.session_dir(user_id, session_id)
         try:
             rel = target.relative_to(ws)
         except ValueError:
@@ -71,6 +79,19 @@ class WorkspaceManager:
             return False
 
         return parts[0] in READONLY_SUBDIRS
-        
+
+    def remove_session_workspace(self, user_id: str, session_id: str) -> None:
+        self._validate_id(user_id, "user_id")
+        self._validate_id(session_id, "session_id")
+        target = self.root / user_id / session_id
+        if target.is_dir():
+            shutil.rmtree(target)
+
+    def remove_user_workspace(self, user_id: str) -> None:
+        self._validate_id(user_id, "user_id")
+        target = self.root / user_id
+        if target.is_dir():
+            shutil.rmtree(target)
+
 
 manager = WorkspaceManager()

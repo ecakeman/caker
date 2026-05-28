@@ -140,10 +140,11 @@ curl -N -X POST http://127.0.0.1:8000/api/v2/stream \
 **验证**：
 
 ```bash
-mkdir -p /tmp/skills/demo/data && echo "hello world" > /tmp/skills/demo/data/a.txt
+mkdir -p var/workspace/local/demo/data && echo "hello world" > var/workspace/local/demo/data/a.txt
 curl -s -X POST http://127.0.0.1:8000/api/v2/chat-graph \
   -H 'content-type: application/json' \
-  -d '{"message":"读 data/a.txt 然后用一句话总结"}'
+  -H 'x-user-id: local' \
+  -d '{"message":"读 data/a.txt 然后用一句话总结","session_id":"demo"}'
 ```
 
 ---
@@ -153,14 +154,14 @@ curl -s -X POST http://127.0.0.1:8000/api/v2/chat-graph \
 | 路径 | 说明 |
 |------|------|
 | [app/workspace/__init__.py](app/workspace/__init__.py) | 工作区包（空文件即可） |
-| [app/workspace/manager.py](app/workspace/manager.py) | `WorkspaceManager`：`session_dir`、`resolve`、`is_readonly`；模块级 `manager` 单例 |
-| [app/tools/read_tool.py](app/tools/read_tool.py) | `Read` 经 `manager.resolve(session_id, rel_path)`；`session_id` 从 `run_manager.config["configurable"]` 读取 |
+| [app/workspace/manager.py](app/workspace/manager.py) | `WorkspaceManager`：`session_dir(user_id, session_id)`、`resolve`、`remove_*`；模块级 `manager` 单例 |
+| [app/tools/read_tool.py](app/tools/read_tool.py) | `Read` 经 `manager.resolve(user_id, session_id, rel_path)`；ids 从 `configurable` 读取 |
 | [app/api/chat.py](app/api/chat.py) | `ChatGraphIn.session_id`；`_graph_config()`；`chat-graph` / `stream` 的 `ainvoke` / `astream_events` 传入 `config` |
 | [app/runtime/graph.py](app/runtime/graph.py) | `iter_graph_stream_events(..., config=...)` 转发给 `astream_events` |
 
 **行为要点**：
 
-- 每个 `session_id` 对应 `WORKSPACE_ROOT/<session_id>/`，自动创建 `data/`、`outputs/`。
+- 每个会话对应 `WORKSPACE_ROOT/<user_id>/<session_id>/`，自动创建 `data/`、`outputs/`。
 - `resolve` 拒绝绝对路径、`..` 越权；`session_id` 仅允许 `[A-Za-z0-9_-]+`。
 - `is_readonly` 识别 `skills/`、`books/` 前缀（供后续写类工具使用）。
 - 默认 `session_id` 为 `demo`（与演示数据路径一致）。
@@ -168,12 +169,13 @@ curl -s -X POST http://127.0.0.1:8000/api/v2/chat-graph \
 **验证**：
 
 ```bash
-# 准备 demo 会话数据（路径与 .env 中 WORKSPACE_ROOT 一致，默认 /tmp/skills）
-mkdir -p /tmp/skills/demo/data && echo "hello world" > /tmp/skills/demo/data/a.txt
+# 准备 demo 会话数据（默认 WORKSPACE_ROOT=./var/workspace）
+mkdir -p var/workspace/local/demo/data && echo "hello world" > var/workspace/local/demo/data/a.txt
 
 # 正常读文件并总结
 curl -s -X POST http://127.0.0.1:8000/api/v2/chat-graph \
   -H 'content-type: application/json' \
+  -H 'x-user-id: local' \
   -d '{"message":"读 data/a.txt 然后用一句话总结","session_id":"demo"}'
 
 # 越权路径应被拒绝（模型侧说明无法读取，或工具返回 <error>）
@@ -320,11 +322,12 @@ curl -s -X POST http://127.0.0.1:8000/api/v2/chat-graph \
 **验证**：
 
 ```bash
-mkdir -p /tmp/skills/demo/data && echo "hello world" > /tmp/skills/demo/data/a.txt
+mkdir -p var/workspace/local/demo-m11/data && echo "hello world" > var/workspace/local/demo-m11/data/a.txt
 uv run --extra dev pytest tests/test_m11_result_set.py -q
 
 curl -s -X POST http://127.0.0.1:8000/api/v2/chat-graph \
   -H 'content-type: application/json' \
+  -H 'x-user-id: local' \
   -d '{"message":"读 data/a.txt 然后用 result_set 给我最终答案","session_id":"demo-m11"}'
 ```
 

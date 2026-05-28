@@ -70,3 +70,7 @@ def search(query: str, k: int = 3, where: dict | None = None):
     docs = res["documents"][0]
     metas = res["metadatas"][0]
     return list(zip(ids, docs, metas))
+
+
+def delete_by_user(user_id: str) -> None:
+    _get_collection().delete(where={"user_id": user_id})

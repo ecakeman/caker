@@ -36,17 +36,6 @@ def inject_system_node(state: GraphState) -> dict:
 def inject_user_node(state: GraphState) -> dict:
     return {"messages": [HumanMessage(content=state["input"])]}
 
-
-async def mempalace_inject_node(state: GraphState, config) -> dict:
-    if not should_inject(state["messages"]):
-        return {}
-    user_id = config.get("configurable", {}).get("user_id", "local")
-    boot = build_bootstrap(state["input"], user_id)
-    if boot is None:
-        return {}
-    return {"messages": [boot]}
-
-
 async def llm_node(state: GraphState) -> dict:
     tools = get_tools_for_state(streaming=state.get("streaming", False))
     llm = get_llm_with_tools(tools)
@@ -74,19 +63,6 @@ async def end_node(state: GraphState, config) -> dict:
                 content = msg.content
                 result_text = content if isinstance(content, str) else str(content)
                 break
-
-    if state.get("messages"):
-        cfg = config.get("configurable", {}) if config else {}
-        summary_msg = summarize(state["messages"])
-        text = summary_msg.content if isinstance(summary_msg.content, str) else str(summary_msg.content)
-        chroma_store.add(
-            uuid.uuid4().hex,
-            text,
-            {
-                "session_id": cfg.get("session_id", ""),
-                "user_id": cfg.get("user_id", "local"),
-            },
-        )
 
     return {"result": result_text}
 

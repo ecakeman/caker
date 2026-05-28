@@ -23,7 +23,6 @@ def build_graph():
     g.add_node("end", nodes.end_node)
     g.add_node("summary", nodes.summary_node)
     g.add_node("apply_result_set", nodes.apply_result_set_node)
-    g.add_node("mempalace_inject", nodes.mempalace_inject_node)
 
     g.add_edge(START, "start")
     g.add_conditional_edges(
@@ -35,8 +34,7 @@ def build_graph():
         }
     )
     g.add_edge("inject_system", "inject_user")
-    g.add_edge("inject_user", "mempalace_inject")
-    g.add_edge("mempalace_inject", "llm")
+    g.add_edge("inject_user", "llm")
     g.add_conditional_edges(
         "llm",
         routes.route_after_llm,

@@ -350,6 +350,8 @@ dependencies = [
     { name = "boto3" },
     { name = "chromadb" },
     { name = "fastapi" },
+    { name = "httpx" },
+    { name = "jsonschema" },
     { name = "langchain-openai" },
     { name = "langgraph" },
     { name = "langgraph-checkpoint-sqlite" },
@@ -360,7 +362,6 @@ dependencies = [
 
 [package.optional-dependencies]
 dev = [
-    { name = "httpx" },
     { name = "pytest" },
 ]
 
@@ -371,7 +372,8 @@ requires-dist = [
     { name = "boto3", specifier = ">=1.35.0" },
     { name = "chromadb", specifier = ">=0.5.0" },
     { name = "fastapi", specifier = ">=0.115.0" },
-    { name = "httpx", marker = "extra == 'dev'", specifier = ">=0.27.0" },
+    { name = "httpx", specifier = ">=0.27.0" },
+    { name = "jsonschema", specifier = ">=4.0.0" },
     { name = "langchain-openai", specifier = ">=0.2.0" },
     { name = "langgraph", specifier = ">=0.2.0" },
     { name = "langgraph-checkpoint-sqlite", specifier = ">=2.0.0" },
