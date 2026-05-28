@@ -1,6 +1,7 @@
 # 里程碑实现进度（M0–M13）
 
-本仓库相对 [跟写指南](agent_skills_build_guide.md) 的**已落地验收记录**（从原 README 迁入）。设计理念见 [design.md](design.md)。
+**只针对agent引擎开发**
+本仓库相对 [跟写指南](agent_skills_build_guide.md) 的**已落地验收记录**。项目介绍见 [README](../README.md)。
 
 **编号对照**：本表 **M12 = 指南 M14（summary/compact）**，**M13 = 指南 M15（MemPalace）**。
 

@@ -1,6 +1,5 @@
-# Agent Skills 跟写指南（Build-along）
+# Agent 引擎 跟写指南（Build-along）
 
-> 配合阅读：[原深度研究报告](/mnt/c/Users/PF-4BA9TH/Desktop/user_attachments_session_a29c06ca28284858b68f5de84ede3306_outputs_agent_skills_deep_research_report.md)
 > 用法：每个里程碑 M# 都能跑出来一个比上一个强一点点的 demo；不绿就别往下走。
 
 ### 本地部署范围（caker 默认）
@@ -1501,7 +1500,7 @@ dev-dependencies = ["pytest>=8", "httpx>=0.27"]
 | M14 | summary 压缩 | §3 节点 7 |
 | M15 | MemPalace 召回 | §3 节点 3 / §9.5 |
 
-> 原报告 **§6 Pipeline / 游标恢复** 不在本地路线跟写；需要时对照 [深度研究报告](docs/user_attachments_session_a29c06ca28284858b68f5de84ede3306_outputs_agent_skills_deep_research_report.md) 另开分支。
+> 原报告 **§6 Pipeline / 游标恢复** 不在本地路线跟写；需要分布式能力时另开分支扩展。
 
 ## 附录 C：调试技巧
 
