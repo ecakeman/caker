@@ -34,5 +34,10 @@ class Settings(BaseSettings):
     chroma_path: str = Field(default="./var/chroma")  # M15 MemPalace
     upload_max_bytes: int = Field(default=10 * 1024 * 1024, ge=1)
 
+    max_input_tokens: int = Field(default=8000, ge=1000)
+    compact_ratio: float = Field(default=0.75, ge=0.1, le=1.0)
+    mempalace_auto_inject: bool = Field(default=False)
+    stream_emit_tool_status: bool = Field(default=True)
+
 
 settings = Settings()

@@ -78,6 +78,7 @@ function parseSseBlock(block) {
  *   userId: string,
  *   signal?: AbortSignal,
  *   onDelta?: (text: string) => void,
+ *   onStatus?: (payload: { phase?: string; detail?: string; tool?: string }) => void,
  * }} opts
  */
 export async function streamChat(body, opts) {
@@ -113,7 +114,9 @@ export async function streamChat(body, opts) {
       const parsed = parseSseBlock(block);
       if (!parsed) continue;
 
-      if (parsed.event === "delta" && parsed.data?.text) {
+      if (parsed.event === "status") {
+        opts.onStatus?.(parsed.data ?? {});
+      } else if (parsed.event === "delta" && parsed.data?.text) {
         opts.onDelta?.(String(parsed.data.text));
       } else if (parsed.event === "error") {
         throw new Error(parsed.data?.detail || "stream upstream request failed");

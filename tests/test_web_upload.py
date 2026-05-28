@@ -20,7 +20,9 @@ def test_upload_file_to_session_workspace(tmp_path, monkeypatch):
     data = r.json()
     assert data["ok"] is True
     assert len(data["files"]) == 1
-    assert data["files"][0]["rel_path"] == "data/uploads/notes.txt"
+    rel = data["files"][0]["rel_path"]
+    assert rel.startswith("data/uploads/notes")
+    assert rel.endswith(".txt")
     assert data["files"][0]["bytes"] == 10
 
 

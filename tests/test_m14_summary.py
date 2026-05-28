@@ -1,57 +1,106 @@
-"""M14 summary handler and routing."""
+"""M14 context compaction (soft compact, replaces nuclear summary)."""
 
 from __future__ import annotations
 
 from unittest.mock import patch
 
-from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 
-from app.runtime.nodes import summary_node
+from app.runtime.nodes import compact_node
 from app.runtime.routes import route_after_tools
-from app.summary.handler import estimate_tokens, need_summary
+from app.summary.handler import (
+    build_compact_messages,
+    estimate_tokens,
+    need_compact,
+    partition_for_compact,
+)
 
 
-def test_need_summary_true():
-    msgs = [HumanMessage(content="x" * 40000)]
-    assert need_summary(msgs) is True
+def test_need_compact_true():
+    msgs = [HumanMessage(content="x" * 50000)]
+    assert need_compact(msgs) is True
 
 
-def test_need_summary_false():
+def test_need_compact_false():
     msgs = [HumanMessage(content="short")]
-    assert need_summary(msgs) is False
+    assert need_compact(msgs) is False
 
 
 def test_estimate_tokens_positive():
     assert estimate_tokens([HumanMessage(content="hello")]) > 0
 
 
-def test_route_after_tools_summary_branch():
-    long_msgs = [HumanMessage(content="x" * 40000)]
-    assert route_after_tools({"result_set_handled": False, "messages": long_msgs}) == "summary"  # type: ignore[arg-type]
+def test_route_after_tools_compact_branch():
+    long_msgs = [HumanMessage(content="x" * 50000)]
+    assert route_after_tools({"result_set_handled": False, "messages": long_msgs}) == "compact"  # type: ignore[arg-type]
 
 
 def test_route_after_tools_end_when_handled():
     assert route_after_tools({"result_set_handled": True, "messages": []}) == "end"  # type: ignore[arg-type]
 
 
-def test_summary_node_replaces_messages():
+def test_partition_keeps_system_and_current_turn():
+    system = SystemMessage(content="sys rules")
+    old_human = HumanMessage(content="old q")
+    old_ai = AIMessage(content="old a")
+    current_human = HumanMessage(content="current q")
+    tool = ToolMessage(content="file body", tool_call_id="1", name="read")
+    messages = [system, old_human, old_ai, current_human, tool]
+
+    primary, middle, current = partition_for_compact(messages, "current q")
+    assert primary is system
+    assert middle == [old_human, old_ai]
+    assert current == [current_human, tool]
+
+
+def test_build_compact_inserts_context_not_summary_prefix():
+    system = SystemMessage(content="sys")
+    messages = [
+        system,
+        HumanMessage(content="old"),
+        AIMessage(content="ans"),
+        HumanMessage(content="now"),
+    ]
+    with patch(
+        "app.summary.handler.summarize_messages",
+        return_value="line one",
+    ):
+        built = build_compact_messages(messages, "now")
+    assert built[0] is system
+    assert isinstance(built[1], SystemMessage)
+    assert built[1].content.startswith("[CONTEXT]")
+    assert "[SUMMARY]" not in built[1].content
+    assert built[-1].content == "now"
+
+
+def test_compact_node_replaces_with_soft_compact():
     import asyncio
 
     async def _run() -> None:
         state = {
-            "messages": [HumanMessage(content="old"), AIMessage(content="reply")],
+            "messages": [
+                SystemMessage(content="sys"),
+                HumanMessage(content="old"),
+                AIMessage(content="reply"),
+                HumanMessage(content="current question"),
+            ],
             "input": "current question",
             "result": "",
             "skip_inject_system": False,
             "result_set_handled": False,
             "streaming": False,
         }
-        fake_summary = SystemMessage(content="[SUMMARY]\ncompressed")
-        with patch("app.runtime.nodes.summarize", return_value=fake_summary):
-            out = await summary_node(state, None)
-        assert len(out["messages"]) == 3
-        assert out["messages"][1] == fake_summary
-        assert isinstance(out["messages"][2], HumanMessage)
-        assert out["messages"][2].content == "current question"
+        with patch(
+            "app.runtime.nodes.build_compact_messages",
+            return_value=[
+                SystemMessage(content="sys"),
+                SystemMessage(content="[CONTEXT]\nshort"),
+                HumanMessage(content="current question"),
+            ],
+        ) as mock_build:
+            out = await compact_node(state, None)
+            mock_build.assert_called_once()
+        assert len(out["messages"]) == 4
+        assert out["messages"][-1].content == "current question"
 
     asyncio.run(_run())

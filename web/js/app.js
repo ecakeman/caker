@@ -62,6 +62,7 @@ const els = {
   btnAttach: $("btn-attach"),
   fileInput: $("file-input"),
   attachmentBar: $("attachment-bar"),
+  streamStatus: $("stream-status"),
 };
 
 function applyTheme(theme) {
@@ -89,6 +90,14 @@ function setGenerating(on) {
   if (els.composer) els.composer.disabled = on;
   els.btnStop?.classList.toggle("hidden", !on);
   els.btnSend?.classList.toggle("hidden", on);
+  if (!on) setStreamStatus("");
+}
+
+function setStreamStatus(text) {
+  if (!els.streamStatus) return;
+  const t = (text || "").trim();
+  els.streamStatus.textContent = t;
+  els.streamStatus.classList.toggle("hidden", !t);
 }
 
 function renderMessageContent(el, msg) {
@@ -469,7 +478,12 @@ async function sendMessage() {
       await streamChat(body, {
         userId: activeUserId,
         signal: abortController.signal,
+        onStatus: (payload) => {
+          const detail = payload?.detail || payload?.tool || payload?.phase || "";
+          setStreamStatus(detail);
+        },
         onDelta: (chunk) => {
+          setStreamStatus("");
           assistant().content += chunk;
           renderMessages(currentSession.messages);
         },

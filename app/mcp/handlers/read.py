@@ -25,9 +25,17 @@ def handle_read(args: dict, ctx: ToolContext) -> ToolCallResult:
         return ToolCallResult(text=f"<error>not a file: {parsed.rel_path}</error>", is_error=True)
 
     lines = target.read_text(encoding="utf-8", errors="replace").splitlines()
+    total = len(lines)
     chunk = lines[parsed.offset : parsed.offset + parsed.limit]
     out = [f"{i:6d}|{line}" for i, line in enumerate(chunk, start=parsed.offset + 1)]
-    return ToolCallResult(text="\n".join(out) if out else "(empty range)")
+    body = "\n".join(out) if out else "(empty range)"
+    if parsed.offset + parsed.limit < total:
+        body += (
+            f"\n\n(showing lines {parsed.offset + 1}-"
+            f"{min(parsed.offset + parsed.limit, total)} of {total}; "
+            f"use offset={parsed.offset + parsed.limit} to continue)"
+        )
+    return ToolCallResult(text=body)
 
 
 DEFINITION = McpToolDefinition(
