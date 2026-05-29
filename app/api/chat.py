@@ -16,7 +16,10 @@ from app.runtime.sse import sse_pack
 def _graph_config(session_id: str | None, user_id: str | None = None) -> dict:
     sid = (session_id or "demo").strip() or "demo"
     uid = (user_id or "local").strip() or "local"
-    return {"configurable": {"session_id": sid, "thread_id": sid, "user_id": uid}}
+    return {
+        "configurable": {"session_id": sid, "thread_id": sid, "user_id": uid},
+        "recursion_limit": settings.graph_recursion_limit,
+    }
 
 
 def _format_user_input(message: str, attachments: list[str] | None = None) -> str:

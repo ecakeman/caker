@@ -16,8 +16,11 @@ from app.summary.handler import (
 )
 
 
+_COMPACT_TEST_CHARS = 900_000  # ~112.5K tokens; default threshold ~111K
+
+
 def test_need_compact_true():
-    msgs = [HumanMessage(content="x" * 50000)]
+    msgs = [HumanMessage(content="x" * _COMPACT_TEST_CHARS)]
     assert need_compact(msgs) is True
 
 
@@ -31,7 +34,7 @@ def test_estimate_tokens_positive():
 
 
 def test_route_after_tools_compact_branch():
-    long_msgs = [HumanMessage(content="x" * 50000)]
+    long_msgs = [HumanMessage(content="x" * _COMPACT_TEST_CHARS)]
     assert route_after_tools({"result_set_handled": False, "messages": long_msgs}) == "compact"  # type: ignore[arg-type]
 
 

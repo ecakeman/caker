@@ -34,8 +34,11 @@ class Settings(BaseSettings):
     chroma_path: str = Field(default="./var/chroma")  # M15 MemPalace
     upload_max_bytes: int = Field(default=10 * 1024 * 1024, ge=1)
 
-    max_input_tokens: int = Field(default=8000, ge=1000)
-    compact_ratio: float = Field(default=0.75, ge=0.1, le=1.0)
+    # Qwen3.5-397B-A17B 原生 262K；官方建议部署上下文至少 128K 以保留长程推理能力。
+    # 压缩在 estimate_tokens >= max_input_tokens * compact_ratio 时触发（默认约 111K）。
+    max_input_tokens: int = Field(default=131_072, ge=1000)
+    compact_ratio: float = Field(default=0.85, ge=0.1, le=1.0)
+    graph_recursion_limit: int = Field(default=50, ge=1)
     mempalace_auto_inject: bool = Field(default=False)
     stream_emit_tool_status: bool = Field(default=True)
 
