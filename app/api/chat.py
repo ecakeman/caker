@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import logging
+
 from fastapi import APIRouter, Header, HTTPException
 from fastapi.responses import StreamingResponse
 from langchain_core.messages import HumanMessage
@@ -69,6 +71,7 @@ def _tool_label_from_event(ev: dict) -> str:
 
 
 router = APIRouter(prefix="/api/v2")
+logger = logging.getLogger(__name__)
 
 
 class EchoIn(BaseModel):
@@ -203,7 +206,11 @@ async def stream_chat(
                     yield sse_pack("delta", {"text": content})
 
             yield sse_pack("done", {})
-        except Exception:
-            yield sse_pack("error", {"detail": "stream upstream request failed"})
+        except Exception as e:
+            logger.exception("stream chat failed")
+            detail = str(e).strip() or "stream upstream request failed"
+            if len(detail) > 240:
+                detail = detail[:240] + "…"
+            yield sse_pack("error", {"detail": detail})
 
     return StreamingResponse(gen(), media_type="text/event-stream")

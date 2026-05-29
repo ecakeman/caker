@@ -9,7 +9,7 @@ from app.mempalace.injector import build_bootstrap, should_inject
 from app.runtime.llm import get_llm_with_tools, get_tools_for_state
 from app.runtime.state import GraphState
 from app.skills.manager import skills_manager
-from app.summary.handler import build_compact_messages
+from app.summary.handler import build_compact_messages, sanitize_messages_for_llm
 from app.tools.base import build_default_tools
 
 _TOOLS_FOR_NODE = build_default_tools(include_result_set=True)
@@ -55,7 +55,8 @@ async def mempalace_inject_node(state: GraphState, config) -> dict:
 async def llm_node(state: GraphState) -> dict:
     tools = get_tools_for_state(streaming=state.get("streaming", False))
     llm = get_llm_with_tools(tools)
-    ai = await llm.ainvoke(state["messages"])
+    messages = sanitize_messages_for_llm(state["messages"])
+    ai = await llm.ainvoke(messages)
     return {"messages": [ai]}
 
 

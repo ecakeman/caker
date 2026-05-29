@@ -56,10 +56,16 @@ def need_compact(messages: list[BaseMessage]) -> bool:
 
 
 def _is_context_system(msg: BaseMessage) -> bool:
-    if not isinstance(msg, SystemMessage):
-        return False
     text = _message_text(msg)
-    return text.startswith(_CONTEXT_PREFIX) or text.startswith(_LEGACY_SUMMARY_PREFIX)
+    if not text.startswith(_CONTEXT_PREFIX) and not text.startswith(_LEGACY_SUMMARY_PREFIX):
+        return False
+    # Legacy compact stored context as SystemMessage; treat as compressible middle.
+    return isinstance(msg, (SystemMessage, HumanMessage))
+
+
+def _context_message(summary_text: str) -> HumanMessage:
+    """Store compacted history as HumanMessage (some LLM gateways allow only one SystemMessage)."""
+    return HumanMessage(content=f"{_CONTEXT_PREFIX}\n{summary_text}")
 
 
 def _find_turn_start(messages: list[BaseMessage], current_input: str) -> int:
@@ -124,11 +130,30 @@ def build_compact_messages(
     if middle:
         summary_text = summarize_messages(middle)
         if summary_text:
-            rebuilt.append(
-                SystemMessage(content=f"{_CONTEXT_PREFIX}\n{summary_text}")
-            )
+            rebuilt.append(_context_message(summary_text))
     rebuilt.extend(current_turn)
     return rebuilt
+
+
+def sanitize_messages_for_llm(messages: list[BaseMessage]) -> list[BaseMessage]:
+    """Some gateways (e.g. Qwen on PAI-EAS) allow only one leading SystemMessage."""
+    out: list[BaseMessage] = []
+    primary_system_used = False
+    for msg in messages:
+        if isinstance(msg, SystemMessage):
+            text = _message_text(msg)
+            if (
+                primary_system_used
+                or text.startswith(_CONTEXT_PREFIX)
+                or text.startswith(_LEGACY_SUMMARY_PREFIX)
+            ):
+                out.append(HumanMessage(content=text))
+            else:
+                out.append(msg)
+                primary_system_used = True
+        else:
+            out.append(msg)
+    return out
 
 
 # Backward-compatible aliases for tests migrating from summary naming

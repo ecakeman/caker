@@ -67,10 +67,24 @@ def test_build_compact_inserts_context_not_summary_prefix():
     ):
         built = build_compact_messages(messages, "now")
     assert built[0] is system
-    assert isinstance(built[1], SystemMessage)
+    assert isinstance(built[1], HumanMessage)
     assert built[1].content.startswith("[CONTEXT]")
     assert "[SUMMARY]" not in built[1].content
     assert built[-1].content == "now"
+
+
+def test_sanitize_converts_extra_system_to_human():
+    from app.summary.handler import sanitize_messages_for_llm
+
+    messages = [
+        SystemMessage(content="sys"),
+        SystemMessage(content="[CONTEXT]\nold"),
+        HumanMessage(content="now"),
+    ]
+    fixed = sanitize_messages_for_llm(messages)
+    assert isinstance(fixed[0], SystemMessage)
+    assert isinstance(fixed[1], HumanMessage)
+    assert fixed[1].content.startswith("[CONTEXT]")
 
 
 def test_compact_node_replaces_with_soft_compact():
@@ -94,7 +108,7 @@ def test_compact_node_replaces_with_soft_compact():
             "app.runtime.nodes.build_compact_messages",
             return_value=[
                 SystemMessage(content="sys"),
-                SystemMessage(content="[CONTEXT]\nshort"),
+                HumanMessage(content="[CONTEXT]\nshort"),
                 HumanMessage(content="current question"),
             ],
         ) as mock_build:
