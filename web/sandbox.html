@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="h-full">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Caker · 执行环境</title>
+    <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = { darkMode: "class" };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/codemirror@5.65.18/lib/codemirror.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/codemirror@5.65.18/theme/material-darker.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/css/xterm.min.css"
+    />
+    <style>
+      body {
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      }
+      .thin-scroll {
+        scrollbar-width: thin;
+        scrollbar-color: rgb(163 163 163 / 0.45) transparent;
+      }
+      .thin-scroll::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      .thin-scroll::-webkit-scrollbar-thumb {
+        background: rgb(163 163 163 / 0.45);
+        border-radius: 4px;
+      }
+      .dark .thin-scroll {
+        scrollbar-color: rgb(82 82 82 / 0.7) transparent;
+      }
+      .dark .thin-scroll::-webkit-scrollbar-thumb {
+        background: rgb(82 82 82 / 0.7);
+      }
+      #terminal-host {
+        height: 100%;
+        min-height: 120px;
+      }
+      #terminal-host .xterm {
+        height: 100%;
+        padding: 4px;
+      }
+      #terminal-host .xterm-viewport {
+        overflow-y: auto !important;
+        scrollbar-width: thin;
+      }
+      .message-content {
+        word-break: break-word;
+      }
+      .message-content.user-plain {
+        white-space: pre-wrap;
+      }
+      .message-content.md-body p {
+        margin: 0.5em 0;
+      }
+      .message-content.md-body p:first-child {
+        margin-top: 0;
+      }
+      .message-content.md-body pre {
+        margin: 0.5em 0;
+        overflow-x: auto;
+        border-radius: 0.5rem;
+        padding: 0.75rem;
+        font-size: 0.8125rem;
+        background: rgba(0, 0, 0, 0.06);
+      }
+      .dark .message-content.md-body pre {
+        background: rgba(255, 255, 255, 0.08);
+      }
+      #code-editor-host {
+        min-height: 120px;
+        flex: 1 1 0;
+      }
+      #code-editor-host .CodeMirror {
+        height: 100%;
+        font-size: 13px;
+        line-height: 1.5;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      }
+      #code-editor-host .CodeMirror-gutters {
+        border-right: 1px solid rgb(229 229 229);
+      }
+      .dark #code-editor-host .CodeMirror-gutters {
+        border-right-color: rgb(38 38 38);
+      }
+      .composer-attach-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 0.75rem;
+        color: rgb(107 114 128);
+      }
+      .composer-attach-btn:hover {
+        background: rgb(243 244 246);
+      }
+      .dark .composer-attach-btn:hover {
+        background: rgb(38 38 38);
+      }
+    </style>
+  </head>
+  <body class="h-full bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100">
+    <div class="flex h-full flex-col">
+      <header
+        class="flex shrink-0 items-center gap-3 border-b border-gray-200 px-4 py-2.5 dark:border-gray-800"
+      >
+        <button
+          type="button"
+          id="btn-exit"
+          class="shrink-0 rounded-xl bg-gray-900 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200"
+        >
+          退出工作台
+        </button>
+        <h1 class="min-w-0 flex-1 truncate text-sm font-medium" id="sandbox-title">执行环境</h1>
+        <span id="terminal-status" class="shrink-0 text-xs text-gray-500">连接中…</span>
+      </header>
+      <div id="sandbox-main" class="flex min-h-0 flex-1">
+        <aside
+          id="pane-left"
+          class="flex shrink-0 flex-col border-r border-gray-200 dark:border-gray-800"
+        >
+          <p class="shrink-0 px-3 py-2 text-xs font-medium text-gray-500">工作区</p>
+          <ul
+            id="file-tree"
+            class="thin-scroll min-h-0 flex-1 overflow-y-auto px-1 pb-2 text-xs font-mono"
+          ></ul>
+          <div
+            class="shrink-0 space-y-2 border-t border-gray-200 px-3 py-3 dark:border-gray-800"
+          >
+            <p id="compose-status" class="text-[10px] text-gray-500 dark:text-gray-400">环境未启动</p>
+            <div class="flex flex-col gap-2">
+              <button
+                type="button"
+                id="btn-compose-up"
+                class="w-full rounded-xl bg-gray-900 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-gray-800 disabled:opacity-40 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200"
+              >
+                启动环境
+              </button>
+              <button
+                type="button"
+                id="btn-compose-down"
+                class="w-full rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-900 shadow-sm hover:bg-gray-50 disabled:opacity-40 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:hover:bg-gray-850"
+              >
+                停止环境
+              </button>
+            </div>
+          </div>
+        </aside>
+        <section id="pane-center" class="flex min-h-0 min-w-0 flex-1 flex-col">
+          <div
+            id="editor-panel"
+            class="flex min-h-0 flex-1 flex-col border-b border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900"
+          >
+            <div
+              class="flex shrink-0 items-center gap-2 border-b border-gray-100 px-2 py-1.5 text-xs dark:border-gray-800"
+            >
+              <span
+                id="editor-path"
+                class="min-w-0 flex-1 truncate text-gray-500 dark:text-gray-400"
+              >
+                展开文件夹，点击文件编辑
+              </span>
+              <span id="editor-dirty" class="hidden shrink-0 text-amber-600 dark:text-amber-400"
+                >未保存</span
+              >
+              <button
+                id="btn-save-file"
+                type="button"
+                disabled
+                class="shrink-0 rounded-lg bg-gray-900 px-3 py-1 text-xs font-medium text-white hover:bg-gray-800 disabled:opacity-40 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200"
+              >
+                保存
+              </button>
+            </div>
+            <div id="code-editor-host" class="min-h-0 flex-1"></div>
+          </div>
+          <div id="terminal-panel" class="flex shrink-0 flex-col bg-gray-950">
+            <p class="shrink-0 px-3 py-1 text-xs text-gray-400">终端（点此区域后输入）</p>
+            <div id="terminal-host" class="min-h-0 flex-1 cursor-text"></div>
+          </div>
+        </section>
+        <aside
+          id="pane-right"
+          class="flex shrink-0 flex-col border-l border-gray-200 dark:border-gray-800"
+        >
+          <div
+            class="shrink-0 border-b border-gray-200 px-3 py-2 text-xs font-medium text-gray-600 dark:border-gray-800 dark:text-gray-300"
+          >
+            对话
+          </div>
+          <div
+            id="chat-messages"
+            class="thin-scroll min-h-0 flex-1 overflow-y-auto px-3 py-3 text-sm"
+          ></div>
+          <div id="composer-mount" class="shrink-0 border-t border-gray-200 p-2 dark:border-gray-800 min-h-[5.5rem]"></div>
+        </aside>
+      </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.18/lib/codemirror.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.18/mode/meta.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.18/mode/python/python.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.18/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.18/mode/yaml/yaml.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.18/mode/markdown/markdown.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.18/mode/shell/shell.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/lib/xterm.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@xterm/addon-fit@0.10.0/lib/addon-fit.min.js"></script>
+    <script type="module" src="/js/sandbox.js"></script>
+  </body>
+</html>

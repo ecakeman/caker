@@ -125,6 +125,7 @@ class SkillManager:
         self,
         skills_meta: str | None = None,
         tools_meta: str | None = None,
+        sandbox_context: str | None = None,
     ) -> str:
         from app.mcp.registry import registry
 
@@ -132,6 +133,8 @@ class SkillManager:
             skills_meta = json.dumps(self.list_meta(), ensure_ascii=False, indent=2)
         if tools_meta is None:
             tools_meta = registry.summarize_for_prompt(include_result_set=False)
+        if sandbox_context is None:
+            sandbox_context = ""
 
         template = self.load_system_prompt()
         if "{skills_meta}" not in template:
@@ -140,7 +143,10 @@ class SkillManager:
             raise ValueError("system_prompt.md must contain {tools_meta} placeholder")
 
         out = template.replace("{skills_meta}", skills_meta)
-        return out.replace("{tools_meta}", tools_meta)
+        out = out.replace("{tools_meta}", tools_meta)
+        if "{sandbox_context}" in out:
+            out = out.replace("{sandbox_context}", sandbox_context.strip())
+        return out
 
 
 skills_manager = SkillManager()

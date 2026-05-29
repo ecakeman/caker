@@ -1,5 +1,14 @@
 import { checkHealth, chatGraph, deleteSessionRemote, deleteUserRemote, streamChat } from "./api.js";
 import {
+  bindWorkspaceDrag,
+  createComposerFileRefs,
+} from "./composer-file-ref.js";
+import {
+  autoResizeComposer as resizeComposer,
+  renderMessages as renderChatMessages,
+  setStreamStatus as setChatStreamStatus,
+} from "./chat-ui.js";
+import {
   createSession,
   fetchSession,
   getActiveSessionIdForUser,
@@ -14,9 +23,12 @@ import {
   upsertSession,
 } from "./sessions.js";
 import {
+  fetchLlmModels,
+  fetchLlmProfile,
   fetchWorkspace,
   importLegacy,
   revealWorkspace,
+  saveLlmProfile,
   uploadSessionFiles,
 } from "./store-api.js";
 import { addUser, loadUsers, refreshUsers, removeUserLocal } from "./users.js";
@@ -34,6 +46,9 @@ let usersExpanded = true;
 
 /** @type {{ relPath: string, filename: string }[]} */
 let pendingAttachments = [];
+
+/** @type {ReturnType<typeof createComposerFileRefs> | null} */
+let composerFileRefs = null;
 
 const $ = (id) => document.getElementById(id);
 
@@ -78,6 +93,12 @@ const els = {
   workspaceHint: $("workspace-hint"),
   btnCopyWorkspace: $("btn-copy-workspace"),
   btnOpenWorkspace: $("btn-open-workspace"),
+  btnEnterSandbox: $("btn-enter-sandbox"),
+  settingsLlmName: $("settings-llm-name"),
+  settingsLlmBaseUrl: $("settings-llm-base-url"),
+  settingsLlmApiKey: $("settings-llm-api-key"),
+  settingsLlmModel: $("settings-llm-model"),
+  btnLlmRefreshModels: $("btn-llm-refresh-models"),
 };
 
 /** @type {{ session_path?: string, workspace_root?: string, files?: { rel_path: string, filename: string }[] } | null} */
@@ -114,62 +135,15 @@ function setGenerating(on) {
 }
 
 function setStreamStatus(text) {
-  if (!els.streamStatus) return;
-  const t = (text || "").trim();
-  els.streamStatus.textContent = t;
-  els.streamStatus.classList.toggle("hidden", !t);
-}
-
-function renderMessageContent(el, msg) {
-  const isUser = msg.role === "user";
-  el.className = "message-content";
-  if (isUser) {
-    el.classList.add("user-plain");
-    el.textContent = msg.content;
-    return;
-  }
-  el.classList.add("md-body");
-  const raw = msg.content || "";
-  if (typeof marked !== "undefined" && typeof DOMPurify !== "undefined") {
-    const html = marked.parse(raw, { async: false });
-    el.innerHTML = DOMPurify.sanitize(html);
-  } else {
-    el.textContent = raw;
-  }
+  setChatStreamStatus(els.streamStatus, text);
 }
 
 /** @param {import('./sessions.js').Message[]} messages */
 function renderMessages(messages) {
-  if (!els.messages) return;
-  els.messages.innerHTML = "";
-  if (!messages.length) {
-    els.emptyState?.classList.remove("hidden");
-    return;
-  }
-  els.emptyState?.classList.add("hidden");
-
-  const wrap = document.createElement("div");
-  wrap.className = "mx-auto max-w-3xl space-y-4";
-
-  for (const msg of messages) {
-    const isUser = msg.role === "user";
-    const row = document.createElement("div");
-    row.className = `flex ${isUser ? "justify-end" : "justify-start"}`;
-
-    const bubble = document.createElement("div");
-    bubble.className = isUser
-      ? "max-w-[85%] rounded-2xl rounded-br-md bg-gray-900 px-4 py-2.5 text-sm text-white dark:bg-gray-100 dark:text-gray-900"
-      : "max-w-[85%] rounded-2xl rounded-bl-md bg-gray-100 px-4 py-2.5 text-sm text-gray-900 dark:bg-gray-850 dark:text-gray-100";
-
-    const content = document.createElement("div");
-    renderMessageContent(content, msg);
-    bubble.appendChild(content);
-    row.appendChild(bubble);
-    wrap.appendChild(row);
-  }
-
-  els.messages.appendChild(wrap);
-  els.messages.scrollTop = els.messages.scrollHeight;
+  renderChatMessages(els.messages, messages, {
+    outerWrapClass: "mx-auto max-w-3xl",
+    emptyStateEl: els.emptyState,
+  });
 }
 
 function renderUserList() {
@@ -312,6 +286,7 @@ function setWorkspacePanelLoading() {
   }
   if (els.btnCopyWorkspace) els.btnCopyWorkspace.disabled = true;
   if (els.btnOpenWorkspace) els.btnOpenWorkspace.disabled = true;
+  if (els.btnEnterSandbox) els.btnEnterSandbox.disabled = true;
 }
 
 function setWorkspacePanelIdle() {
@@ -337,6 +312,20 @@ function setWorkspacePanelIdle() {
   }
   if (els.btnCopyWorkspace) els.btnCopyWorkspace.disabled = true;
   if (els.btnOpenWorkspace) els.btnOpenWorkspace.disabled = true;
+  if (els.btnEnterSandbox) els.btnEnterSandbox.disabled = true;
+}
+
+function enterSandbox() {
+  if (!activeUserId || !currentSession?.id) return;
+  const ok = window.confirm(
+    "进入执行环境工作台？\n\n终端在 Docker 容器内运行；compose 请在工作台左下角启动/停止环境。"
+  );
+  if (!ok) return;
+  const q = new URLSearchParams({
+    user_id: activeUserId,
+    session_id: currentSession.id,
+  });
+  window.location.href = `/sandbox.html?${q}`;
 }
 
 async function copyTextToClipboard(text) {
@@ -399,9 +388,10 @@ async function refreshWorkspacePanel() {
         els.workspaceFileList.classList.remove("hidden");
         for (const f of show) {
           const li = document.createElement("li");
-          li.className = "truncate font-mono";
+          li.className = "truncate font-mono cursor-grab active:cursor-grabbing";
           li.textContent = `${f.rel_path} (${formatBytes(f.bytes)})`;
-          li.title = f.rel_path;
+          li.title = `拖到输入框定位：${f.rel_path}`;
+          bindWorkspaceDrag(li, f.rel_path);
           els.workspaceFileList.appendChild(li);
         }
         if (files.length > show.length) {
@@ -415,6 +405,7 @@ async function refreshWorkspacePanel() {
     }
     if (els.btnCopyWorkspace) els.btnCopyWorkspace.disabled = !path;
     if (els.btnOpenWorkspace) els.btnOpenWorkspace.disabled = !path;
+    if (els.btnEnterSandbox) els.btnEnterSandbox.disabled = false;
     syncPendingFromWorkspaceFiles(uploads);
   } catch (err) {
     workspaceInfo = null;
@@ -438,6 +429,7 @@ async function refreshWorkspacePanel() {
     }
     if (els.btnCopyWorkspace) els.btnCopyWorkspace.disabled = true;
     if (els.btnOpenWorkspace) els.btnOpenWorkspace.disabled = true;
+    if (els.btnEnterSandbox) els.btnEnterSandbox.disabled = true;
   }
 }
 
@@ -731,7 +723,9 @@ async function handleFilesSelected(fileList) {
 async function sendMessage() {
   const text = els.composer?.value.trim() ?? "";
   const attachmentPaths = pendingAttachments.map((a) => a.relPath);
-  if (!text && !attachmentPaths.length) return;
+  const fileRefs = composerFileRefs?.getRelPaths() ?? [];
+  const allAttachments = [...attachmentPaths, ...fileRefs.filter((p) => !attachmentPaths.includes(p))];
+  if (!text && !allAttachments.length) return;
   if (!currentSession) await startNewChat();
   if (!currentSession) return;
 
@@ -743,8 +737,8 @@ async function sendMessage() {
   currentSession.userId = activeUserId;
 
   let displayContent = text;
-  if (attachmentPaths.length) {
-    const lines = attachmentPaths.map((p) => `[文件] ${p}`);
+  if (allAttachments.length) {
+    const lines = allAttachments.map((p) => `[文件] ${p}`);
     displayContent = text ? `${text}\n${lines.join("\n")}` : lines.join("\n");
   }
 
@@ -764,15 +758,16 @@ async function sendMessage() {
   const assistantIdx = currentSession.messages.length - 1;
   els.composer.value = "";
   pendingAttachments = [];
+  composerFileRefs?.clear();
   renderAttachmentBar();
   autoResizeComposer();
   renderMessages(currentSession.messages);
   await persistCurrent();
 
-  if (attachmentPaths.length) {
+  if (allAttachments.length) {
     try {
       const ws = await fetchWorkspace(activeUserId, currentSession.id);
-      const missing = attachmentPaths.filter(
+      const missing = allAttachments.filter(
         (p) => !(ws.files || []).some((f) => f.rel_path === p)
       );
       if (missing.length) {
@@ -790,7 +785,7 @@ async function sendMessage() {
   const body = {
     message: text,
     session_id: currentSession.id,
-    attachments: attachmentPaths,
+    attachments: allAttachments,
   };
   const settings = loadSettings();
   const streaming = els.toggleStreaming?.checked ?? settings.streaming;
@@ -843,15 +838,60 @@ function stopGeneration() {
 }
 
 function autoResizeComposer() {
-  if (!els.composer) return;
-  els.composer.style.height = "auto";
-  els.composer.style.height = `${Math.min(els.composer.scrollHeight, 160)}px`;
+  resizeComposer(els.composer);
+}
+
+async function loadLlmSettingsIntoModal() {
+  try {
+    const profile = await fetchLlmProfile(activeUserId);
+    const conn = profile.connections?.[0];
+    if (els.settingsLlmName) els.settingsLlmName.value = conn?.name || "";
+    if (els.settingsLlmBaseUrl) els.settingsLlmBaseUrl.value = conn?.baseUrl || "";
+    if (els.settingsLlmApiKey) els.settingsLlmApiKey.value = "";
+    if (els.settingsLlmModel && profile.activeModelId) {
+      const sel = els.settingsLlmModel;
+      const has = Array.from(sel.options).some((o) => o.value === profile.activeModelId);
+      if (!has) {
+        const opt = document.createElement("option");
+        opt.value = profile.activeModelId;
+        opt.textContent = profile.activeModelId;
+        sel.appendChild(opt);
+      }
+      sel.value = profile.activeModelId;
+    }
+  } catch (e) {
+    console.warn("load llm profile", e);
+  }
+}
+
+async function refreshLlmModelList() {
+  const baseUrl = els.settingsLlmBaseUrl?.value?.trim();
+  if (!baseUrl) {
+    alert("请先填写 Base URL");
+    return;
+  }
+  const apiKey = els.settingsLlmApiKey?.value || "";
+  const data = await fetchLlmModels({ baseUrl, apiKey });
+  const sel = els.settingsLlmModel;
+  if (!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = "";
+  for (const m of data.models || []) {
+    const opt = document.createElement("option");
+    opt.value = m.id;
+    opt.textContent = m.id;
+    sel.appendChild(opt);
+  }
+  if (cur && Array.from(sel.options).some((o) => o.value === cur)) {
+    sel.value = cur;
+  }
 }
 
 function openSettings() {
   const s = loadSettings();
   if (els.settingsStreaming) els.settingsStreaming.checked = s.streaming;
   if (els.settingsTheme) els.settingsTheme.value = s.theme;
+  void loadLlmSettingsIntoModal();
   els.settingsModal?.classList.remove("hidden");
   els.settingsModal?.classList.add("flex");
 }
@@ -869,6 +909,23 @@ async function syncSettingsFromModal() {
   await saveSettings({ streaming, theme });
   if (els.toggleStreaming) els.toggleStreaming.checked = streaming;
   applyTheme(theme);
+
+  const baseUrl = els.settingsLlmBaseUrl?.value?.trim();
+  const modelId = els.settingsLlmModel?.value?.trim();
+  if (baseUrl || modelId) {
+    const conn = {
+      id: "default",
+      name: els.settingsLlmName?.value?.trim() || "默认",
+      baseUrl: baseUrl || "",
+      apiKey: els.settingsLlmApiKey?.value || "",
+    };
+    await saveLlmProfile(activeUserId, {
+      connections: [conn],
+      activeConnectionId: "default",
+      activeModelId: modelId || undefined,
+    });
+    if (els.settingsLlmApiKey) els.settingsLlmApiKey.value = "";
+  }
 }
 
 function toggleUsersPanel() {
@@ -957,6 +1014,11 @@ async function boot() {
       void handleFilesSelected(els.fileInput?.files);
     });
 
+    const composerShell = document.querySelector(".composer-shell");
+    if (composerShell) {
+      composerFileRefs = createComposerFileRefs(composerShell);
+    }
+
     els.composer?.addEventListener("input", autoResizeComposer);
     els.composer?.addEventListener("keydown", (e) => {
       if (e.key === "Enter" && !e.shiftKey) {
@@ -973,6 +1035,10 @@ async function boot() {
       });
     });
 
+    els.btnEnterSandbox?.addEventListener("click", enterSandbox);
+    els.btnLlmRefreshModels?.addEventListener("click", () => {
+      void refreshLlmModelList().catch((e) => alert(e.message || e));
+    });
     els.btnSettings?.addEventListener("click", openSettings);
     els.btnSettingsClose?.addEventListener("click", () => {
       void syncSettingsFromModal().then(closeSettings);

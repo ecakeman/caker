@@ -42,5 +42,15 @@ class Settings(BaseSettings):
     mempalace_auto_inject: bool = Field(default=False)
     stream_emit_tool_status: bool = Field(default=True)
 
+    # CEER V2 — Sandbox terminal + venue shell
+    sandbox_terminal_enabled: bool = Field(default=True)
+    sandbox_docker_bin: str = Field(default="docker")
+    sandbox_venue_image: str = Field(default="python:3.12-slim")
+    sandbox_venue_mount: str = Field(default="/workspace")
+    docker_pull_mirror_prefix: str = Field(
+        default="docker.m.daocloud.io",
+        description="Empty to disable; prepended for venue image pull only",
+    )
+
 
 settings = Settings()

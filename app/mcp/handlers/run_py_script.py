@@ -7,9 +7,9 @@ import sys
 
 from pydantic import BaseModel, Field
 
-from app.mcp.handlers import _workspace
 from app.mcp.schema import pydantic_input_schema
 from app.mcp.types import McpToolDefinition, ToolCallResult, ToolContext, ToolHandler
+from app.workspace import manager as workspace_manager
 from app.workspace.manager import WorkspaceError
 
 
@@ -37,7 +37,7 @@ def handle_run_py_script(args: dict, ctx: ToolContext) -> ToolCallResult:
         )
 
     try:
-        target = _workspace.manager.resolve(ctx.user_id, ctx.session_id, rel)
+        target = workspace_manager.manager.resolve(ctx.user_id, ctx.session_id, rel)
     except WorkspaceError as e:
         return ToolCallResult(text=json.dumps({"error": str(e)}), is_error=True)
 
@@ -47,7 +47,7 @@ def handle_run_py_script(args: dict, ctx: ToolContext) -> ToolCallResult:
             is_error=True,
         )
 
-    ws = _workspace.manager.session_dir(ctx.user_id, ctx.session_id)
+    ws = workspace_manager.manager.session_dir(ctx.user_id, ctx.session_id)
     env = {**os.environ, "SESSION_ID": ctx.session_id, "USER_ID": ctx.user_id}
     cmd = [sys.executable, str(target), *parsed.args]
 

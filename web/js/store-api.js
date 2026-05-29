@@ -8,6 +8,9 @@ async function throwIfNotOk(res) {
   } catch {
     /* ignore */
   }
+  if (res.status === 404 && detail === "Not Found") {
+    detail = "文件不存在";
+  }
   throw new Error(detail || `HTTP ${res.status}`);
 }
 
@@ -133,12 +136,166 @@ export async function uploadSessionFiles(userId, sessionId, files) {
 }
 
 /** @param {{ users?: unknown[], sessions?: unknown[], settings?: object }} payload */
+export async function fetchWorkspaceTree(userId, sessionId) {
+  const params = new URLSearchParams({
+    user_id: userId,
+    session_id: sessionId,
+  });
+  const res = await fetch(
+    `/api/v2/web/sessions/${encodeURIComponent(sessionId)}/workspace/tree?${params}`
+  );
+  await throwIfNotOk(res);
+  return res.json();
+}
+
+export async function fetchLlmProfile(userId) {
+  const params = new URLSearchParams({ user_id: userId });
+  const res = await fetch(`/api/v2/web/llm/profile?${params}`);
+  await throwIfNotOk(res);
+  return res.json();
+}
+
+/** @param {string} userId @param {object} profile */
+export async function saveLlmProfile(userId, profile) {
+  const params = new URLSearchParams({ user_id: userId });
+  const res = await fetch(`/api/v2/web/llm/profile?${params}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(profile),
+  });
+  await throwIfNotOk(res);
+  return res.json();
+}
+
+/** @param {{ baseUrl: string, apiKey?: string }} body */
+export async function fetchLlmModels(body) {
+  const res = await fetch("/api/v2/web/llm/models", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  await throwIfNotOk(res);
+  return res.json();
+}
+
+export async function fetchWorkspaceFile(userId, sessionId, path) {
+  const params = new URLSearchParams({
+    user_id: userId,
+    session_id: sessionId,
+    path,
+  });
+  const res = await fetch(
+    `/api/v2/web/sessions/${encodeURIComponent(sessionId)}/workspace/file?${params}`
+  );
+  await throwIfNotOk(res);
+  return res.json();
+}
+
+export async function saveWorkspaceFile(userId, sessionId, path, content) {
+  const params = new URLSearchParams({
+    user_id: userId,
+    session_id: sessionId,
+    path,
+  });
+  const res = await fetch(
+    `/api/v2/web/sessions/${encodeURIComponent(sessionId)}/workspace/file?${params}`,
+    {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content }),
+    }
+  );
+  await throwIfNotOk(res);
+  return res.json();
+}
+
 export async function importLegacy(payload) {
   const res = await fetch("/api/v2/web/import-legacy", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
+  await throwIfNotOk(res);
+  return res.json();
+}
+
+export async function fetchComposeStatus(userId, sessionId) {
+  const params = new URLSearchParams({ user_id: userId });
+  const res = await fetch(
+    `/api/v2/web/sessions/${encodeURIComponent(sessionId)}/compose/status?${params}`,
+  );
+  await throwIfNotOk(res);
+  return res.json();
+}
+
+export async function composeUp(userId, sessionId) {
+  const params = new URLSearchParams({ user_id: userId });
+  const res = await fetch(
+    `/api/v2/web/sessions/${encodeURIComponent(sessionId)}/compose/up?${params}`,
+    { method: "POST" },
+  );
+  await throwIfNotOk(res);
+  return res.json();
+}
+
+export async function composeDown(userId, sessionId) {
+  const params = new URLSearchParams({ user_id: userId });
+  const res = await fetch(
+    `/api/v2/web/sessions/${encodeURIComponent(sessionId)}/compose/down?${params}`,
+    { method: "POST" },
+  );
+  await throwIfNotOk(res);
+  return res.json();
+}
+
+export async function workspaceMkdir(userId, sessionId, path) {
+  const params = new URLSearchParams({ user_id: userId });
+  const res = await fetch(
+    `/api/v2/web/sessions/${encodeURIComponent(sessionId)}/workspace/mkdir?${params}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ path }),
+    },
+  );
+  await throwIfNotOk(res);
+  return res.json();
+}
+
+export async function workspaceCopy(userId, sessionId, src, destDir) {
+  const params = new URLSearchParams({ user_id: userId });
+  const res = await fetch(
+    `/api/v2/web/sessions/${encodeURIComponent(sessionId)}/workspace/copy?${params}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ src, dest_dir: destDir }),
+    },
+  );
+  await throwIfNotOk(res);
+  return res.json();
+}
+
+export async function workspaceMove(userId, sessionId, src, dest) {
+  const params = new URLSearchParams({ user_id: userId });
+  const res = await fetch(
+    `/api/v2/web/sessions/${encodeURIComponent(sessionId)}/workspace/move?${params}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ src, dest }),
+    },
+  );
+  await throwIfNotOk(res);
+  return res.json();
+}
+
+export async function workspaceDeleteEntry(userId, sessionId, path) {
+  const params = new URLSearchParams({ user_id: userId, path });
+  const res = await fetch(
+    `/api/v2/web/sessions/${encodeURIComponent(sessionId)}/workspace/entry?${params}`,
+    { method: "DELETE" },
+  );
   await throwIfNotOk(res);
   return res.json();
 }

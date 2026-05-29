@@ -17,7 +17,7 @@ def should_inject(messages: list[BaseMessage]) -> bool:
     return isinstance(messages[-1], HumanMessage)
 
 def build_bootstrap(user_text: str, user_id: str) -> HumanMessage | None:
-    hits = chroma_store.search(user_text, k=3, where={"user_id": user_id})
+    hits = chroma_store.search(user_text, k=5, where={"user_id": user_id})
     if not hits:
         return None
     payload = {

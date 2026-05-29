@@ -10,6 +10,7 @@ from app.mcp.handlers import (
     read,
     result_set,
     run_py_script,
+    sandbox_exec,
     time_tool,
     write,
 )
@@ -22,6 +23,7 @@ ALL_HANDLERS = [
     download,
     time_tool,
     run_py_script,
+    sandbox_exec,
     call_skill,
     chroma_in,
     chroma_out,

@@ -108,13 +108,13 @@ def partition_for_compact(
     return primary_system, middle, current_turn
 
 
-def summarize_messages(messages: list[BaseMessage]) -> str:
+def summarize_messages(messages: list[BaseMessage], *, user_id: str | None = None) -> str:
     if not messages:
         return ""
     dialog = "\n".join(
         f"[{_message_label(m)}] {_message_text(m)}" for m in messages
     )
-    out = get_llm().invoke([HumanMessage(content=COMPACT_PROMPT.format(dialog=dialog))])
+    out = get_llm(user_id).invoke([HumanMessage(content=COMPACT_PROMPT.format(dialog=dialog))])
     text = out.content if isinstance(out.content, str) else str(out.content)
     return text.strip()
 
@@ -122,13 +122,15 @@ def summarize_messages(messages: list[BaseMessage]) -> str:
 def build_compact_messages(
     messages: list[BaseMessage],
     current_input: str,
+    *,
+    user_id: str | None = None,
 ) -> list[BaseMessage]:
     primary_system, middle, current_turn = partition_for_compact(messages, current_input)
     rebuilt: list[BaseMessage] = []
     if primary_system is not None:
         rebuilt.append(primary_system)
     if middle:
-        summary_text = summarize_messages(middle)
+        summary_text = summarize_messages(middle, user_id=user_id)
         if summary_text:
             rebuilt.append(_context_message(summary_text))
     rebuilt.extend(current_turn)

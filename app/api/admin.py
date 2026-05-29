@@ -2,9 +2,25 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, Query, Request
 
+from app.execution.cleanup import destroy_session_venue
 from app.mempalace import chroma_store
 from app.web_store.store import WebStoreError, store
 from app.workspace.manager import WorkspaceError, manager
+
+
+def _stop_session_runtime(user_id: str, session_id: str) -> None:
+    """Best-effort: compose down + venue container before workspace rmtree."""
+    try:
+        from app.execution.compose_control import ComposeError, compose_down
+
+        compose_down(user_id, session_id)
+    except (ComposeError, Exception):
+        pass
+    try:
+        destroy_session_venue(user_id, session_id)
+    except Exception:
+        pass
+
 
 router = APIRouter(prefix="/api/v2")
 
@@ -28,6 +44,11 @@ async def delete_session(
         await checkpointer.adelete_thread(sid)
     except Exception as e:
         raise HTTPException(status_code=500, detail="failed to delete checkpoint") from e
+
+    try:
+        _stop_session_runtime(uid, sid)
+    except Exception:
+        pass
 
     try:
         manager.remove_session_workspace(uid, sid)
@@ -64,6 +85,10 @@ async def delete_user(user_id: str, request: Request) -> dict:
             raise HTTPException(
                 status_code=500, detail=f"failed to delete checkpoint for {sid}"
             ) from e
+        try:
+            _stop_session_runtime(uid, sid)
+        except Exception:
+            pass
         try:
             manager.remove_session_workspace(uid, sid)
         except WorkspaceError as e:

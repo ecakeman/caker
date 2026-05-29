@@ -2,14 +2,14 @@ from __future__ import annotations
 
 import fnmatch
 import json
-from pathlib import Path
 
 from pydantic import BaseModel, Field
 
-from app.mcp.handlers import _workspace
 from app.mcp.schema import pydantic_input_schema
 from app.mcp.types import McpToolDefinition, ToolCallResult, ToolContext, ToolHandler
+from app.workspace import manager as workspace_manager
 from app.workspace.manager import WorkspaceError
+from app.workspace.paths import normalize_glob_pattern
 
 
 class GlobArgs(BaseModel):
@@ -19,17 +19,14 @@ class GlobArgs(BaseModel):
 
 def handle_glob(args: dict, ctx: ToolContext) -> ToolCallResult:
     parsed = GlobArgs.model_validate(args)
-    pattern = parsed.pattern.strip().replace("\\", "/")
-    if pattern.startswith("/") or ".." in Path(pattern).parts:
+    try:
+        pattern = normalize_glob_pattern(parsed.pattern)
+        ws = workspace_manager.manager.session_dir(ctx.user_id, ctx.session_id)
+    except WorkspaceError as e:
         return ToolCallResult(
-            text=json.dumps({"ok": False, "error": "invalid pattern"}),
+            text=json.dumps({"ok": False, "error": str(e)}, ensure_ascii=False),
             is_error=True,
         )
-
-    try:
-        ws = _workspace.manager.session_dir(ctx.user_id, ctx.session_id)
-    except WorkspaceError as e:
-        return ToolCallResult(text=json.dumps({"ok": False, "error": str(e)}), is_error=True)
 
     matches: list[str] = []
     for p in sorted(ws.rglob("*")):

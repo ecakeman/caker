@@ -28,7 +28,8 @@ def test_call_read_write_glob_smoke(tmp_path, monkeypatch):
 
     ws = tmp_path / "ws"
     monkeypatch.setattr("app.workspace.manager.manager", WorkspaceManager(str(ws)))
-    monkeypatch.setattr("app.mcp.handlers._workspace.manager", WorkspaceManager(str(ws)))
+    monkeypatch.setattr("app.workspace.manager.manager", WorkspaceManager(str(ws)))
+    monkeypatch.setattr("app.workspace.paths.manager", WorkspaceManager(str(ws)))
 
     ctx = ToolContext(user_id="u1", session_id="s1")
     ws_mgr = WorkspaceManager(str(ws))

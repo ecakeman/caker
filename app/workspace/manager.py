@@ -1,10 +1,16 @@
 from __future__ import annotations
 
+import logging
+import os
 import re
 import shutil
+import stat
+import subprocess
 from pathlib import Path
 
 from app.config import settings
+
+logger = logging.getLogger(__name__)
 
 READONLY_SUBDIRS = {"skills", "books"}
 _ID_RE = re.compile(r"^[A-Za-z0-9_-]+$")
@@ -12,6 +18,61 @@ _ID_RE = re.compile(r"^[A-Za-z0-9_-]+$")
 
 class WorkspaceError(Exception):
     """Workspace 路径校验失败。"""
+
+
+def _docker_rmtree(path: Path) -> None:
+    """Remove path as root inside a throwaway container (handles root-owned bind-mount files)."""
+    parent = path.parent
+    name = path.name
+    proc = subprocess.run(
+        [
+            "docker",
+            "run",
+            "--rm",
+            "-v",
+            f"{parent}:/parent",
+            "alpine",
+            "rm",
+            "-rf",
+            f"/parent/{name}",
+        ],
+        capture_output=True,
+        timeout=120,
+        check=False,
+    )
+    if proc.returncode != 0:
+        err = proc.stderr.decode(errors="replace").strip()
+        raise OSError(f"docker rm failed for {path}: {err or proc.stdout.decode(errors='replace')}")
+    if path.exists():
+        raise OSError(f"failed to remove {path}")
+
+
+def _force_rmtree(path: Path, *, allowed_root: Path) -> None:
+    """Remove a directory tree; chmod retry, then docker rm as root if needed."""
+    target = path.resolve()
+    root = allowed_root.resolve()
+    try:
+        target.relative_to(root)
+    except ValueError as e:
+        raise WorkspaceError("path escapes workspace root") from e
+
+    if not target.is_dir():
+        return
+
+    def _onexc(func, entry_path, exc):
+        if not isinstance(exc, PermissionError):
+            raise exc
+        try:
+            os.chmod(entry_path, stat.S_IWUSR | stat.S_IRUSR | stat.S_IXUSR)
+            func(entry_path)
+        except OSError as retry_exc:
+            raise retry_exc from exc
+
+    try:
+        shutil.rmtree(target, onexc=_onexc)
+    except OSError as exc:
+        logger.warning("rmtree %s failed (%s); trying docker rm", target, exc)
+        _docker_rmtree(target)
 
 
 class WorkspaceManager:
@@ -31,6 +92,7 @@ class WorkspaceManager:
         ws.mkdir(parents=True, exist_ok=True)
         (ws / "data").mkdir(parents=True, exist_ok=True)
         (ws / "outputs").mkdir(parents=True, exist_ok=True)
+        (ws / "compose").mkdir(parents=True, exist_ok=True)
 
         skills_link = ws / "skills"
         if not skills_link.exists():
@@ -85,13 +147,13 @@ class WorkspaceManager:
         self._validate_id(session_id, "session_id")
         target = self.root / user_id / session_id
         if target.is_dir():
-            shutil.rmtree(target)
+            _force_rmtree(target, allowed_root=self.root)
 
     def remove_user_workspace(self, user_id: str) -> None:
         self._validate_id(user_id, "user_id")
         target = self.root / user_id
         if target.is_dir():
-            shutil.rmtree(target)
+            _force_rmtree(target, allowed_root=self.root)
 
 
 manager = WorkspaceManager()

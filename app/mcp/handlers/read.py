@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import json
+
 from pydantic import BaseModel, Field
 
-from app.mcp.handlers._workspace import resolve_read
 from app.mcp.schema import pydantic_input_schema
 from app.mcp.types import McpToolDefinition, ToolCallResult, ToolContext, ToolHandler
+from app.workspace.io import read_text_file
 from app.workspace.manager import WorkspaceError
 
 
@@ -17,30 +19,24 @@ class ReadArgs(BaseModel):
 def handle_read(args: dict, ctx: ToolContext) -> ToolCallResult:
     parsed = ReadArgs.model_validate(args)
     try:
-        target = resolve_read(ctx, parsed.rel_path)
-    except WorkspaceError as e:
-        return ToolCallResult(text=f"<error>{e}</error>", is_error=True)
-
-    if not target.is_file():
-        return ToolCallResult(text=f"<error>not a file: {parsed.rel_path}</error>", is_error=True)
-
-    lines = target.read_text(encoding="utf-8", errors="replace").splitlines()
-    total = len(lines)
-    chunk = lines[parsed.offset : parsed.offset + parsed.limit]
-    out = [f"{i:6d}|{line}" for i, line in enumerate(chunk, start=parsed.offset + 1)]
-    body = "\n".join(out) if out else "(empty range)"
-    if parsed.offset + parsed.limit < total:
-        body += (
-            f"\n\n(showing lines {parsed.offset + 1}-"
-            f"{min(parsed.offset + parsed.limit, total)} of {total}; "
-            f"use offset={parsed.offset + parsed.limit} to continue)"
+        result = read_text_file(
+            ctx.user_id,
+            ctx.session_id,
+            parsed.rel_path,
+            offset=parsed.offset,
+            limit=parsed.limit,
         )
-    return ToolCallResult(text=body)
+    except WorkspaceError as e:
+        return ToolCallResult(
+            text=json.dumps({"ok": False, "error": str(e)}, ensure_ascii=False),
+            is_error=True,
+        )
+    return ToolCallResult(text=result.text)
 
 
 DEFINITION = McpToolDefinition(
     name="read",
-    description="Read a text file from the session workspace (data/, outputs/, or skills/).",
+    description="Read a text file from the session workspace (data/, outputs/, compose/, or skills/).",
     input_schema=pydantic_input_schema(ReadArgs),
 )
 HANDLER: ToolHandler = handle_read

@@ -6,7 +6,7 @@ from langgraph.prebuilt import ToolNode
 
 from app.config import settings
 from app.mempalace.injector import build_bootstrap, should_inject
-from app.runtime.llm import get_llm_with_tools, get_tools_for_state
+from app.runtime.llm import get_llm_with_tools, get_tools_for_state, user_id_from_config
 from app.runtime.state import GraphState
 from app.skills.manager import skills_manager
 from app.summary.handler import build_compact_messages, sanitize_messages_for_llm
@@ -24,9 +24,14 @@ async def start_node(state: GraphState) -> dict:
 def inject_system_node(state: GraphState) -> dict:
     if state.get("skip_inject_system", False):
         return {}
+    sandbox_context = state.get("sandbox_context") or ""
     return {
         "messages": [
-            SystemMessage(content=skills_manager.render_system_prompt())
+            SystemMessage(
+                content=skills_manager.render_system_prompt(
+                    sandbox_context=sandbox_context,
+                )
+            )
         ]
     }
 
@@ -52,9 +57,9 @@ async def mempalace_inject_node(state: GraphState, config) -> dict:
     return {"messages": [boot]}
 
 
-async def llm_node(state: GraphState) -> dict:
+async def llm_node(state: GraphState, config) -> dict:
     tools = get_tools_for_state(streaming=state.get("streaming", False))
-    llm = get_llm_with_tools(tools)
+    llm = get_llm_with_tools(tools, user_id=user_id_from_config(config))
     messages = sanitize_messages_for_llm(state["messages"])
     ai = await llm.ainvoke(messages)
     return {"messages": [ai]}
@@ -72,7 +77,11 @@ def apply_result_set_node(state: GraphState, config) -> dict:
 
 async def compact_node(state: GraphState, config) -> dict:
     messages = state.get("messages") or []
-    compacted = build_compact_messages(messages, state["input"])
+    compacted = build_compact_messages(
+        messages,
+        state["input"],
+        user_id=user_id_from_config(config),
+    )
     return {
         "messages": [
             RemoveMessage(id=REMOVE_ALL_MESSAGES),

@@ -19,6 +19,7 @@ dependencies = [
     "tiktoken>=0.7",
     "httpx>=0.27.0",
     "jsonschema>=4.0.0",
+    "pyyaml>=6.0.0",
 ]
 
 [project.optional-dependencies]
@@ -32,3 +33,6 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["app"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

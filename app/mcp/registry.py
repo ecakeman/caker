@@ -12,6 +12,11 @@ from app.mcp.schema import validate_input_schema
 from app.mcp.types import McpToolDefinition, ToolCallResult, ToolContext, ToolHandler
 
 
+def _normalize_arguments(arguments: dict[str, Any]) -> dict[str, Any]:
+    """Drop explicit nulls so handler Pydantic models can apply field defaults."""
+    return {k: v for k, v in arguments.items() if v is not None}
+
+
 class ToolRegistry:
     def __init__(self) -> None:
         self._defs: dict[str, McpToolDefinition] = {}
@@ -52,7 +57,7 @@ class ToolRegistry:
         handler = self._handlers.get(name)
         if handler is None:
             return ToolCallResult(text=json.dumps({"error": f"unknown tool: {name}"}), is_error=True)
-        result = handler(arguments, ctx)
+        result = handler(_normalize_arguments(arguments), ctx)
         if inspect.isawaitable(result):
             result = await result
         return result
@@ -63,7 +68,21 @@ class ToolRegistry:
         arguments: dict[str, Any],
         ctx: ToolContext,
     ) -> ToolCallResult:
-        return asyncio.run(self.call_tool(name, arguments, ctx))
+        """Run a tool synchronously (tests/CLI). Safe when no event loop is running."""
+        handler = self._handlers.get(name)
+        if handler is None:
+            return ToolCallResult(text=json.dumps({"error": f"unknown tool: {name}"}), is_error=True)
+        result = handler(_normalize_arguments(arguments), ctx)
+        if not inspect.isawaitable(result):
+            return result
+        try:
+            asyncio.get_running_loop()
+        except RuntimeError:
+            return asyncio.run(self.call_tool(name, arguments, ctx))
+        raise RuntimeError(
+            f"sync tool call for {name!r} cannot await inside a running event loop; "
+            "use await registry.call_tool() instead"
+        )
 
     def to_langchain_tools(self, *, include_result_set: bool = False) -> list[BaseTool]:
         from app.mcp.adapters.langchain import make_langchain_tool
@@ -82,6 +101,7 @@ class ToolRegistry:
             "download",
             "get_current_time",
             "run_py_script",
+            "sandbox_exec",
             "call_skill",
             "chroma_in",
             "chroma_out",

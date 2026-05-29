@@ -33,7 +33,11 @@ function requireUserId(userId) {
 
 /**
  * @param {ChatBody} body
- * @param {{ userId: string, signal?: AbortSignal }} opts
+ * @param {{
+ *   userId: string,
+ *   signal?: AbortSignal,
+ *   sandbox?: boolean,
+ * }} opts
  * @returns {Promise<string>}
  */
 export async function chatGraph(body, opts) {
@@ -42,6 +46,7 @@ export async function chatGraph(body, opts) {
     "Content-Type": "application/json",
     "x-user-id": userId,
   };
+  if (opts.sandbox) headers["x-sandbox"] = "1";
 
   const res = await fetch("/api/v2/chat-graph", {
     method: "POST",
@@ -77,6 +82,7 @@ function parseSseBlock(block) {
  * @param {{
  *   userId: string,
  *   signal?: AbortSignal,
+ *   sandbox?: boolean,
  *   onDelta?: (text: string) => void,
  *   onStatus?: (payload: { phase?: string; detail?: string; tool?: string }) => void,
  * }} opts
@@ -87,6 +93,7 @@ export async function streamChat(body, opts) {
     "Content-Type": "application/json",
     "x-user-id": userId,
   };
+  if (opts.sandbox) headers["x-sandbox"] = "1";
 
   const res = await fetch("/api/v2/stream", {
     method: "POST",
@@ -155,3 +162,57 @@ export async function deleteUserRemote(userId) {
 
 /** @deprecated 使用 deleteUserRemote */
 export const deleteUserMemory = deleteUserRemote;
+
+/**
+ * @param {string} userId
+ * @param {string} sessionId
+ */
+export async function fetchExecPending(userId, sessionId) {
+  const uid = requireUserId(userId);
+  const params = new URLSearchParams({ user_id: uid });
+  const res = await fetch(
+    `/api/v2/web/sessions/${encodeURIComponent(sessionId)}/exec/pending?${params}`,
+  );
+  await throwIfNotOk(res);
+  return res.json();
+}
+
+/**
+ * @param {string} userId
+ * @param {string} sessionId
+ * @param {string} pendingId
+ */
+export async function approveExec(userId, sessionId, pendingId) {
+  const uid = requireUserId(userId);
+  const params = new URLSearchParams({ user_id: uid });
+  const res = await fetch(
+    `/api/v2/web/sessions/${encodeURIComponent(sessionId)}/exec/approve?${params}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pending_id: pendingId }),
+    },
+  );
+  await throwIfNotOk(res);
+  return res.json();
+}
+
+/**
+ * @param {string} userId
+ * @param {string} sessionId
+ * @param {string} pendingId
+ */
+export async function rejectExec(userId, sessionId, pendingId) {
+  const uid = requireUserId(userId);
+  const params = new URLSearchParams({ user_id: uid });
+  const res = await fetch(
+    `/api/v2/web/sessions/${encodeURIComponent(sessionId)}/exec/reject?${params}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pending_id: pendingId }),
+    },
+  );
+  await throwIfNotOk(res);
+  return res.json();
+}

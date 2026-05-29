@@ -14,14 +14,17 @@ from app.skills.manager import skills_manager
 def test_load_system_prompt_has_required_sections():
     text = skills_manager.load_system_prompt()
     assert "身份与角色" in text
+    assert "运行架构" in text
+    assert "交互界面" in text
     assert "行为准则" in text
-    assert "工作区" in text
     assert "路径规范" in text
+    assert "记忆与内部上下文" in text
+    assert "已移除能力" in text
     assert "工具" in text
     assert "技能" in text
     assert "{skills_meta}" in text
     assert "{tools_meta}" in text
-    assert "MemPalace" not in text
+    assert "{sandbox_context}" in text
     assert "部署位置" not in text
 
 

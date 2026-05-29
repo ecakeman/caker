@@ -5,6 +5,7 @@
 | 文档 | 适合 | 内容 |
 |------|------|------|
 | [user-guide.md](user-guide.md) | 使用者 | Web、工作区、上传、打开文件夹 |
+| [execution-runtime-v2.md](execution-runtime-v2.md) | 开发者 | CEER 沙箱工作台 + 终端（V2） |
 | [milestones.md](milestones.md) | 开发者 | 已实现里程碑与验收 |
 | [agent_skills_build_guide.md](agent_skills_build_guide.md) | 实现者 | 分阶段从零搭建引擎 |
 

@@ -7,10 +7,10 @@ from urllib.parse import urlparse
 import httpx
 from pydantic import BaseModel, Field
 
-from app.mcp.handlers._workspace import resolve_write
 from app.mcp.schema import pydantic_input_schema
 from app.mcp.types import McpToolDefinition, ToolCallResult, ToolContext, ToolHandler
 from app.workspace.manager import WorkspaceError
+from app.workspace.paths import resolve_write_path
 
 MAX_BYTES = 10 * 1024 * 1024
 TIMEOUT_SEC = 30
@@ -20,7 +20,7 @@ class DownloadArgs(BaseModel):
     url: str = Field(..., description="HTTP or HTTPS URL")
     rel_path: str = Field(
         ...,
-        description="Destination path under data/, e.g. data/download.bin",
+        description="Destination path under data/ or outputs/, e.g. data/download.bin",
     )
 
 
@@ -34,9 +34,12 @@ def handle_download(args: dict, ctx: ToolContext) -> ToolCallResult:
         )
 
     try:
-        target = resolve_write(ctx, parsed.rel_path)
+        rel, target = resolve_write_path(ctx.user_id, ctx.session_id, parsed.rel_path)
     except WorkspaceError as e:
-        return ToolCallResult(text=json.dumps({"ok": False, "error": str(e)}), is_error=True)
+        return ToolCallResult(
+            text=json.dumps({"ok": False, "error": str(e)}, ensure_ascii=False),
+            is_error=True,
+        )
 
     try:
         with httpx.Client(timeout=TIMEOUT_SEC, follow_redirects=True) as client:
@@ -65,9 +68,9 @@ def handle_download(args: dict, ctx: ToolContext) -> ToolCallResult:
         text=json.dumps(
             {
                 "ok": True,
-                "path": parsed.rel_path,
+                "path": rel,
                 "bytes": len(data),
-                "filename": Path(parsed.rel_path).name,
+                "filename": Path(rel).name,
             },
             ensure_ascii=False,
         )

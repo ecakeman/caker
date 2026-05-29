@@ -19,7 +19,7 @@ def test_mcp_call_write_and_read(tmp_path, monkeypatch):
 
     ws = tmp_path / "ws"
     monkeypatch.setattr("app.workspace.manager.manager", WorkspaceManager(str(ws)))
-    monkeypatch.setattr("app.mcp.handlers._workspace.manager", WorkspaceManager(str(ws)))
+    monkeypatch.setattr("app.workspace.paths.manager", WorkspaceManager(str(ws)))
 
     with TestClient(app) as client:
         w = client.post(

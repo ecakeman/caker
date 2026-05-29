@@ -11,4 +11,5 @@ class GraphState(TypedDict):
     skip_inject_system: bool
     result_set_handled: bool
     streaming: bool
+    sandbox_context: str
 

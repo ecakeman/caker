@@ -102,12 +102,15 @@ class WebDataStore:
         raw = self._read_json(self.settings_path, default)
         if not isinstance(raw, dict):
             return default
-        return {
+        out = {
             "activeUserId": raw.get("activeUserId") or "local",
             "streaming": raw.get("streaming", True) is not False,
             "theme": raw.get("theme") or "system",
             "activeSessionByUser": raw.get("activeSessionByUser") or {},
         }
+        if isinstance(raw.get("llmByUser"), dict):
+            out["llmByUser"] = raw["llmByUser"]
+        return out
 
     def save_settings(self, patch: dict[str, Any]) -> dict[str, Any]:
         cur = self.load_settings()

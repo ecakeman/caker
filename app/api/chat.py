@@ -8,6 +8,7 @@ from langchain_core.messages import HumanMessage
 from pydantic import BaseModel
 
 from app.config import settings
+from app.execution.sandbox_context import build_sandbox_context
 from app.runtime.graph import get_graph, iter_graph_stream_events
 from app.runtime.llm import get_llm
 from app.runtime.sse import sse_pack
@@ -41,6 +42,7 @@ def _graph_inputs(
     *,
     streaming: bool = False,
     attachments: list[str] | None = None,
+    sandbox_context: str = "",
 ) -> dict:
     return {
         "messages": [],
@@ -49,6 +51,7 @@ def _graph_inputs(
         "skip_inject_system": False,
         "result_set_handled": False,
         "streaming": streaming,
+        "sandbox_context": sandbox_context,
     }
 
 
@@ -110,8 +113,11 @@ async def echo(body: EchoIn) -> EchoOut:
 
 
 @router.post("/chat-once", response_model=ChatOnceOut)
-async def chat_once(body: ChatOnceIn) -> ChatOnceOut:
-    llm = get_llm()
+async def chat_once(
+    body: ChatOnceIn,
+    x_user_id: str | None = Header(default=None, alias="x-user-id"),
+) -> ChatOnceOut:
+    llm = get_llm(x_user_id)
     try:
         ai_msg = llm.invoke([HumanMessage(content=body.message)])
     except Exception as e:
@@ -123,15 +129,23 @@ async def chat_once(body: ChatOnceIn) -> ChatOnceOut:
 async def chat_graph(
     body: ChatGraphIn,
     x_user_id: str | None = Header(default=None, alias="x-user-id"),
+    x_sandbox: str | None = Header(default=None, alias="x-sandbox"),
 ) -> ChatGraphOut:
+    uid = (x_user_id or "local").strip() or "local"
+    sid = (body.session_id or "demo").strip() or "demo"
+    sandbox_ctx = ""
+    if (x_sandbox or "").strip() == "1":
+        sandbox_ctx = build_sandbox_context(uid, sid)
+    config = _graph_config(body.session_id, x_user_id)
     try:
         out = await get_graph().ainvoke(
             _graph_inputs(
                 body.message,
                 streaming=False,
                 attachments=body.attachments,
+                sandbox_context=sandbox_ctx,
             ),
-            config=_graph_config(body.session_id, x_user_id),
+            config=config,
         )
     except Exception as e:
         raise HTTPException(status_code=502, detail="Graph upstream request failed") from e
@@ -142,12 +156,20 @@ async def chat_graph(
 async def stream_chat(
     body: ChatGraphIn,
     x_user_id: str | None = Header(default=None, alias="x-user-id"),
+    x_sandbox: str | None = Header(default=None, alias="x-sandbox"),
 ) -> StreamingResponse:
+    uid = (x_user_id or "local").strip() or "local"
+    sid = (body.session_id or "demo").strip() or "demo"
+    sandbox_ctx = ""
+    if (x_sandbox or "").strip() == "1":
+        sandbox_ctx = build_sandbox_context(uid, sid)
+
     async def gen():
         inputs = _graph_inputs(
             body.message,
             streaming=True,
             attachments=body.attachments,
+            sandbox_context=sandbox_ctx,
         )
         config = _graph_config(body.session_id, x_user_id)
         emit_status = settings.stream_emit_tool_status
@@ -177,9 +199,14 @@ async def stream_chat(
                         continue
 
                 if emit_status and event == "on_tool_end":
+                    label = _tool_label_from_event(ev) or "tool"
                     yield sse_pack(
                         "status",
-                        {"phase": "tool_done", "detail": "工具执行完成"},
+                        {
+                            "phase": "tool_done",
+                            "tool": label,
+                            "detail": "工具执行完成",
+                        },
                     )
                     continue
 
