@@ -78,16 +78,64 @@ def resolve_llm_credentials(user_id: str | None) -> LlmCredentials:
     )
 
 
+def _normalize_base_url(base_url: str) -> str:
+    return base_url.strip().rstrip("/")
+
+
+def resolve_api_key_for_models(
+    user_id: str | None,
+    *,
+    base_url: str,
+    api_key: str,
+) -> str:
+    """Use explicit key from the form, else stored profile/env key for the same base URL."""
+    key = api_key.strip()
+    if key:
+        return key
+
+    req_base = _normalize_base_url(base_url)
+    if not req_base:
+        raise ValueError("请填写 Base URL")
+
+    uid = (user_id or "local").strip() or "local"
+    profile = get_user_llm_profile(uid)
+    for conn in profile.get("connections") or []:
+        if not isinstance(conn, dict):
+            continue
+        conn_base = _normalize_base_url(str(conn.get("baseUrl") or ""))
+        if conn_base == req_base:
+            stored = str(conn.get("apiKey") or "").strip()
+            if stored:
+                return stored
+
+    env_base = _normalize_base_url(settings.llm_base_url)
+    if env_base and req_base == env_base:
+        env_key = settings.llm_api_key.strip()
+        if env_key:
+            return env_key
+
+    raise ValueError("请填写 API Key，或先保存设置后再刷新模型列表")
+
+
 async def fetch_openai_models(*, base_url: str, api_key: str) -> list[dict[str, str]]:
-    base = base_url.strip().rstrip("/")
+    base = _normalize_base_url(base_url)
     key = api_key.strip()
     if not base:
         raise ValueError("baseUrl required")
+    if not key:
+        raise ValueError("apiKey required")
     url = f"{base}/models" if base.endswith("/v1") else f"{base}/v1/models"
-    headers = {"Authorization": f"Bearer {key}"} if key else {}
+    headers = {"Authorization": f"Bearer {key}"}
     async with httpx.AsyncClient(timeout=30) as client:
-        resp = await client.get(url, headers=headers)
-        resp.raise_for_status()
+        try:
+            resp = await client.get(url, headers=headers)
+            resp.raise_for_status()
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 401:
+                raise ValueError("API Key 无效或未授权，请检查设置") from e
+            raise ValueError(f"上游返回 {e.response.status_code}: {e.response.text[:200]}") from e
+        except httpx.HTTPError as e:
+            raise ValueError(f"无法连接 LLM 网关: {e}") from e
         data = resp.json()
     items = data.get("data") if isinstance(data, dict) else None
     if not isinstance(items, list):

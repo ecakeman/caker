@@ -13,7 +13,11 @@ from pydantic import BaseModel, Field
 from app.config import settings
 from app.execution.paths import COMPOSE_FILE
 from app.runtime.llm import clear_llm_cache
-from app.web.llm_settings import fetch_openai_models, get_user_llm_profile
+from app.web.llm_settings import (
+    fetch_openai_models,
+    get_user_llm_profile,
+    resolve_api_key_for_models,
+)
 from app.web.regenerate import (
     RegenerateError,
     find_regenerate_slice,
@@ -83,6 +87,7 @@ class SettingsIn(BaseModel):
 class LlmModelsIn(BaseModel):
     baseUrl: str
     apiKey: str = ""
+    userId: str | None = None
 
 
 class LegacyImportIn(BaseModel):
@@ -154,7 +159,14 @@ async def get_llm_profile(user_id: str) -> dict:
 @router.post("/llm/models")
 async def list_llm_models(body: LlmModelsIn) -> dict:
     try:
-        models = await fetch_openai_models(base_url=body.baseUrl, api_key=body.apiKey)
+        api_key = resolve_api_key_for_models(
+            body.userId,
+            base_url=body.baseUrl,
+            api_key=body.apiKey,
+        )
+        models = await fetch_openai_models(base_url=body.baseUrl, api_key=api_key)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
         raise HTTPException(status_code=502, detail=str(e)) from e
     return {"models": models}

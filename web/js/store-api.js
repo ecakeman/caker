@@ -182,7 +182,7 @@ export async function saveLlmProfile(userId, profile) {
   return res.json();
 }
 
-/** @param {{ baseUrl: string, apiKey?: string }} body */
+/** @param {{ baseUrl: string, apiKey?: string, userId?: string }} body */
 export async function fetchLlmModels(body) {
   const res = await fetch("/api/v2/web/llm/models", {
     method: "POST",

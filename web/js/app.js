@@ -954,7 +954,7 @@ async function refreshLlmModelList() {
     return;
   }
   const apiKey = els.settingsLlmApiKey?.value || "";
-  const data = await fetchLlmModels({ baseUrl, apiKey });
+  const data = await fetchLlmModels({ baseUrl, apiKey, userId: activeUserId });
   const sel = els.settingsLlmModel;
   if (!sel) return;
   const cur = sel.value;
