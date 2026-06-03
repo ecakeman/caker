@@ -6,9 +6,18 @@ import {
 import {
   autoResizeComposer as resizeComposer,
   createStreamingMarkdownPainter,
+  mountComposer,
   renderMessages as renderChatMessages,
   setStreamStatus as setChatStreamStatus,
 } from "./chat-ui.js";
+import { initLayoutChrome } from "./layout-chrome.js";
+import {
+  CHANNEL_FOLLOWUP,
+  CHANNEL_MAIN,
+  filterMessagesByChannel,
+  globalIndexForDisplay,
+  tagMessage,
+} from "./message-channel.js";
 import {
   createSession,
   fetchSession,
@@ -55,12 +64,31 @@ let composerFileRefs = null;
 /** @type {HTMLElement | null} */
 let assistantBubbleEl = null;
 
+/** @type {ReturnType<typeof createStreamingMarkdownPainter> | null} */
+let streamPainter = null;
+
+/** @type {ReturnType<typeof createStreamingMarkdownPainter> | null} */
+let followupStreamPainter = null;
+
+/** @type {HTMLElement | null} */
+let followupAssistantBubbleEl = null;
+
+/** @type {ReturnType<typeof initLayoutChrome> | null} */
+let layoutChrome = null;
+
+/** @type {ReturnType<typeof mountComposer> | null} */
+let followupComposerUi = null;
+
 const $ = (id) => document.getElementById(id);
 
 const els = {
   healthBanner: $("health-banner"),
+  appShell: $("app-shell"),
   sidebar: $("sidebar"),
   sidebarOverlay: $("sidebar-overlay"),
+  contentRow: $("content-row"),
+  mainPane: $("main-pane"),
+  mainComposerWrap: $("main-composer-wrap"),
   chatList: $("chat-list"),
   messages: $("messages"),
   emptyState: $("empty-state"),
@@ -71,7 +99,17 @@ const els = {
   btnNewChat: $("btn-new-chat"),
   btnOpenSidebar: $("btn-open-sidebar"),
   btnCloseSidebar: $("btn-close-sidebar"),
+  btnToggleSidebar: $("btn-toggle-sidebar"),
+  btnExpandSidebar: $("btn-expand-sidebar"),
   btnLogs: $("btn-logs"),
+  btnFollowup: $("btn-followup"),
+  followupPanel: $("followup-panel"),
+  followupCollapsedTab: $("followup-collapsed-tab"),
+  followupMessages: $("followup-messages"),
+  followupEmpty: $("followup-empty"),
+  followupComposerMount: $("followup-composer-mount"),
+  btnFollowupCollapse: $("btn-followup-collapse"),
+  btnFollowupClose: $("btn-followup-close"),
   statusDot: $("status-dot"),
   settingsModal: $("settings-modal"),
   btnSettings: $("btn-settings"),
@@ -130,19 +168,41 @@ function closeSidebar() {
 function setGenerating(on) {
   if (els.btnSend) els.btnSend.disabled = on;
   if (els.composer) els.composer.disabled = on;
+  if (followupComposerUi?.composer) followupComposerUi.composer.disabled = on;
+  if (followupComposerUi?.btnSend) followupComposerUi.btnSend.disabled = on;
   els.btnStop?.classList.toggle("hidden", !on);
   els.btnSend?.classList.toggle("hidden", on);
-  if (!on) setStreamStatus("");
+  followupComposerUi?.btnStop?.classList.toggle("hidden", !on);
+  followupComposerUi?.btnSend?.classList.toggle("hidden", on);
+  if (!on) {
+    setStreamStatus("");
+    setFollowupStreamStatus("");
+  }
 }
 
-function setStreamStatus(text) {
-  setChatStreamStatus(els.streamStatus, text);
+function setFollowupStreamStatus(text) {
+  if (followupComposerUi?.streamStatus) {
+    setChatStreamStatus(followupComposerUi.streamStatus, text);
+  }
+}
+
+function syncMainPaneLayout() {
+  const state = layoutChrome?.getState();
+  const narrow = !!state?.followupOpen && !state?.followupCollapsed;
+  els.mainPane?.classList.toggle("main-pane-narrow", narrow);
+  els.mainComposerWrap?.classList.toggle("main-composer-narrow", narrow);
+}
+
+function renderAllMessageViews() {
+  renderMainMessages();
+  renderFollowupMessages();
 }
 
 /** @param {import('./sessions.js').Message[]} messages */
-function renderMessages(messages) {
-  assistantBubbleEl = renderChatMessages(els.messages, messages, {
-    outerWrapClass: "mx-auto max-w-4xl",
+function renderMainMessages(messages = currentSession?.messages || []) {
+  const main = filterMessagesByChannel(messages, CHANNEL_MAIN);
+  assistantBubbleEl = renderChatMessages(els.messages, main, {
+    outerWrapClass: "main-messages-wrap mx-auto max-w-4xl w-full",
     emptyStateEl: els.emptyState,
     onAssistantBubble: (el) => {
       assistantBubbleEl = el;
@@ -153,11 +213,38 @@ function renderMessages(messages) {
         void navigator.clipboard.writeText(text);
       }
     },
-    onRegenerateAssistant: (index) => {
-      void regenerateAssistant(index);
+    onRegenerateAssistant: (displayIndex) => {
+      const globalIdx = globalIndexForDisplay(messages, CHANNEL_MAIN, displayIndex);
+      if (globalIdx >= 0) void regenerateAssistant(globalIdx);
     },
   });
 }
+
+/** @param {import('./sessions.js').Message[]} messages */
+function renderFollowupMessages(messages = currentSession?.messages || []) {
+  const followup = filterMessagesByChannel(messages, CHANNEL_FOLLOWUP);
+  if (els.followupEmpty) {
+    els.followupEmpty.classList.toggle("hidden", followup.length > 0);
+  }
+  followupAssistantBubbleEl = renderChatMessages(els.followupMessages, followup, {
+    outerWrapClass: "w-full",
+    maxWidthClass: "max-w-[95%]",
+    onAssistantBubble: (el) => {
+      followupAssistantBubbleEl = el;
+    },
+    onCopyAssistant: (_index, msg) => {
+      const text = msg.content || "";
+      if (navigator.clipboard?.writeText) {
+        void navigator.clipboard.writeText(text);
+      }
+    },
+  });
+}
+
+function setStreamStatus(text) {
+  setChatStreamStatus(els.streamStatus, text);
+}
+
 
 async function regenerateAssistant(assistantIndex) {
   if (!currentSession || !activeUserId?.trim()) return;
@@ -167,9 +254,11 @@ async function regenerateAssistant(assistantIndex) {
   try {
     const data = await regenerateSession(currentSession.id, activeUserId, assistantIndex);
     currentSession.messages = data.messages || [];
-    currentSession.messages.push({ role: "assistant", content: "", ts: Date.now() });
+    currentSession.messages.push(
+      tagMessage({ role: "assistant", content: "", ts: Date.now() }, CHANNEL_MAIN)
+    );
     const assistantIdx = currentSession.messages.length - 1;
-    renderMessages(currentSession.messages);
+    renderAllMessageViews();
     await persistCurrent();
 
     const streaming = isStreamingEnabled();
@@ -206,18 +295,18 @@ async function regenerateAssistant(assistantIndex) {
         userId: activeUserId,
         signal: abortController.signal,
       });
-      renderMessages(currentSession.messages);
+      renderAllMessageViews();
     }
 
     if (streamPainter) {
       streamPainter.flush(assistant().content || "");
       streamPainter.destroy();
     }
-    renderMessages(currentSession.messages);
+    renderAllMessageViews();
     await persistCurrent();
   } catch (err) {
     alert(`重新生成失败：${err.message || "未知错误"}`);
-    renderMessages(currentSession.messages || []);
+    renderAllMessageViews();
   } finally {
     abortController = null;
     setGenerating(false);
@@ -594,7 +683,7 @@ async function selectSession(id) {
   await setActiveSessionForUser(activeUserId, id);
   clearComposerAttachments();
   if (els.chatTitle) els.chatTitle.textContent = s.title;
-  renderMessages(s.messages || []);
+  renderAllMessageViews();
   renderChatList();
   await refreshWorkspacePanel();
   closeSidebar();
@@ -605,7 +694,7 @@ function clearCurrentChat() {
   clearComposerAttachments();
   void setActiveSessionForUser(activeUserId, null);
   if (els.chatTitle) els.chatTitle.textContent = "新对话";
-  renderMessages([]);
+  renderAllMessageViews();
   renderChatList();
   void refreshWorkspacePanel();
 }
@@ -615,7 +704,7 @@ async function startNewChat() {
   await setActiveSessionForUser(activeUserId, currentSession.id);
   clearComposerAttachments();
   if (els.chatTitle) els.chatTitle.textContent = "新对话";
-  renderMessages([]);
+  renderAllMessageViews();
   renderChatList();
   await refreshWorkspacePanel();
   closeSidebar();
@@ -792,10 +881,65 @@ async function handleFilesSelected(fileList) {
 }
 
 async function sendMessage() {
-  const text = els.composer?.value.trim() ?? "";
-  const attachmentPaths = pendingAttachments.map((a) => a.relPath);
-  const fileRefs = composerFileRefs?.getRelPaths() ?? [];
-  const allAttachments = [...attachmentPaths, ...fileRefs.filter((p) => !attachmentPaths.includes(p))];
+  await sendChatMessage({
+    channel: CHANNEL_MAIN,
+    text: els.composer?.value.trim() ?? "",
+    useAttachments: true,
+    onClearComposer: () => {
+      if (els.composer) els.composer.value = "";
+      pendingAttachments = [];
+      composerFileRefs?.clear();
+      renderAttachmentBar();
+      autoResizeComposer();
+    },
+    getPainterTarget: () => assistantBubbleEl,
+    getScrollContainer: () => els.messages,
+    setStatus: setStreamStatus,
+    focusComposer: () => els.composer?.focus(),
+  });
+}
+
+async function sendFollowupMessage() {
+  if (!layoutChrome?.getState()?.followupOpen) {
+    layoutChrome?.setState({ followupOpen: true, followupCollapsed: false });
+  }
+  await sendChatMessage({
+    channel: CHANNEL_FOLLOWUP,
+    text: followupComposerUi?.composer?.value.trim() ?? "",
+    useAttachments: false,
+    onClearComposer: () => {
+      if (followupComposerUi?.composer) {
+        followupComposerUi.composer.value = "";
+        resizeComposer(followupComposerUi.composer);
+      }
+    },
+    getPainterTarget: () => followupAssistantBubbleEl,
+    getScrollContainer: () => els.followupMessages,
+    setStatus: setFollowupStreamStatus,
+    focusComposer: () => followupComposerUi?.composer?.focus(),
+  });
+}
+
+/**
+ * @param {{
+ *   channel: import('./message-channel.js').MessageChannel,
+ *   text: string,
+ *   useAttachments?: boolean,
+ *   onClearComposer?: () => void,
+ *   getPainterTarget?: () => HTMLElement | null,
+ *   getScrollContainer?: () => HTMLElement | null,
+ *   setStatus?: (t: string) => void,
+ *   focusComposer?: () => void,
+ * }} opts
+ */
+async function sendChatMessage(opts) {
+  const text = opts.text;
+  const attachmentPaths = opts.useAttachments ? pendingAttachments.map((a) => a.relPath) : [];
+  const fileRefs = opts.useAttachments ? composerFileRefs?.getRelPaths() ?? [] : [];
+  const allAttachments = [
+    ...attachmentPaths,
+    ...fileRefs.filter((p) => !attachmentPaths.includes(p)),
+  ];
   if (!text && !allAttachments.length) return;
   if (!currentSession) await startNewChat();
   if (!currentSession) return;
@@ -831,22 +975,16 @@ async function sendMessage() {
     displayContent = text ? `${text}\n${lines.join("\n")}` : lines.join("\n");
   }
 
-  const userMsg = { role: "user", content: displayContent, ts: Date.now() };
   currentSession.messages = currentSession.messages || [];
-  currentSession.messages.push(userMsg);
-
-  currentSession.messages.push({
-    role: "assistant",
-    content: "",
-    ts: Date.now(),
-  });
+  currentSession.messages.push(
+    tagMessage({ role: "user", content: displayContent, ts: Date.now() }, opts.channel)
+  );
+  currentSession.messages.push(
+    tagMessage({ role: "assistant", content: "", ts: Date.now() }, opts.channel)
+  );
   const assistantIdx = currentSession.messages.length - 1;
-  els.composer.value = "";
-  pendingAttachments = [];
-  composerFileRefs?.clear();
-  renderAttachmentBar();
-  autoResizeComposer();
-  renderMessages(currentSession.messages);
+  opts.onClearComposer?.();
+  renderAllMessageViews();
   await persistCurrent();
 
   const body = {
@@ -860,10 +998,16 @@ async function sendMessage() {
   setGenerating(true);
 
   const assistant = () => currentSession.messages[assistantIdx];
-  /** @type {ReturnType<typeof createStreamingMarkdownPainter> | null} */
-  let streamPainter = null;
-  if (streaming && assistantBubbleEl) {
-    streamPainter = createStreamingMarkdownPainter(assistantBubbleEl, els.messages);
+  const scrollEl = opts.getScrollContainer?.() ?? null;
+  const bubbleEl = opts.getPainterTarget?.() ?? null;
+  let painter = null;
+  if (streaming && bubbleEl) {
+    painter = createStreamingMarkdownPainter(bubbleEl, scrollEl);
+    if (opts.channel === CHANNEL_FOLLOWUP) {
+      followupStreamPainter = painter;
+    } else {
+      streamPainter = painter;
+    }
   }
 
   try {
@@ -873,12 +1017,12 @@ async function sendMessage() {
         signal: abortController.signal,
         onStatus: (payload) => {
           const detail = payload?.detail || payload?.tool || payload?.phase || "";
-          setStreamStatus(detail);
+          opts.setStatus?.(detail);
         },
         onDelta: (chunk) => {
-          setStreamStatus("");
+          opts.setStatus?.("");
           assistant().content += chunk;
-          streamPainter?.update(assistant().content || "");
+          painter?.update(assistant().content || "");
         },
       });
     } else {
@@ -886,7 +1030,7 @@ async function sendMessage() {
         userId: activeUserId,
         signal: abortController.signal,
       });
-      renderMessages(currentSession.messages);
+      renderAllMessageViews();
     }
   } catch (err) {
     const msg = assistant();
@@ -895,24 +1039,30 @@ async function sendMessage() {
     } else {
       msg.content = msg.content || `请求失败：${err.message || "未知错误"}`;
     }
-    renderMessages(currentSession.messages);
+    renderAllMessageViews();
   } finally {
-    if (streamPainter) {
-      streamPainter.flush(assistant().content || "");
-      streamPainter.destroy();
-      streamPainter = null;
+    if (painter) {
+      painter.flush(assistant().content || "");
+      painter.destroy();
+      if (opts.channel === CHANNEL_FOLLOWUP) {
+        followupStreamPainter = null;
+      } else {
+        streamPainter = null;
+      }
     }
-    renderMessages(currentSession.messages);
+    renderAllMessageViews();
     abortController = null;
     setGenerating(false);
     await persistCurrent();
-    const newTitle = await refreshSessionTitle(activeUserId, currentSession.id);
-    if (newTitle) {
-      currentSession.title = newTitle;
-      if (els.chatTitle) els.chatTitle.textContent = newTitle;
-      renderChatList();
+    if (opts.channel === CHANNEL_MAIN) {
+      const newTitle = await refreshSessionTitle(activeUserId, currentSession.id);
+      if (newTitle) {
+        currentSession.title = newTitle;
+        if (els.chatTitle) els.chatTitle.textContent = newTitle;
+        renderChatList();
+      }
     }
-    els.composer?.focus();
+    opts.focusComposer?.();
   }
 }
 
@@ -1096,6 +1246,41 @@ async function boot() {
     await refreshSessionsForUser(activeUserId);
     renderUserList();
     renderChatList();
+
+    layoutChrome = initLayoutChrome({
+      shell: els.appShell,
+      sidebar: els.sidebar,
+      contentRow: els.contentRow,
+      mainPane: els.mainPane,
+      followupPanel: els.followupPanel,
+      followupCollapsedTab: els.followupCollapsedTab,
+      btnToggleSidebar: els.btnToggleSidebar,
+      btnFollowup: els.btnFollowup,
+      btnFollowupCollapse: els.btnFollowupCollapse,
+      btnFollowupClose: els.btnFollowupClose,
+      onLayoutChange: syncMainPaneLayout,
+    });
+    els.btnExpandSidebar?.addEventListener("click", () => {
+      layoutChrome?.setState({ sidebarCollapsed: false });
+    });
+    syncMainPaneLayout();
+
+    if (els.followupComposerMount) {
+      followupComposerUi = mountComposer(els.followupComposerMount, {
+        showAttach: false,
+        compact: true,
+        onSend: () => void sendFollowupMessage(),
+        onStop: stopGeneration,
+      });
+      const fc = followupComposerUi?.composer;
+      if (fc) {
+        fc.placeholder = "追问… Enter 发送，Shift+Enter 换行";
+        fc.rows = 1;
+        fc.className =
+          "max-h-40 min-h-[2.5rem] flex-1 resize-none bg-transparent py-2.5 text-sm outline-none";
+        resizeComposer(fc);
+      }
+    }
 
     els.btnNewChat?.addEventListener("click", () => void startNewChat());
     els.btnSend?.addEventListener("click", () => void sendMessage());

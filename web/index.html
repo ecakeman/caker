@@ -173,6 +173,84 @@
         border-radius: 9999px;
         animation: attach-spin 0.65s linear infinite;
       }
+      #app-shell.sidebar-collapsed #sidebar {
+        width: 3.5rem;
+      }
+      #app-shell.sidebar-collapsed #sidebar .sidebar-body,
+      #app-shell.sidebar-collapsed #sidebar .sidebar-label,
+      #app-shell.sidebar-collapsed #sidebar .btn-sidebar-collapse {
+        display: none;
+      }
+      #app-shell.sidebar-collapsed #sidebar .btn-sidebar-expand {
+        display: flex;
+      }
+      #app-shell:not(.sidebar-collapsed) #sidebar .btn-sidebar-expand {
+        display: none;
+      }
+      #content-row {
+        min-width: 0;
+      }
+      #content-row.followup-open #main-pane {
+        min-width: 0;
+        flex: 1 1 0%;
+      }
+      #followup-panel {
+        width: 20rem;
+        max-width: min(20rem, 38vw);
+        flex-shrink: 0;
+      }
+      #followup-panel.followup-panel-collapsed {
+        width: 0;
+        min-width: 0;
+        border-width: 0;
+        overflow: visible;
+      }
+      #followup-panel.followup-panel-collapsed .followup-panel-inner {
+        display: none;
+      }
+      #content-row.followup-open #followup-collapsed-tab:not(.hidden) {
+        flex-shrink: 0;
+      }
+      #main-pane.main-pane-narrow .main-messages-wrap {
+        max-width: 100%;
+      }
+      #main-pane.main-pane-narrow #messages {
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
+      }
+      #main-pane.main-pane-narrow #empty-state > div,
+      #main-pane.main-pane-narrow #empty-state > ul,
+      #main-pane.main-pane-narrow #empty-state > p {
+        max-width: 100%;
+      }
+      #main-composer-wrap.main-composer-narrow {
+        max-width: none;
+        padding-left: 0.25rem;
+        padding-right: 0.25rem;
+      }
+      .chat-header {
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      .chat-header .header-left {
+        justify-self: start;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+      }
+      .chat-header .header-center {
+        justify-self: center;
+        max-width: 100%;
+        text-align: center;
+      }
+      .chat-header .header-right {
+        justify-self: end;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
     </style>
   </head>
   <body
@@ -182,7 +260,7 @@
       无法连接后端，请确认 uvicorn 已启动。
     </div>
 
-    <div class="flex h-[100dvh] overflow-hidden">
+    <div id="app-shell" class="flex h-[100dvh] overflow-hidden">
       <div
         id="sidebar-overlay"
         class="fixed inset-0 z-30 bg-black/40 hidden md:hidden"
@@ -191,25 +269,45 @@
 
       <aside
         id="sidebar"
-        class="fixed md:static inset-y-0 left-0 z-40 flex h-full min-h-0 w-72 flex-col overflow-hidden border-e border-gray-100 bg-gray-50 dark:border-gray-850/50 dark:bg-gray-950 -translate-x-full md:translate-x-0 transition-transform duration-200"
+        class="fixed md:static inset-y-0 left-0 z-40 flex h-full min-h-0 w-72 shrink-0 flex-col overflow-hidden border-e border-gray-100 bg-gray-50 transition-[width] duration-200 dark:border-gray-850/50 dark:bg-gray-950 -translate-x-full md:translate-x-0"
       >
-        <div class="flex items-center gap-2 px-3 pt-3 pb-2">
-          <div
-            class="flex size-8 items-center justify-center rounded-xl bg-gray-900 text-sm font-semibold text-white dark:bg-gray-100 dark:text-gray-900"
+        <div class="flex shrink-0 items-center gap-2 px-2 pt-3 pb-2">
+          <a
+            id="brand-github-link"
+            class="flex size-8 shrink-0 items-center justify-center rounded-xl bg-gray-900 text-sm font-semibold text-white hover:opacity-90 dark:bg-gray-100 dark:text-gray-900"
           >
             C
-          </div>
-          <span class="text-lg font-semibold tracking-tight">Caker</span>
+          </a>
+          <span class="sidebar-label min-w-0 truncate text-lg font-semibold tracking-tight">Caker</span>
+          <button
+            id="btn-toggle-sidebar"
+            type="button"
+            class="btn-sidebar-collapse ml-auto hidden rounded-lg p-1.5 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-850 md:inline-flex"
+            title="收起侧栏"
+            aria-label="收起侧栏"
+          >
+            ‹
+          </button>
           <button
             id="btn-close-sidebar"
             type="button"
-            class="md:hidden ml-auto rounded-lg p-1.5 hover:bg-gray-200 dark:hover:bg-gray-850"
+            class="md:hidden rounded-lg p-1.5 hover:bg-gray-200 dark:hover:bg-gray-850"
             aria-label="关闭侧栏"
           >
             ✕
           </button>
         </div>
+        <button
+          id="btn-expand-sidebar"
+          type="button"
+          class="btn-sidebar-expand mx-auto mt-2 hidden size-9 items-center justify-center rounded-xl text-gray-600 hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-gray-850"
+          title="展开侧栏"
+          aria-label="展开侧栏"
+        >
+          ›
+        </button>
 
+        <div id="sidebar-body" class="sidebar-body flex min-h-0 flex-1 flex-col overflow-hidden">
         <div class="px-2 pb-2">
           <button
             id="btn-new-chat"
@@ -322,37 +420,51 @@
             ⚙ 设置
           </button>
         </div>
+        </div>
       </aside>
 
-      <main class="flex min-w-0 flex-1 flex-col">
+      <div id="content-row" class="flex min-h-0 min-w-0 flex-1">
+      <main id="main-pane" class="flex min-h-0 min-w-0 flex-1 flex-col">
         <header
-          class="flex items-center gap-3 border-b border-gray-100 px-4 py-3 dark:border-gray-850/50"
+          class="chat-header shrink-0 border-b border-gray-100 px-3 py-3 dark:border-gray-850/50 md:px-4"
         >
-          <button
-            id="btn-open-sidebar"
-            type="button"
-            class="md:hidden rounded-lg p-2 hover:bg-gray-100 dark:hover:bg-gray-850"
-            aria-label="打开侧栏"
-          >
-            ☰
-          </button>
-          <h1 id="chat-title" class="flex-1 truncate text-sm font-medium">新对话</h1>
-          <button
-            id="btn-logs"
-            type="button"
-            class="shrink-0 rounded-lg px-2.5 py-1 text-xs font-medium text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-850"
-            title="查看会话观测日志"
-          >
-            日志
-          </button>
-          <span
-            id="status-dot"
-            class="size-2 rounded-full bg-gray-300 dark:bg-gray-600"
-            title="连接状态"
-          ></span>
+          <div class="header-left">
+            <button
+              id="btn-open-sidebar"
+              type="button"
+              class="md:hidden rounded-lg p-2 hover:bg-gray-100 dark:hover:bg-gray-850"
+              aria-label="打开侧栏"
+            >
+              ☰
+            </button>
+            <button
+              id="btn-logs"
+              type="button"
+              class="rounded-lg px-2.5 py-1 text-xs font-medium text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-850"
+              title="查看会话观测日志"
+            >
+              日志
+            </button>
+          </div>
+          <h1 id="chat-title" class="header-center truncate px-2 text-sm font-medium">新对话</h1>
+          <div class="header-right">
+            <button
+              id="btn-followup"
+              type="button"
+              class="rounded-lg px-2.5 py-1 text-xs font-medium text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-850"
+              title="打开追问侧栏（与主对话同一上下文，分栏显示）"
+            >
+              追问
+            </button>
+            <span
+              id="status-dot"
+              class="size-2 shrink-0 rounded-full bg-gray-300 dark:bg-gray-600"
+              title="连接状态"
+            ></span>
+          </div>
         </header>
 
-        <div class="relative flex-1 overflow-hidden">
+        <div class="relative min-h-0 flex-1 overflow-hidden">
           <div
             id="empty-state"
             class="absolute inset-0 flex flex-col items-center justify-center px-6 pointer-events-none"
@@ -374,7 +486,7 @@
               </li>
               <li class="flex gap-2.5 rounded-xl border border-gray-100 bg-white/80 px-3 py-2.5 dark:border-gray-800 dark:bg-gray-900/60">
                 <span class="shrink-0 text-base" aria-hidden="true">📎</span>
-                <span>右上角 <strong class="font-medium text-gray-800 dark:text-gray-200">日志</strong> 可实时查看引擎、终端与容器输出。</span>
+                <span>左上角 <strong class="font-medium text-gray-800 dark:text-gray-200">日志</strong> 可查看引擎与沙箱输出；右上角 <strong class="font-medium text-gray-800 dark:text-gray-200">追问</strong> 在侧栏继续提问（主区更整洁）。</span>
               </li>
               <li class="flex gap-2.5 rounded-xl border border-gray-100 bg-white/80 px-3 py-2.5 dark:border-gray-800 dark:bg-gray-900/60">
                 <span class="shrink-0 text-base" aria-hidden="true">📁</span>
@@ -392,8 +504,8 @@
           <div id="messages" class="h-full overflow-y-auto px-4 py-6"></div>
         </div>
 
-        <div class="border-t border-gray-100 dark:border-gray-850/50 p-4">
-          <div class="mx-auto max-w-3xl">
+        <div class="shrink-0 border-t border-gray-100 p-3 dark:border-gray-850/50 md:p-4">
+          <div id="main-composer-wrap" class="mx-auto w-full max-w-3xl px-1">
             <p
               id="stream-status"
               class="mb-2 hidden text-xs text-gray-500 dark:text-gray-400"
@@ -456,6 +568,55 @@
           </div>
         </div>
       </main>
+
+      <aside
+        id="followup-panel"
+        class="hidden flex h-full min-h-0 shrink-0 flex-col overflow-hidden border-s border-gray-100 bg-gray-50/80 dark:border-gray-850/50 dark:bg-gray-950/90"
+        aria-label="追问侧栏"
+      >
+        <div class="followup-panel-inner flex min-h-0 flex-1 flex-col">
+        <div class="flex shrink-0 items-center justify-between gap-2 border-b border-gray-100 px-3 py-2.5 dark:border-gray-850/50">
+          <span class="text-sm font-medium text-gray-800 dark:text-gray-100">追问</span>
+          <div class="flex items-center gap-1">
+            <button
+              id="btn-followup-collapse"
+              type="button"
+              class="rounded-lg px-2 py-1 text-xs text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-850"
+              title="收起追问栏"
+            >
+              收起
+            </button>
+            <button
+              id="btn-followup-close"
+              type="button"
+              class="rounded-lg px-2 py-1 text-xs text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-850"
+              title="关闭追问栏"
+            >
+              关闭
+            </button>
+          </div>
+        </div>
+        <div class="relative min-h-0 flex-1 overflow-hidden">
+          <div
+            id="followup-empty"
+            class="pointer-events-none absolute inset-0 flex items-center justify-center px-4 text-center text-xs text-gray-400 dark:text-gray-500"
+          >
+            追问与主对话共享同一会话；此处仅显示追问消息。
+          </div>
+          <div id="followup-messages" class="relative h-full min-h-0 overflow-y-auto px-3 py-4"></div>
+        </div>
+        <div id="followup-composer-mount" class="shrink-0 border-t border-gray-100 p-3 dark:border-gray-850/50"></div>
+        </div>
+      </aside>
+      <button
+        id="followup-collapsed-tab"
+        type="button"
+        class="hidden h-full w-11 shrink-0 flex-col items-center justify-center gap-1 border-s border-gray-100 bg-gray-50 text-xs font-medium text-gray-600 hover:bg-gray-100 dark:border-gray-850/50 dark:bg-gray-950 dark:text-gray-300 dark:hover:bg-gray-900"
+        title="展开追问栏"
+      >
+        <span class="[writing-mode:vertical-rl]">追问</span>
+      </button>
+      </div>
     </div>
 
     <div
@@ -542,6 +703,6 @@
       </div>
     </div>
 
-    <script type="module" src="/js/app.js?v=20260604d"></script>
+    <script type="module" src="/js/app.js?v=20260605b"></script>
   </body>
 </html>
