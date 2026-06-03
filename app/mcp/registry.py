@@ -165,6 +165,8 @@ class ToolRegistry:
             "get_current_time",
             "run_py_script",
             "sandbox_exec",
+            "caker_mirror_read",
+            "caker_mirror_glob",
             "daemon_start",
             "daemon_list",
             "daemon_attach",

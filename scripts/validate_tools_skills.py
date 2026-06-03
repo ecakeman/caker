@@ -48,6 +48,7 @@ def main() -> int:
         "online-search-web",
         "memory-remember",
         "memory-recall",
+        "caker-introspect",
     }
     chroma = {"chroma_in", "chroma_out"}
     tool_names = {t["name"] for t in registry.list_tools_public(include_result_set=False)}

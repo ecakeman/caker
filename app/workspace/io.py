@@ -76,6 +76,17 @@ def _format_line_chunk(lines: list[str], offset: int, limit: int) -> tuple[str, 
     return body, total, resolved
 
 
+def format_line_window(
+    text: str,
+    offset: int,
+    limit: int,
+) -> tuple[str, int, int, int]:
+    """Format a line window with the same numbering as read_text_file."""
+    lines = text.splitlines()
+    body, total, resolved = _format_line_chunk(lines, offset, limit)
+    return body, total, resolved, limit
+
+
 def read_text_file(
     user_id: str,
     session_id: str,

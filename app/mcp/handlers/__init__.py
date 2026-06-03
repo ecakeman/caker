@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from app.mcp.handlers import (
+    caker_mirror,
     call_skill,
     chroma_in,
     chroma_out,
@@ -26,6 +27,7 @@ ALL_HANDLERS = [
     time_tool,
     run_py_script,
     sandbox_exec,
+    caker_mirror,
     daemon_tools,
     file_watch_tools,
     call_skill,

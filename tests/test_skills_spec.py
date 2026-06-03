@@ -19,6 +19,7 @@ EXPECTED_SKILLS = {
     "online-search-web",
     "memory-remember",
     "memory-recall",
+    "caker-introspect",
 }
 
 
