@@ -269,6 +269,7 @@ export function autoResizeComposer(textarea) {
  *   onAttach?: () => void,
  *   showAttach?: boolean,
  *   compact?: boolean,
+ *   placeholder?: string,
  * }} hooks
  */
 export function mountComposer(mountEl, hooks) {
@@ -289,7 +290,7 @@ export function mountComposer(mountEl, hooks) {
         </button>`
             : ""
         }
-        <textarea id="composer" rows="3" placeholder="输入消息… Enter 发送，Shift+Enter 换行"
+        <textarea id="composer" rows="3" placeholder="${hooks.placeholder ?? "输入消息… Enter 发送，Shift+Enter 换行"}"
           class="max-h-52 min-h-[4.5rem] flex-1 resize-y bg-transparent py-2.5 text-sm leading-relaxed outline-none"></textarea>
         <button id="btn-stop" type="button" class="mb-0.5 hidden shrink-0 rounded-xl px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-850">停止</button>
         <button id="btn-send" type="button" class="mb-0.5 shrink-0 rounded-xl bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-40 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200">发送</button>

@@ -173,19 +173,79 @@
         border-radius: 9999px;
         animation: attach-spin 0.65s linear infinite;
       }
+      #sidebar {
+        width: 18rem;
+        min-width: 12.5rem;
+        max-width: 32.5rem;
+      }
       #app-shell.sidebar-collapsed #sidebar {
-        width: 3.5rem;
+        width: 3.5rem !important;
+        min-width: 3.5rem;
+        max-width: 3.5rem;
       }
       #app-shell.sidebar-collapsed #sidebar .sidebar-body,
       #app-shell.sidebar-collapsed #sidebar .sidebar-label,
-      #app-shell.sidebar-collapsed #sidebar .btn-sidebar-collapse {
+      #app-shell.sidebar-collapsed #sidebar .btn-sidebar-collapse,
+      #app-shell.sidebar-collapsed #sidebar .sidebar-footer-expanded {
         display: none;
       }
-      #app-shell.sidebar-collapsed #sidebar .btn-sidebar-expand {
+      #app-shell.sidebar-collapsed #sidebar .btn-sidebar-expand,
+      #app-shell.sidebar-collapsed #sidebar .sidebar-rail-footer {
         display: flex;
       }
-      #app-shell:not(.sidebar-collapsed) #sidebar .btn-sidebar-expand {
+      #app-shell:not(.sidebar-collapsed) #sidebar .btn-sidebar-expand,
+      #app-shell:not(.sidebar-collapsed) #sidebar .sidebar-rail-footer {
         display: none;
+      }
+      .btn-sidebar-collapse,
+      .btn-sidebar-expand {
+        font-size: 1.25rem;
+        line-height: 1;
+        font-weight: 600;
+      }
+      .btn-sidebar-collapse {
+        width: 2.25rem;
+        height: 2.25rem;
+        align-items: center;
+        justify-content: center;
+      }
+      .btn-sidebar-expand {
+        width: 2.5rem;
+        height: 2.5rem;
+      }
+      .panel-resize-handle {
+        flex-shrink: 0;
+        width: 5px;
+        margin: 0 -2px;
+        cursor: col-resize;
+        touch-action: none;
+        position: relative;
+        z-index: 20;
+        background: transparent;
+        transition: background 0.15s;
+      }
+      .panel-resize-handle::after {
+        content: "";
+        position: absolute;
+        inset: 0 1px;
+        border-radius: 2px;
+        background: transparent;
+        transition: background 0.15s;
+      }
+      .panel-resize-handle:hover::after,
+      .panel-resize-handle.is-active::after {
+        background: rgba(107, 114, 128, 0.35);
+      }
+      .dark .panel-resize-handle:hover::after,
+      .dark .panel-resize-handle.is-active::after {
+        background: rgba(163, 163, 163, 0.35);
+      }
+      body.ui-col-resizing {
+        cursor: col-resize !important;
+        user-select: none;
+      }
+      body.ui-col-resizing * {
+        cursor: col-resize !important;
       }
       #content-row {
         min-width: 0;
@@ -196,7 +256,8 @@
       }
       #followup-panel {
         width: 20rem;
-        max-width: min(20rem, 38vw);
+        min-width: 13.75rem;
+        max-width: 40rem;
         flex-shrink: 0;
       }
       #followup-panel.followup-panel-collapsed {
@@ -242,7 +303,15 @@
       }
       .chat-header .header-center {
         justify-self: center;
-        max-width: 100%;
+        max-width: min(100%, 42rem);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        min-width: 0;
+      }
+      .chat-header .header-center #chat-title {
+        min-width: 0;
         text-align: center;
       }
       .chat-header .header-right {
@@ -250,6 +319,45 @@
         display: flex;
         align-items: center;
         gap: 0.5rem;
+      }
+      .header-action-btn {
+        border: 1px solid rgba(107, 114, 128, 0.28);
+        background: rgba(249, 250, 251, 0.9);
+        color: rgb(55, 65, 81);
+        font-weight: 500;
+        letter-spacing: 0.01em;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+      }
+      .header-action-btn:hover {
+        background: rgb(243, 244, 246);
+        border-color: rgba(107, 114, 128, 0.45);
+        color: rgb(17, 24, 39);
+      }
+      .dark .header-action-btn {
+        border-color: rgba(163, 163, 163, 0.22);
+        background: rgba(38, 38, 38, 0.85);
+        color: rgb(212, 212, 212);
+        box-shadow: none;
+      }
+      .dark .header-action-btn:hover {
+        background: rgb(38, 38, 38);
+        border-color: rgba(163, 163, 163, 0.4);
+        color: rgb(245, 245, 245);
+      }
+      .header-action-btn[aria-pressed="true"] {
+        border-color: rgba(23, 23, 23, 0.35);
+        background: rgb(243, 244, 246);
+        color: rgb(17, 24, 39);
+      }
+      .dark .header-action-btn[aria-pressed="true"] {
+        border-color: rgba(245, 245, 245, 0.35);
+        background: rgb(64, 64, 64);
+        color: rgb(245, 245, 245);
+      }
+      #status-dot {
+        width: 0.5rem;
+        height: 0.5rem;
+        flex-shrink: 0;
       }
     </style>
   </head>
@@ -269,7 +377,7 @@
 
       <aside
         id="sidebar"
-        class="fixed md:static inset-y-0 left-0 z-40 flex h-full min-h-0 w-72 shrink-0 flex-col overflow-hidden border-e border-gray-100 bg-gray-50 transition-[width] duration-200 dark:border-gray-850/50 dark:bg-gray-950 -translate-x-full md:translate-x-0"
+        class="fixed md:static inset-y-0 left-0 z-40 flex h-full min-h-0 shrink-0 flex-col overflow-hidden border-e border-gray-100 bg-gray-50 dark:border-gray-850/50 dark:bg-gray-950 -translate-x-full md:translate-x-0"
       >
         <div class="flex shrink-0 items-center gap-2 px-2 pt-3 pb-2">
           <a
@@ -282,7 +390,7 @@
           <button
             id="btn-toggle-sidebar"
             type="button"
-            class="btn-sidebar-collapse ml-auto hidden rounded-lg p-1.5 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-850 md:inline-flex"
+            class="btn-sidebar-collapse ml-auto hidden rounded-xl text-gray-600 hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-gray-850 md:inline-flex"
             title="收起侧栏"
             aria-label="收起侧栏"
           >
@@ -300,7 +408,7 @@
         <button
           id="btn-expand-sidebar"
           type="button"
-          class="btn-sidebar-expand mx-auto mt-2 hidden size-9 items-center justify-center rounded-xl text-gray-600 hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-gray-850"
+          class="btn-sidebar-expand mx-auto mt-2 hidden items-center justify-center rounded-xl text-gray-600 hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-gray-850"
           title="展开侧栏"
           aria-label="展开侧栏"
         >
@@ -323,7 +431,7 @@
 
         <div
           id="sidebar-footer"
-          class="relative z-10 shrink-0 border-t border-gray-100 bg-gray-50 p-3 space-y-2 dark:border-gray-850/50 dark:bg-gray-950"
+          class="sidebar-footer-expanded relative z-10 shrink-0 border-t border-gray-100 bg-gray-50 p-3 space-y-2 dark:border-gray-850/50 dark:bg-gray-950"
         >
           <div
             id="workspace-panel"
@@ -421,7 +529,27 @@
           </button>
         </div>
         </div>
+        <div class="sidebar-rail-footer mt-auto hidden flex-col items-center gap-2 pb-3 pt-2">
+          <button
+            id="btn-settings-collapsed"
+            type="button"
+            class="flex size-8 shrink-0 items-center justify-center rounded-xl border border-gray-200 bg-white text-base text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:bg-gray-850"
+            title="设置"
+            aria-label="设置"
+          >
+            ⚙
+          </button>
+        </div>
       </aside>
+
+      <div
+        id="resize-handle-sidebar"
+        class="panel-resize-handle hidden md:block"
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="调整侧栏宽度"
+        tabindex="-1"
+      ></div>
 
       <div id="content-row" class="flex min-h-0 min-w-0 flex-1">
       <main id="main-pane" class="flex min-h-0 min-w-0 flex-1 flex-col">
@@ -440,27 +568,29 @@
             <button
               id="btn-logs"
               type="button"
-              class="rounded-lg px-2.5 py-1 text-xs font-medium text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-850"
+              class="header-action-btn rounded-lg px-3 py-1.5 text-xs"
               title="查看会话观测日志"
             >
               日志
             </button>
           </div>
-          <h1 id="chat-title" class="header-center truncate px-2 text-sm font-medium">新对话</h1>
+          <div class="header-center">
+            <h1 id="chat-title" class="truncate text-sm font-medium">新对话</h1>
+            <span
+              id="status-dot"
+              class="rounded-full bg-gray-300 dark:bg-gray-600"
+              title="连接状态"
+            ></span>
+          </div>
           <div class="header-right">
             <button
               id="btn-followup"
               type="button"
-              class="rounded-lg px-2.5 py-1 text-xs font-medium text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-850"
+              class="header-action-btn rounded-lg px-3 py-1.5 text-xs"
               title="打开追问侧栏（与主对话同一上下文，分栏显示）"
             >
               追问
             </button>
-            <span
-              id="status-dot"
-              class="size-2 shrink-0 rounded-full bg-gray-300 dark:bg-gray-600"
-              title="连接状态"
-            ></span>
           </div>
         </header>
 
@@ -568,6 +698,15 @@
           </div>
         </div>
       </main>
+
+      <div
+        id="resize-handle-followup"
+        class="panel-resize-handle hidden"
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="调整追问栏宽度"
+        tabindex="-1"
+      ></div>
 
       <aside
         id="followup-panel"
@@ -703,6 +842,6 @@
       </div>
     </div>
 
-    <script type="module" src="/js/app.js?v=20260605b"></script>
+    <script type="module" src="/js/app.js?v=20260605c"></script>
   </body>
 </html>

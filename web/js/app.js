@@ -11,6 +11,7 @@ import {
   setStreamStatus as setChatStreamStatus,
 } from "./chat-ui.js";
 import { initLayoutChrome } from "./layout-chrome.js";
+import { initPanelResize } from "./panel-resize.js";
 import {
   CHANNEL_FOLLOWUP,
   CHANNEL_MAIN,
@@ -79,6 +80,9 @@ let layoutChrome = null;
 /** @type {ReturnType<typeof mountComposer> | null} */
 let followupComposerUi = null;
 
+/** @type {ReturnType<typeof initPanelResize> | null} */
+let panelResize = null;
+
 const $ = (id) => document.getElementById(id);
 
 const els = {
@@ -101,6 +105,9 @@ const els = {
   btnCloseSidebar: $("btn-close-sidebar"),
   btnToggleSidebar: $("btn-toggle-sidebar"),
   btnExpandSidebar: $("btn-expand-sidebar"),
+  btnSettingsCollapsed: $("btn-settings-collapsed"),
+  resizeHandleSidebar: $("resize-handle-sidebar"),
+  resizeHandleFollowup: $("resize-handle-followup"),
   btnLogs: $("btn-logs"),
   btnFollowup: $("btn-followup"),
   followupPanel: $("followup-panel"),
@@ -1258,23 +1265,38 @@ async function boot() {
       btnFollowup: els.btnFollowup,
       btnFollowupCollapse: els.btnFollowupCollapse,
       btnFollowupClose: els.btnFollowupClose,
-      onLayoutChange: syncMainPaneLayout,
+      onLayoutChange: () => {
+        syncMainPaneLayout();
+        panelResize?.apply();
+      },
+    });
+    panelResize = initPanelResize({
+      shell: els.appShell,
+      sidebar: els.sidebar,
+      contentRow: els.contentRow,
+      mainPane: els.mainPane,
+      followupPanel: els.followupPanel,
+      handleSidebar: els.resizeHandleSidebar,
+      handleFollowup: els.resizeHandleFollowup,
+      getLayoutState: () => layoutChrome?.getState() ?? { sidebarCollapsed: false, followupOpen: false, followupCollapsed: false },
+      onResize: syncMainPaneLayout,
     });
     els.btnExpandSidebar?.addEventListener("click", () => {
       layoutChrome?.setState({ sidebarCollapsed: false });
     });
+    els.btnSettingsCollapsed?.addEventListener("click", openSettings);
     syncMainPaneLayout();
 
     if (els.followupComposerMount) {
       followupComposerUi = mountComposer(els.followupComposerMount, {
         showAttach: false,
         compact: true,
+        placeholder: "追问",
         onSend: () => void sendFollowupMessage(),
         onStop: stopGeneration,
       });
       const fc = followupComposerUi?.composer;
       if (fc) {
-        fc.placeholder = "追问… Enter 发送，Shift+Enter 换行";
         fc.rows = 1;
         fc.className =
           "max-h-40 min-h-[2.5rem] flex-1 resize-none bg-transparent py-2.5 text-sm outline-none";

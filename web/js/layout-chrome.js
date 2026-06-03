@@ -1,7 +1,7 @@
 const LAYOUT_KEY = "caker.ui.layout";
 const GITHUB_URL = "https://github.com/ecakeman/caker";
 
-/** @typedef {{ sidebarCollapsed: boolean, followupOpen: boolean, followupCollapsed: boolean }} UiLayoutState */
+/** @typedef {{ sidebarCollapsed: boolean, followupOpen: boolean, followupCollapsed: boolean, sidebarWidth?: number, followupWidth?: number }} UiLayoutState */
 
 /** @returns {UiLayoutState} */
 export function loadUiLayout() {
@@ -13,6 +13,8 @@ export function loadUiLayout() {
       sidebarCollapsed: !!data.sidebarCollapsed,
       followupOpen: !!data.followupOpen,
       followupCollapsed: !!data.followupCollapsed,
+      sidebarWidth: data.sidebarWidth,
+      followupWidth: data.followupWidth,
     };
   } catch {
     return defaultUiLayout();
