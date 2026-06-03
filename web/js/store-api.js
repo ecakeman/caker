@@ -93,6 +93,21 @@ export async function saveSession(session) {
 /**
  * @param {string} userId
  * @param {string} sessionId
+ * @returns {Promise<{ session: object, title?: string, skipped?: boolean }>}
+ */
+export async function generateSessionTitle(userId, sessionId) {
+  const params = new URLSearchParams({ user_id: userId });
+  const res = await fetch(
+    `/api/v2/web/sessions/${encodeURIComponent(sessionId)}/generate-title?${params}`,
+    { method: "POST" },
+  );
+  await throwIfNotOk(res);
+  return res.json();
+}
+
+/**
+ * @param {string} userId
+ * @param {string} sessionId
  * @param {FileList | File[]} files
  */
 export async function fetchWorkspace(userId, sessionId) {
@@ -181,12 +196,30 @@ export async function fetchLlmModels(body) {
 export async function fetchWorkspaceFile(userId, sessionId, path) {
   const params = new URLSearchParams({
     user_id: userId,
-    session_id: sessionId,
     path,
   });
   const res = await fetch(
     `/api/v2/web/sessions/${encodeURIComponent(sessionId)}/workspace/file?${params}`
   );
+  await throwIfNotOk(res);
+  return res.json();
+}
+
+/** Like fetchWorkspaceFile but returns empty content when the file does not exist yet. */
+export async function fetchWorkspaceFileOrEmpty(userId, sessionId, path, opts = {}) {
+  const params = new URLSearchParams({
+    user_id: userId,
+    path,
+  });
+  if (opts.missingOk) {
+    params.set("missing_ok", "1");
+  }
+  const res = await fetch(
+    `/api/v2/web/sessions/${encodeURIComponent(sessionId)}/workspace/file?${params}`
+  );
+  if (res.status === 404) {
+    return { ok: true, path, content: "", size: 0, missing: true };
+  }
   await throwIfNotOk(res);
   return res.json();
 }

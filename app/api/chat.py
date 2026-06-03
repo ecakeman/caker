@@ -8,7 +8,9 @@ from langchain_core.messages import HumanMessage
 from pydantic import BaseModel
 
 from app.config import settings
-from app.execution.sandbox_context import build_sandbox_context
+from app.execution.sandbox_context import build_prompt_context
+from app.observability.llm_meta import reset_run_token_totals
+from app.observability.session_log import append_engine, log_for_ids
 from app.runtime.graph import get_graph, iter_graph_stream_events
 from app.runtime.llm import get_llm
 from app.runtime.sse import sse_pack
@@ -43,16 +45,23 @@ def _graph_inputs(
     streaming: bool = False,
     attachments: list[str] | None = None,
     sandbox_context: str = "",
+    regenerate: bool = False,
 ) -> dict:
     return {
         "messages": [],
         "input": _format_user_input(message, attachments),
         "result": "",
-        "skip_inject_system": False,
+        "skip_inject_system": regenerate,
+        "skip_inject_user": regenerate,
         "result_set_handled": False,
         "streaming": streaming,
         "sandbox_context": sandbox_context,
     }
+
+
+def _prompt_context(user_id: str, session_id: str, x_sandbox: str | None) -> str:
+    include_sandbox = (x_sandbox or "").strip() == "1"
+    return build_prompt_context(user_id, session_id, include_sandbox=include_sandbox)
 
 
 def _langgraph_node(ev: dict) -> str | None:
@@ -101,6 +110,7 @@ class ChatGraphIn(BaseModel):
     message: str = ""
     session_id: str | None = None
     attachments: list[str] = []
+    regenerate: bool = False
 
 
 class ChatGraphOut(BaseModel):
@@ -133,10 +143,9 @@ async def chat_graph(
 ) -> ChatGraphOut:
     uid = (x_user_id or "local").strip() or "local"
     sid = (body.session_id or "demo").strip() or "demo"
-    sandbox_ctx = ""
-    if (x_sandbox or "").strip() == "1":
-        sandbox_ctx = build_sandbox_context(uid, sid)
+    sandbox_ctx = _prompt_context(uid, sid, x_sandbox)
     config = _graph_config(body.session_id, x_user_id)
+    reset_run_token_totals(uid, sid)
     try:
         out = await get_graph().ainvoke(
             _graph_inputs(
@@ -144,11 +153,22 @@ async def chat_graph(
                 streaming=False,
                 attachments=body.attachments,
                 sandbox_context=sandbox_ctx,
+                regenerate=body.regenerate,
             ),
             config=config,
         )
     except Exception as e:
+        append_engine(
+            log_for_ids(uid, sid),
+            "graph_error",
+            "chat-graph failed",
+            level="ERROR",
+            meta={"error": str(e)},
+        )
         raise HTTPException(status_code=502, detail="Graph upstream request failed") from e
+    from app.user_profile.reflect_task import schedule_profile_reflect
+
+    await schedule_profile_reflect(uid, sid, config)
     return ChatGraphOut(reply=str(out.get("result", "")))
 
 
@@ -160,9 +180,7 @@ async def stream_chat(
 ) -> StreamingResponse:
     uid = (x_user_id or "local").strip() or "local"
     sid = (body.session_id or "demo").strip() or "demo"
-    sandbox_ctx = ""
-    if (x_sandbox or "").strip() == "1":
-        sandbox_ctx = build_sandbox_context(uid, sid)
+    sandbox_ctx = _prompt_context(uid, sid, x_sandbox)
 
     async def gen():
         inputs = _graph_inputs(
@@ -170,13 +188,37 @@ async def stream_chat(
             streaming=True,
             attachments=body.attachments,
             sandbox_context=sandbox_ctx,
+            regenerate=body.regenerate,
         )
         config = _graph_config(body.session_id, x_user_id)
         emit_status = settings.stream_emit_tool_status
+        log_ctx = log_for_ids(uid, sid)
+        reset_run_token_totals(uid, sid)
+        delta_batches = 0
+        delta_chars = 0
         try:
             async for ev in iter_graph_stream_events(inputs, config=config):
                 event = ev.get("event")
                 node = _langgraph_node(ev)
+
+                if event == "on_chat_model_end" and node in (None, "llm"):
+                    output = ev.get("data", {})
+                    if isinstance(output, dict):
+                        ai_msg = output.get("output")
+                        if ai_msg is not None and settings.session_agent_log_enabled:
+                            from app.observability.llm_meta import extract_token_usage
+
+                            usage = extract_token_usage(ai_msg)
+                            if usage:
+                                from app.observability.session_log import append_agent
+
+                                append_agent(
+                                    log_ctx,
+                                    "llm_stream_end",
+                                    "completed",
+                                    meta=usage,
+                                )
+                    continue
 
                 if emit_status and event == "on_chain_start" and node == "compact":
                     yield sse_pack(
@@ -233,11 +275,41 @@ async def stream_chat(
 
                 content = getattr(chunk, "content", None)
                 if isinstance(content, str) and content:
+                    delta_batches += 1
+                    delta_chars += len(content)
+                    if settings.session_agent_log_enabled and delta_batches % 20 == 0:
+                        from app.observability.session_log import append_agent
+
+                        append_agent(
+                            log_ctx,
+                            "stream_delta",
+                            "batch",
+                            meta={"batches": delta_batches, "chars": delta_chars},
+                        )
                     yield sse_pack("delta", {"text": content})
 
+            if settings.session_agent_log_enabled and delta_batches:
+                from app.observability.session_log import append_agent
+
+                append_agent(
+                    log_ctx,
+                    "stream_done",
+                    "completed",
+                    meta={"batches": delta_batches, "chars": delta_chars},
+                )
             yield sse_pack("done", {})
+            from app.user_profile.reflect_task import schedule_profile_reflect
+
+            await schedule_profile_reflect(uid, sid, config)
         except Exception as e:
             logger.exception("stream chat failed")
+            append_engine(
+                log_ctx,
+                "graph_error",
+                "stream failed",
+                level="ERROR",
+                meta={"error": str(e)},
+            )
             detail = str(e).strip() or "stream upstream request failed"
             if len(detail) > 240:
                 detail = detail[:240] + "…"

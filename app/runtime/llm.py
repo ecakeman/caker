@@ -20,6 +20,7 @@ def get_llm(user_id: str | None = None, model: str | None = None) -> BaseChatMod
         api_key=creds.api_key,
         base_url=creds.base_url,
         temperature=creds.temperature,
+        stream_usage=True,
     )
 
 
@@ -50,9 +51,19 @@ def get_tools_for_state(*, streaming: bool) -> list[BaseTool]:
     return build_default_tools(include_result_set=not streaming)
 
 
-def user_id_from_config(config) -> str:
+def _configurable(config) -> dict:
     if config and isinstance(config, dict):
-        configurable = config.get("configurable") or {}
-        if isinstance(configurable, dict):
-            return str(configurable.get("user_id") or "local")
-    return "local"
+        raw = config.get("configurable") or {}
+        if isinstance(raw, dict):
+            return raw
+    return {}
+
+
+def user_id_from_config(config) -> str:
+    return str(_configurable(config).get("user_id") or "local")
+
+
+def session_id_from_config(config) -> str:
+    cfg = _configurable(config)
+    sid = cfg.get("session_id") or cfg.get("thread_id") or "demo"
+    return str(sid).strip() or "demo"

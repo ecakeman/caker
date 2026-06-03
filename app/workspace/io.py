@@ -47,18 +47,33 @@ def _is_previewable_file(path: Path) -> bool:
         return False
 
 
-def _format_line_chunk(lines: list[str], offset: int, limit: int) -> tuple[str, int]:
+def _resolve_line_offset(offset: int, total_lines: int) -> int:
+    """0-based line index; negative offset counts from end (e.g. -50 = start 50 lines from EOF)."""
+    if offset >= 0:
+        return min(offset, total_lines)
+    return max(0, total_lines + offset)
+
+
+def _format_line_chunk(lines: list[str], offset: int, limit: int) -> tuple[str, int, int]:
     total = len(lines)
-    chunk = lines[offset : offset + limit]
-    out = [f"{i:6d}|{line}" for i, line in enumerate(chunk, start=offset + 1)]
+    resolved = _resolve_line_offset(offset, total)
+    chunk = lines[resolved : resolved + limit]
+    out = [f"{i:6d}|{line}" for i, line in enumerate(chunk, start=resolved + 1)]
     body = "\n".join(out) if out else "(empty range)"
-    if offset + limit < total:
+    if resolved + limit < total:
         body += (
-            f"\n\n(showing lines {offset + 1}-"
-            f"{min(offset + limit, total)} of {total}; "
-            f"use offset={offset + limit} to continue)"
+            f"\n\n(showing lines {resolved + 1}-"
+            f"{min(resolved + limit, total)} of {total}; "
+            f"use offset={resolved + limit} to continue)"
         )
-    return body, total
+    elif resolved > 0:
+        earlier = max(0, resolved - limit)
+        body += (
+            f"\n\n(showing lines {resolved + 1}-"
+            f"{min(resolved + limit, total)} of {total}; "
+            f"use offset={earlier} or offset=-{total - earlier} for earlier lines)"
+        )
+    return body, total, resolved
 
 
 def read_text_file(
@@ -69,8 +84,6 @@ def read_text_file(
     offset: int = 0,
     limit: int = DEFAULT_READ_LIMIT,
 ) -> ReadFileResult:
-    if offset < 0:
-        raise WorkspaceError("offset must be >= 0")
     if limit < 1 or limit > MAX_READ_LIMIT:
         raise WorkspaceError(f"limit must be between 1 and {MAX_READ_LIMIT}")
 
@@ -94,11 +107,11 @@ def read_text_file(
         raise WorkspaceError("binary file cannot be read as text") from e
 
     lines = text.splitlines()
-    body, total = _format_line_chunk(lines, offset, limit)
+    body, total, resolved = _format_line_chunk(lines, offset, limit)
     return ReadFileResult(
         rel_path=rel,
         text=body,
-        offset=offset,
+        offset=resolved,
         limit=limit,
         total_lines=total,
     )

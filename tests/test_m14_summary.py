@@ -107,14 +107,24 @@ def test_compact_node_replaces_with_soft_compact():
             "result_set_handled": False,
             "streaming": False,
         }
-        with patch(
-            "app.runtime.nodes.build_compact_messages",
-            return_value=[
-                SystemMessage(content="sys"),
-                HumanMessage(content="[CONTEXT]\nshort"),
-                HumanMessage(content="current question"),
-            ],
-        ) as mock_build:
+        with (
+            patch(
+                "app.runtime.nodes.build_compact_result",
+                return_value=type(
+                    "R",
+                    (),
+                    {
+                        "messages": [
+                            SystemMessage(content="sys"),
+                            HumanMessage(content="[CONTEXT]\nshort"),
+                            HumanMessage(content="current question"),
+                        ],
+                        "summary_text": "short",
+                    },
+                )(),
+            ) as mock_build,
+            patch("app.runtime.nodes.persist_compact_summary"),
+        ):
             out = await compact_node(state, None)
             mock_build.assert_called_once()
         assert len(out["messages"]) == 4

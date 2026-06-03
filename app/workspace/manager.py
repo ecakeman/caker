@@ -93,6 +93,14 @@ class WorkspaceManager:
         (ws / "data").mkdir(parents=True, exist_ok=True)
         (ws / "outputs").mkdir(parents=True, exist_ok=True)
         (ws / "compose").mkdir(parents=True, exist_ok=True)
+        (ws / "logs").mkdir(parents=True, exist_ok=True)
+
+        try:
+            from app.user_profile.store import ensure_profile_link
+
+            ensure_profile_link(user_id, session_id)
+        except Exception:
+            logger.debug("profile link setup skipped", exc_info=True)
 
         skills_link = ws / "skills"
         if not skills_link.exists():

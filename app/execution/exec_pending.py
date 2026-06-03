@@ -6,9 +6,16 @@ import uuid
 from dataclasses import dataclass
 from pathlib import Path
 
+from app.config import settings
 from app.execution.exec_runner import ExecError, run_one_shot_command
 from app.execution.paths import COMPOSE_FILE
 from app.execution.docker_util import compose_project_name, compose_ps_has_running
+from app.observability.session_log import (
+    _utc_ts,
+    append_sandbox_exec,
+    append_sandbox_log,
+    log_for_ids,
+)
 
 _INTERACTIVE_DENY = re.compile(
     r"^\s*(vim|vi|nvim|emacs|nano|less|more|top|htop|man)\b",
@@ -67,6 +74,22 @@ def propose_exec(
         created_at=time.time(),
     )
     _pending[pending.pending_id] = pending
+    log_ctx = log_for_ids(user_id, session_id)
+    cwd_display = (cwd.strip() if cwd else None) or settings.sandbox_venue_mount
+    append_sandbox_exec(
+        log_ctx,
+        "exec_proposed",
+        pending.command,
+        meta={
+            "pending_id": pending.pending_id,
+            "cwd": cwd_display,
+            "timeout_sec": pending.timeout_sec,
+        },
+    )
+    append_sandbox_log(
+        log_ctx,
+        f"{_utc_ts()} [proposed] {pending.command} (cwd={cwd_display}, pending_id={pending.pending_id})",
+    )
     return pending
 
 

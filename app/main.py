@@ -1,7 +1,7 @@
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 
@@ -37,6 +37,16 @@ app.include_router(admin_router)
 app.include_router(web_data_router)
 app.include_router(terminal_router)
 app.include_router(mcp_router)
+
+
+@app.middleware("http")
+async def dev_no_cache_frontend(request: Request, call_next):
+    """Avoid stale cached JS/HTML breaking boot after UI updates."""
+    response = await call_next(request)
+    path = request.url.path
+    if path == "/" or path.endswith(".html") or path.startswith("/js/"):
+        response.headers["Cache-Control"] = "no-cache, must-revalidate"
+    return response
 
 
 @app.get("/health")

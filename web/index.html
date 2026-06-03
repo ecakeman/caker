@@ -44,6 +44,50 @@
         margin: 0.5em 0;
         padding-left: 1.25rem;
       }
+      .message-content.md-body table {
+        display: block;
+        width: 100%;
+        max-width: 100%;
+        margin: 0.75em 0;
+        overflow-x: auto;
+        border-collapse: collapse;
+        border: 1px solid rgb(229 229 229);
+        border-radius: 0.5rem;
+      }
+      .message-content.md-body th,
+      .message-content.md-body td {
+        padding: 0.45rem 0.6rem;
+        text-align: left;
+        vertical-align: top;
+        border-bottom: 1px solid rgb(229 229 229);
+        border-right: 1px solid rgb(229 229 229);
+      }
+      .message-content.md-body th:last-child,
+      .message-content.md-body td:last-child {
+        border-right: none;
+      }
+      .message-content.md-body tr:last-child td {
+        border-bottom: none;
+      }
+      .message-content.md-body th {
+        background: rgb(245 245 245);
+        font-weight: 600;
+        white-space: nowrap;
+      }
+      .message-content.md-body tr:nth-child(even) td {
+        background: rgb(250 250 250);
+      }
+      .dark .message-content.md-body table,
+      .dark .message-content.md-body th,
+      .dark .message-content.md-body td {
+        border-color: rgb(64 64 64);
+      }
+      .dark .message-content.md-body th {
+        background: rgb(38 38 38);
+      }
+      .dark .message-content.md-body tr:nth-child(even) td {
+        background: rgb(23 23 23);
+      }
       .message-content.md-body pre {
         margin: 0.5em 0;
         overflow-x: auto;
@@ -293,12 +337,14 @@
             ☰
           </button>
           <h1 id="chat-title" class="flex-1 truncate text-sm font-medium">新对话</h1>
-          <label
-            class="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 cursor-pointer"
+          <button
+            id="btn-logs"
+            type="button"
+            class="shrink-0 rounded-lg px-2.5 py-1 text-xs font-medium text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-850"
+            title="查看会话观测日志"
           >
-            <input id="toggle-streaming" type="checkbox" class="rounded" checked />
-            流式
-          </label>
+            日志
+          </button>
           <span
             id="status-dot"
             class="size-2 rounded-full bg-gray-300 dark:bg-gray-600"
@@ -324,11 +370,11 @@
             >
               <li class="flex gap-2.5 rounded-xl border border-gray-100 bg-white/80 px-3 py-2.5 dark:border-gray-800 dark:bg-gray-900/60">
                 <span class="shrink-0 text-base" aria-hidden="true">💬</span>
-                <span>输入问题即可对话；右上角可开关<strong class="font-medium text-gray-800 dark:text-gray-200">流式</strong>输出。</span>
+                <span>输入问题即可对话；回复<strong class="font-medium text-gray-800 dark:text-gray-200">默认流式</strong>输出。</span>
               </li>
               <li class="flex gap-2.5 rounded-xl border border-gray-100 bg-white/80 px-3 py-2.5 dark:border-gray-800 dark:bg-gray-900/60">
                 <span class="shrink-0 text-base" aria-hidden="true">📎</span>
-                <span>输入框左侧 <strong class="font-medium text-gray-800 dark:text-gray-200">+</strong> 上传文件到当前会话 <code class="rounded bg-gray-100 px-1 text-xs dark:bg-gray-800">data/uploads/</code>，Agent 可用 read 读取。</span>
+                <span>右上角 <strong class="font-medium text-gray-800 dark:text-gray-200">日志</strong> 可实时查看引擎、终端与容器输出。</span>
               </li>
               <li class="flex gap-2.5 rounded-xl border border-gray-100 bg-white/80 px-3 py-2.5 dark:border-gray-800 dark:bg-gray-900/60">
                 <span class="shrink-0 text-base" aria-hidden="true">📁</span>
@@ -355,18 +401,6 @@
             <div
               class="composer-shell rounded-3xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900"
             >
-              <div
-                id="attachment-bar"
-                class="hidden border-b border-gray-100 px-3 pt-3 pb-2 dark:border-gray-800"
-              >
-                <p
-                  id="attachment-hint"
-                  class="mb-2 text-xs text-gray-500 dark:text-gray-400"
-                >
-                  已保存到当前会话工作区，发送后 Agent 可用 read 读取
-                </p>
-                <div id="attachment-chips" class="flex flex-wrap gap-2"></div>
-              </div>
               <div class="flex items-end gap-2 px-2 py-2">
                 <input
                   id="file-input"
@@ -433,10 +467,6 @@
       <div class="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl dark:bg-gray-900 max-h-[90vh] overflow-y-auto">
         <h2 class="text-lg font-semibold mb-4">设置</h2>
         <div class="space-y-4 text-sm">
-          <label class="flex items-center justify-between gap-4">
-            <span>流式输出</span>
-            <input id="settings-streaming" type="checkbox" class="rounded" />
-          </label>
           <label class="block">
             <span class="text-gray-500 dark:text-gray-400">主题</span>
             <select
@@ -512,6 +542,6 @@
       </div>
     </div>
 
-    <script type="module" src="/js/app.js"></script>
+    <script type="module" src="/js/app.js?v=20260604c"></script>
   </body>
 </html>

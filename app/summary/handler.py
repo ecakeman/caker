@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 import tiktoken
 from langchain_core.messages import (
     AIMessage,
@@ -119,14 +121,23 @@ def summarize_messages(messages: list[BaseMessage], *, user_id: str | None = Non
     return text.strip()
 
 
-def build_compact_messages(
+@dataclass(frozen=True)
+class CompactBuildResult:
+    """Session compaction output: rebuilt messages + summary of compressed middle."""
+
+    messages: list[BaseMessage]
+    summary_text: str
+
+
+def build_compact_result(
     messages: list[BaseMessage],
     current_input: str,
     *,
     user_id: str | None = None,
-) -> list[BaseMessage]:
+) -> CompactBuildResult:
     primary_system, middle, current_turn = partition_for_compact(messages, current_input)
     rebuilt: list[BaseMessage] = []
+    summary_text = ""
     if primary_system is not None:
         rebuilt.append(primary_system)
     if middle:
@@ -134,7 +145,16 @@ def build_compact_messages(
         if summary_text:
             rebuilt.append(_context_message(summary_text))
     rebuilt.extend(current_turn)
-    return rebuilt
+    return CompactBuildResult(messages=rebuilt, summary_text=summary_text)
+
+
+def build_compact_messages(
+    messages: list[BaseMessage],
+    current_input: str,
+    *,
+    user_id: str | None = None,
+) -> list[BaseMessage]:
+    return build_compact_result(messages, current_input, user_id=user_id).messages
 
 
 def sanitize_messages_for_llm(messages: list[BaseMessage]) -> list[BaseMessage]:

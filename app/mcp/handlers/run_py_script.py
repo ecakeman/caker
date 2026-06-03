@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 
 from app.mcp.schema import pydantic_input_schema
 from app.mcp.types import McpToolDefinition, ToolCallResult, ToolContext, ToolHandler
+from app.observability.session_log import append_skills, log_for_context
 from app.workspace import manager as workspace_manager
 from app.workspace.manager import WorkspaceError
 
@@ -67,6 +68,19 @@ def handle_run_py_script(args: dict, ctx: ToolContext) -> ToolCallResult:
         )
     except OSError as e:
         return ToolCallResult(text=json.dumps({"error": str(e)}), is_error=True)
+
+    log_ctx = log_for_context(ctx)
+    append_skills(
+        log_ctx,
+        "run_py_script",
+        parsed.rel_path,
+        level="ERROR" if proc.returncode != 0 else "INFO",
+        meta={
+            "exit": proc.returncode,
+            "stdout": (proc.stdout or "")[-2000:],
+            "stderr": (proc.stderr or "")[-2000:],
+        },
+    )
 
     return ToolCallResult(
         text=json.dumps(

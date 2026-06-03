@@ -5,7 +5,7 @@ from pathlib import Path
 from app.workspace.manager import READONLY_SUBDIRS, WorkspaceError, manager
 
 WRITABLE_PREFIXES = ("data/", "outputs/", "compose/")
-READABLE_PREFIXES = WRITABLE_PREFIXES + ("skills/", "books/")
+READABLE_PREFIXES = WRITABLE_PREFIXES + ("logs/", "skills/", "books/")
 MAX_TEXT_BYTES = 512_000
 DEFAULT_READ_LIMIT = 200
 MAX_READ_LIMIT = 2000
@@ -79,7 +79,7 @@ def assert_readable(rel_path: str) -> str:
     rel = normalize_rel_path(rel_path)
     if not is_readable_rel(rel):
         raise WorkspaceError(
-            "reads only allowed under data/, outputs/, compose/, skills/, or books/"
+            "reads only allowed under data/, outputs/, compose/, logs/, skills/, or books/"
         )
     return rel
 

@@ -3,19 +3,32 @@ from __future__ import annotations
 import os
 import shutil
 import subprocess
+import time
 from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, File, HTTPException, UploadFile
 from pydantic import BaseModel, Field
 
+from app.config import settings
 from app.execution.paths import COMPOSE_FILE
 from app.runtime.llm import clear_llm_cache
 from app.web.llm_settings import fetch_openai_models, get_user_llm_profile
+from app.web.regenerate import (
+    RegenerateError,
+    find_regenerate_slice,
+    sync_checkpoint_after_regenerate,
+)
+from app.web.session_title import (
+    DEFAULT_SESSION_TITLE,
+    generate_session_title,
+    title_needs_generation,
+)
 from app.web_store.store import WebStoreError, store
 from app.web_store.upload import UploadError, save_upload
 from app.workspace.io import read_full_text, write_text_file
 from app.workspace.manager import WorkspaceError, manager
+from app.workspace.paths import normalize_rel_path
 from app.web_store.workspace_info import (
     get_session_workspace_info,
     session_path_for_clipboard,
@@ -40,6 +53,10 @@ class SessionSaveIn(BaseModel):
     userId: str
     updatedAt: int | None = None
     messages: list[dict[str, Any]] = Field(default_factory=list)
+
+
+class RegenerateIn(BaseModel):
+    from_assistant_index: int = Field(..., ge=0)
 
 
 class LlmConnectionIn(BaseModel):
@@ -213,6 +230,78 @@ async def save_session(session_id: str, body: SessionSaveIn) -> dict:
     return {"ok": True, "session": session}
 
 
+@router.post("/sessions/{session_id}/regenerate")
+async def regenerate_session(session_id: str, user_id: str, body: RegenerateIn) -> dict:
+    uid = user_id.strip()
+    sid = session_id.strip()
+    try:
+        session = store.get_session(uid, sid)
+    except WebStoreError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    if session is None:
+        raise HTTPException(status_code=404, detail="session not found")
+
+    messages = list(session.get("messages") or [])
+    try:
+        truncated, regenerate_input, _user_index = find_regenerate_slice(
+            messages,
+            body.from_assistant_index,
+        )
+    except RegenerateError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+    session["messages"] = truncated
+    session["updatedAt"] = int(time.time() * 1000)
+    try:
+        saved = store.save_session(session)
+        await sync_checkpoint_after_regenerate(
+            user_id=uid,
+            session_id=sid,
+            truncated_web_messages=truncated,
+        )
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"checkpoint sync failed: {e}") from e
+
+    return {
+        "ok": True,
+        "session": saved,
+        "messages": truncated,
+        "regenerate_input": regenerate_input,
+    }
+
+
+@router.post("/sessions/{session_id}/generate-title")
+async def generate_session_title_endpoint(session_id: str, user_id: str) -> dict:
+    """LLM summary title for sidebar (ChatGPT / DeepSeek style)."""
+    uid = user_id.strip()
+    sid = session_id.strip()
+    try:
+        session = store.get_session(uid, sid)
+    except WebStoreError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    if session is None:
+        raise HTTPException(status_code=404, detail="session not found")
+
+    if not settings.session_title_auto:
+        return {"ok": True, "session": session, "skipped": True}
+
+    messages = session.get("messages") or []
+    if not title_needs_generation(session):
+        return {"ok": True, "session": session, "skipped": True}
+
+    try:
+        title = generate_session_title(messages, user_id=uid)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=str(e)) from e
+
+    session["title"] = title
+    try:
+        saved = store.save_session(session)
+    except WebStoreError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    return {"ok": True, "session": saved, "title": title}
+
+
 @router.post("/import-legacy")
 async def import_legacy(body: LegacyImportIn) -> dict:
     counts = store.import_legacy(body.model_dump())
@@ -358,7 +447,7 @@ async def workspace_tree(session_id: str, user_id: str) -> dict:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
     entries: list[dict[str, str]] = []
-    for sub in ("data", "outputs", "compose"):
+    for sub in ("data", "outputs", "compose", "logs"):
         sub_path = ws / sub
         if sub_path.is_dir():
             entries.append({"path": sub, "type": "dir"})
@@ -373,15 +462,32 @@ async def workspace_tree(session_id: str, user_id: str) -> dict:
 
 
 @router.get("/sessions/{session_id}/workspace/file")
-async def workspace_file(session_id: str, user_id: str, path: str) -> dict:
+async def workspace_file(
+    session_id: str,
+    user_id: str,
+    path: str,
+    missing_ok: bool = False,
+) -> dict:
     uid = user_id.strip()
     sid = session_id.strip()
     if not path.strip():
         raise HTTPException(status_code=400, detail="path required")
     try:
+        rel = normalize_rel_path(path)
+    except WorkspaceError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    try:
         result = read_full_text(uid, sid, path)
     except WorkspaceError as e:
         msg = str(e)
+        if missing_ok and "not found" in msg:
+            return {
+                "ok": True,
+                "path": rel,
+                "content": "",
+                "size": 0,
+                "missing": True,
+            }
         if "not found" in msg:
             raise HTTPException(status_code=404, detail=msg) from e
         if "directory" in msg or "cannot preview" in msg or "not a file" in msg:
@@ -425,6 +531,7 @@ async def exec_pending(session_id: str, user_id: str) -> dict:
 
 @router.post("/sessions/{session_id}/exec/approve")
 async def exec_approve(session_id: str, user_id: str, body: ExecApproveIn) -> dict:
+    from app.execution.container_log_follower import start_container_log_follower
     from app.execution.exec_pending import ExecError, approve_and_run
 
     uid = user_id.strip()
@@ -433,6 +540,7 @@ async def exec_approve(session_id: str, user_id: str, body: ExecApproveIn) -> di
         result = approve_and_run(body.pending_id, user_id=uid, session_id=sid)
     except ExecError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
+    await start_container_log_follower(uid, sid)
     return {"ok": True, "result": result}
 
 
@@ -490,6 +598,7 @@ async def compose_status_route(session_id: str, user_id: str) -> dict:
 @router.post("/sessions/{session_id}/compose/up")
 async def compose_up_route(session_id: str, user_id: str) -> dict:
     from app.execution.compose_control import ComposeError, compose_up
+    from app.execution.container_log_follower import start_container_log_follower
 
     uid = user_id.strip()
     sid = session_id.strip()
@@ -497,12 +606,15 @@ async def compose_up_route(session_id: str, user_id: str) -> dict:
         result = compose_up(uid, sid)
     except ComposeError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
+    if result.get("running"):
+        await start_container_log_follower(uid, sid)
     return result
 
 
 @router.post("/sessions/{session_id}/compose/down")
 async def compose_down_route(session_id: str, user_id: str) -> dict:
     from app.execution.compose_control import ComposeError, compose_down
+    from app.execution.container_log_follower import stop_container_log_follower
 
     uid = user_id.strip()
     sid = session_id.strip()
@@ -510,6 +622,7 @@ async def compose_down_route(session_id: str, user_id: str) -> dict:
         result = compose_down(uid, sid)
     except ComposeError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
+    await stop_container_log_follower(uid, sid)
     return result
 
 

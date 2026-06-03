@@ -38,7 +38,22 @@ def build_sandbox_context(user_id: str, session_id: str) -> str:
         lines.append(f"attach: venue:{settings.sandbox_venue_mount}")
 
     lines.append("hint: 用户在沙箱可见文件树/编辑器/终端；你不可见终端输出。")
+    lines.append("hint: 长时任务用 daemon_start / daemon_attach；文件变动用 watch_start + read logs/watch_events.jsonl。")
     return "\n".join(lines)
+
+
+def build_prompt_context(user_id: str, session_id: str, *, include_sandbox: bool = True) -> str:
+    """Sandbox block + cross-session user profile for system prompt injection."""
+    from app.user_profile.store import build_user_profile_context, ensure_profile_link
+
+    ensure_profile_link(user_id, session_id)
+    parts: list[str] = []
+    if include_sandbox:
+        parts.append(build_sandbox_context(user_id, session_id))
+    profile = build_user_profile_context(user_id)
+    if profile:
+        parts.append(profile)
+    return "\n\n".join(parts)
 
 
 def session_workspace_host(user_id: str, session_id: str) -> Path:

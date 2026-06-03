@@ -77,3 +77,22 @@ def test_read_pagination_hint(ws_mgr):
     write_text_file("alice", "sess1", "data/lines.txt", content)
     result = read_text_file("alice", "sess1", "data/lines.txt", offset=0, limit=200)
     assert "use offset=200" in result.text
+
+
+def test_read_negative_offset_tail(ws_mgr):
+    content = "\n".join(f"line{i}" for i in range(1, 101))
+    write_text_file("alice", "sess1", "data/tail.txt", content)
+    result = read_text_file("alice", "sess1", "data/tail.txt", offset=-20, limit=20)
+    assert result.offset == 80
+    assert result.total_lines == 100
+    assert "line81" in result.text
+    assert "line100" in result.text
+    assert "line1|" not in result.text
+    assert "for earlier lines" in result.text
+
+
+def test_read_negative_offset_last_line(ws_mgr):
+    write_text_file("alice", "sess1", "data/one.txt", "only\n")
+    result = read_text_file("alice", "sess1", "data/one.txt", offset=-1, limit=10)
+    assert "only" in result.text
+    assert result.offset == 0

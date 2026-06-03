@@ -6,29 +6,36 @@ const FILE_ICON_SVG =
 
 /**
  * @param {HTMLElement} shellEl composer-shell element
- * @param {{ chipsEl?: HTMLElement | null, hintEl?: HTMLElement | null, onChange?: () => void }} [opts]
+ * @param {{ chipsEl?: HTMLElement | null, hintEl?: HTMLElement | null, onChange?: () => void, silent?: boolean }} [opts]
  */
 export function createComposerFileRefs(shellEl, opts = {}) {
   /** @type {Array<{ relPath: string }>} */
   let refs = [];
 
-  const bar = document.createElement("div");
-  bar.id = "file-ref-bar";
-  bar.className =
-    "hidden border-b border-gray-100 px-3 pt-3 pb-2 dark:border-gray-800";
-  bar.innerHTML = `
+  const silent = opts.silent === true;
+  let bar = null;
+  let chipsEl = opts.chipsEl;
+  let hintEl = opts.hintEl;
+
+  if (!silent) {
+    bar = document.createElement("div");
+    bar.id = "file-ref-bar";
+    bar.className =
+      "hidden border-b border-gray-100 px-3 pt-3 pb-2 dark:border-gray-800";
+    bar.innerHTML = `
     <p class="mb-2 text-xs text-gray-500 dark:text-gray-400">已定位工作区路径，发送后 Agent 可用 read 读取</p>
     <div class="file-ref-chips flex flex-wrap gap-2"></div>`;
 
-  const chipsEl = opts.chipsEl || bar.querySelector(".file-ref-chips");
-  const hintEl = opts.hintEl || bar.querySelector("p");
+    chipsEl = opts.chipsEl || bar.querySelector(".file-ref-chips");
+    hintEl = opts.hintEl || bar.querySelector("p");
 
-  const existingBar = shellEl.querySelector("#file-ref-bar");
-  if (existingBar) existingBar.remove();
-  shellEl.insertBefore(bar, shellEl.firstChild);
+    const existingBar = shellEl.querySelector("#file-ref-bar");
+    if (existingBar) existingBar.remove();
+    shellEl.insertBefore(bar, shellEl.firstChild);
+  }
 
   function render() {
-    if (!chipsEl) return;
+    if (silent || !chipsEl || !bar) return;
     chipsEl.innerHTML = "";
     bar.classList.toggle("hidden", !refs.length);
     for (const ref of refs) {
@@ -77,6 +84,15 @@ export function createComposerFileRefs(shellEl, opts = {}) {
     render();
   }
 
+  /** Drop refs whose path is not in the current session workspace listing. */
+  function pruneRelPaths(allowedRelPaths) {
+    const allowed = new Set(allowedRelPaths);
+    const next = refs.filter((r) => allowed.has(r.relPath));
+    if (next.length === refs.length) return;
+    refs = next;
+    render();
+  }
+
   function getRelPaths() {
     return refs.map((r) => r.relPath);
   }
@@ -95,7 +111,7 @@ export function createComposerFileRefs(shellEl, opts = {}) {
     addRef(path);
   });
 
-  return { addRef, clear, getRelPaths, render, bar, hintEl };
+  return { addRef, clear, pruneRelPaths, getRelPaths, render, bar, hintEl };
 }
 
 /**

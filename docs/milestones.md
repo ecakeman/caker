@@ -409,6 +409,25 @@ curl -s -X POST http://127.0.0.1:8000/api/v2/chat-graph \
 
 ---
 
+### M14 观测日志 + 消息操作
+
+| 路径 | 说明 |
+|------|------|
+| [app/observability/session_log.py](../app/observability/session_log.py) | `SessionLogger`：JSONL append、轮转、脱敏 |
+| [app/workspace/paths.py](../app/workspace/paths.py) | `logs/` 只读 ACL |
+| [app/api/web_data.py](../app/api/web_data.py) | 文件树 `logs`；`POST …/regenerate` |
+| [app/web/regenerate.py](../app/web/regenerate.py) | 截断 web messages + checkpoint `aupdate_state` |
+| [web/js/chat-ui.js](../web/js/chat-ui.js) | 助手「复制」「重新生成」 |
+| [docs/observability.md](./observability.md) | 运维与验收清单 |
+
+**验证**：
+
+```bash
+uv run pytest tests/test_session_log.py tests/test_regenerate_session.py -q
+```
+
+---
+
 ## 维护约定
 
 - **已完成**：每攻下一个 M，在本文「已完成里程碑」追加一节（路径表、验证、与指南差异）。

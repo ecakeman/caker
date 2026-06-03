@@ -78,7 +78,7 @@ function parseSseBlock(block) {
 }
 
 /**
- * @param {ChatBody} body
+ * @param {ChatBody & { regenerate?: boolean }} body
  * @param {{
  *   userId: string,
  *   signal?: AbortSignal,
@@ -211,6 +211,26 @@ export async function rejectExec(userId, sessionId, pendingId) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ pending_id: pendingId }),
+    },
+  );
+  await throwIfNotOk(res);
+  return res.json();
+}
+
+/**
+ * @param {string} sessionId
+ * @param {string} userId
+ * @param {number} fromAssistantIndex
+ */
+export async function regenerateSession(sessionId, userId, fromAssistantIndex) {
+  const uid = requireUserId(userId);
+  const params = new URLSearchParams({ user_id: uid });
+  const res = await fetch(
+    `/api/v2/web/sessions/${encodeURIComponent(sessionId)}/regenerate?${params}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ from_assistant_index: fromAssistantIndex }),
     },
   );
   await throwIfNotOk(res);

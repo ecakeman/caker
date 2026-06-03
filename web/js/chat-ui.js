@@ -2,6 +2,121 @@
  * Shared chat UI helpers for main site and sandbox.
  */
 
+/** @param {string} raw */
+function parseAssistantMarkdown(raw) {
+  if (typeof marked !== "undefined" && typeof DOMPurify !== "undefined") {
+    return DOMPurify.sanitize(marked.parse(raw || "", { async: false }));
+  }
+  return null;
+}
+
+/** Throttle interval (ms) by growing assistant text length. */
+function streamMarkdownInterval(len) {
+  if (len > 24_000) return 320;
+  if (len > 12_000) return 200;
+  if (len > 6_000) return 140;
+  return 90;
+}
+
+/**
+ * Paint assistant markdown into a bubble with adaptive throttling (stream-friendly).
+ * @param {HTMLElement} bubbleEl
+ * @param {string} text
+ * @param {HTMLElement | null} [scrollContainer]
+ */
+export function paintStreamingMarkdown(bubbleEl, text, scrollContainer = null) {
+  if (!bubbleEl) return;
+  const raw = text || "";
+  const html = parseAssistantMarkdown(raw);
+  if (html !== null) {
+    bubbleEl.className = "message-content md-body";
+    bubbleEl.innerHTML = html;
+  } else {
+    bubbleEl.className = "message-content user-plain";
+    bubbleEl.textContent = raw;
+  }
+  if (scrollContainer) {
+    scrollContainer.scrollTop = scrollContainer.scrollHeight;
+  }
+}
+
+/**
+ * Coalesce stream deltas → throttled markdown paints without blocking the main thread.
+ * @param {HTMLElement} bubbleEl
+ * @param {HTMLElement | null} [scrollContainer]
+ */
+export function createStreamingMarkdownPainter(bubbleEl, scrollContainer = null) {
+  let pendingText = "";
+  let lastPainted = "";
+  let lastPaintAt = 0;
+  let rafId = 0;
+  let timerId = 0;
+
+  const cancelTimers = () => {
+    if (rafId) {
+      window.cancelAnimationFrame(rafId);
+      rafId = 0;
+    }
+    if (timerId) {
+      window.clearTimeout(timerId);
+      timerId = 0;
+    }
+  };
+
+  const paint = () => {
+    if (!bubbleEl || pendingText === lastPainted) return;
+    lastPainted = pendingText;
+    lastPaintAt = performance.now();
+    paintStreamingMarkdown(bubbleEl, pendingText, scrollContainer);
+  };
+
+  const schedule = ({ immediate = false } = {}) => {
+    if (!bubbleEl) return;
+    cancelTimers();
+
+    if (immediate) {
+      paint();
+      return;
+    }
+
+    rafId = window.requestAnimationFrame(() => {
+      rafId = 0;
+      const gap = streamMarkdownInterval(pendingText.length);
+      const elapsed = performance.now() - lastPaintAt;
+      if (elapsed < gap) {
+        timerId = window.setTimeout(() => {
+          timerId = 0;
+          paint();
+        }, gap - elapsed);
+        return;
+      }
+      paint();
+    });
+  };
+
+  return {
+    /** @param {string} text */
+    update(text) {
+      pendingText = text || "";
+      const immediate = !lastPainted && pendingText.length > 0;
+      schedule({ immediate });
+    },
+    /** @param {string} [text] */
+    flush(text) {
+      if (text !== undefined) pendingText = text || "";
+      cancelTimers();
+      lastPainted = "";
+      paint();
+    },
+    destroy() {
+      cancelTimers();
+      pendingText = "";
+      lastPainted = "";
+      lastPaintAt = 0;
+    },
+  };
+}
+
 /**
  * @param {HTMLElement} el
  * @param {{ role: string, content?: string }} msg
@@ -16,8 +131,9 @@ export function renderMessageContent(el, msg) {
   }
   el.classList.add("md-body");
   const raw = msg.content || "";
-  if (typeof marked !== "undefined" && typeof DOMPurify !== "undefined") {
-    el.innerHTML = DOMPurify.sanitize(marked.parse(raw, { async: false }));
+  const html = parseAssistantMarkdown(raw);
+  if (html !== null) {
+    el.innerHTML = html;
   } else {
     el.textContent = raw;
   }
@@ -26,7 +142,15 @@ export function renderMessageContent(el, msg) {
 /**
  * @param {HTMLElement} containerEl
  * @param {Array<{ role: string, content?: string }>} messages
- * @param {{ maxWidthClass?: string, bubbleUserClass?: string, bubbleAssistantClass?: string, onAssistantBubble?: (el: HTMLElement) => void, emptyStateEl?: HTMLElement }} [opts]
+ * @param {{
+ *   maxWidthClass?: string,
+ *   bubbleUserClass?: string,
+ *   bubbleAssistantClass?: string,
+ *   onAssistantBubble?: (el: HTMLElement) => void,
+ *   onCopyAssistant?: (index: number, msg: object) => void,
+ *   onRegenerateAssistant?: (index: number, msg: object) => void,
+ *   emptyStateEl?: HTMLElement
+ * }} [opts]
  */
 export function renderMessages(containerEl, messages, opts = {}) {
   if (!containerEl) return null;
@@ -55,19 +179,55 @@ export function renderMessages(containerEl, messages, opts = {}) {
   /** @type {HTMLElement | null} */
   let lastAssistant = null;
 
-  for (const msg of messages) {
+  for (let index = 0; index < (messages || []).length; index++) {
+    const msg = messages[index];
     if (msg.role !== "user" && msg.role !== "assistant") continue;
     const isUser = msg.role === "user";
     const row = document.createElement("div");
-    row.className = `flex ${isUser ? "justify-end" : "justify-start"}`;
+    row.className = `flex w-full ${isUser ? "justify-end" : "justify-start"}`;
+
+    const col = document.createElement("div");
+    col.className = isUser
+      ? `${maxWidthClass} flex flex-col items-end`
+      : `flex w-full flex-col gap-1 ${maxWidthClass}`;
 
     const bubble = document.createElement("div");
-    bubble.className = `${maxWidthClass} ${isUser ? bubbleUserClass : bubbleAssistantClass}`;
+    bubble.className = isUser
+      ? `${bubbleUserClass} max-w-full min-w-[6rem]`
+      : `w-full ${bubbleAssistantClass}`;
 
     const content = document.createElement("div");
     renderMessageContent(content, msg);
     bubble.appendChild(content);
-    row.appendChild(bubble);
+    col.appendChild(bubble);
+
+    if (!isUser && (opts.onCopyAssistant || opts.onRegenerateAssistant)) {
+      const actions = document.createElement("div");
+      actions.className =
+        "flex items-center gap-2 px-1 text-xs text-gray-500 dark:text-gray-400";
+
+      if (opts.onCopyAssistant) {
+        const copyBtn = document.createElement("button");
+        copyBtn.type = "button";
+        copyBtn.className = "rounded px-1.5 py-0.5 hover:bg-gray-100 dark:hover:bg-gray-800";
+        copyBtn.textContent = "复制";
+        copyBtn.addEventListener("click", () => opts.onCopyAssistant?.(index, msg));
+        actions.appendChild(copyBtn);
+      }
+
+      if (opts.onRegenerateAssistant) {
+        const regenBtn = document.createElement("button");
+        regenBtn.type = "button";
+        regenBtn.className = "rounded px-1.5 py-0.5 hover:bg-gray-100 dark:hover:bg-gray-800";
+        regenBtn.textContent = "重新生成";
+        regenBtn.addEventListener("click", () => opts.onRegenerateAssistant?.(index, msg));
+        actions.appendChild(regenBtn);
+      }
+
+      col.appendChild(actions);
+    }
+
+    row.appendChild(col);
     wrap.appendChild(row);
 
     if (msg.role === "assistant") {
@@ -118,12 +278,6 @@ export function mountComposer(mountEl, hooks) {
   mountEl.innerHTML = `
     <p id="stream-status" class="mb-2 hidden text-xs text-gray-500 dark:text-gray-400"></p>
     <div class="composer-shell rounded-3xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
-      <div id="attachment-bar" class="hidden border-b border-gray-100 px-3 pt-3 pb-2 dark:border-gray-800">
-        <p id="attachment-hint" class="mb-2 text-xs text-gray-500 dark:text-gray-400">
-          已保存到当前会话工作区，发送后 Agent 可用 read 读取
-        </p>
-        <div id="attachment-chips" class="flex flex-wrap gap-2"></div>
-      </div>
       <div class="flex items-end gap-2 px-2 py-2">
         <input id="file-input" type="file" multiple class="hidden" />
         ${
@@ -135,8 +289,8 @@ export function mountComposer(mountEl, hooks) {
         </button>`
             : ""
         }
-        <textarea id="composer" rows="1" placeholder="输入消息… Enter 发送，Shift+Enter 换行"
-          class="max-h-40 min-h-[2.5rem] flex-1 resize-none bg-transparent py-2.5 text-sm outline-none"></textarea>
+        <textarea id="composer" rows="3" placeholder="输入消息… Enter 发送，Shift+Enter 换行"
+          class="max-h-52 min-h-[4.5rem] flex-1 resize-y bg-transparent py-2.5 text-sm leading-relaxed outline-none"></textarea>
         <button id="btn-stop" type="button" class="mb-0.5 hidden shrink-0 rounded-xl px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-850">停止</button>
         <button id="btn-send" type="button" class="mb-0.5 shrink-0 rounded-xl bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-40 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200">发送</button>
       </div>
@@ -170,7 +324,5 @@ export function mountComposer(mountEl, hooks) {
     btnAttach,
     streamStatus,
     fileInput: mountEl.querySelector("#file-input"),
-    attachmentBar: mountEl.querySelector("#attachment-bar"),
-    attachmentChips: mountEl.querySelector("#attachment-chips"),
   };
 }

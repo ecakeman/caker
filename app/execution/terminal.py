@@ -11,7 +11,9 @@ import termios
 from fastapi import WebSocket, WebSocketDisconnect
 
 from app.config import settings
+from app.execution.container_log_follower import start_container_log_follower
 from app.execution.venue import VenueError, resolve_terminal_exec
+from app.observability.session_log import append_terminal_bytes, log_for_ids
 from app.workspace.manager import WorkspaceError, manager
 
 logger = logging.getLogger(__name__)
@@ -32,7 +34,12 @@ def _set_pty_size(fd: int, *, rows: int = 24, cols: int = 80) -> None:
     fcntl.ioctl(fd, termios.TIOCSWINSZ, winsize)
 
 
-async def _pty_to_websocket(master_fd: int, websocket: WebSocket) -> None:
+async def _pty_to_websocket(
+    master_fd: int,
+    websocket: WebSocket,
+    *,
+    log_ctx=None,
+) -> None:
     loop = asyncio.get_running_loop()
     while True:
         try:
@@ -41,21 +48,33 @@ async def _pty_to_websocket(master_fd: int, websocket: WebSocket) -> None:
             break
         if not data:
             break
+        if log_ctx is not None:
+            append_terminal_bytes(log_ctx, data)
         await websocket.send_bytes(data)
 
 
-async def _websocket_to_pty(websocket: WebSocket, master_fd: int) -> None:
+async def _websocket_to_pty(
+    websocket: WebSocket,
+    master_fd: int,
+    *,
+    log_ctx=None,
+) -> None:
     while True:
         msg = await websocket.receive()
         if msg["type"] == "websocket.disconnect":
             break
         data = msg.get("bytes")
         if data:
+            if log_ctx is not None:
+                append_terminal_bytes(log_ctx, data, stream="stdin")
             os.write(master_fd, data)
             continue
         text = msg.get("text")
         if text:
-            os.write(master_fd, text.encode("utf-8", errors="replace"))
+            encoded = text.encode("utf-8", errors="replace")
+            if log_ctx is not None:
+                append_terminal_bytes(log_ctx, encoded, stream="stdin")
+            os.write(master_fd, encoded)
 
 
 async def run_terminal_session(
@@ -99,8 +118,14 @@ async def run_terminal_session(
 
         await websocket.send_text(WELCOME_BANNER)
 
-        pty_task = asyncio.create_task(_pty_to_websocket(master_fd, websocket))
-        ws_task = asyncio.create_task(_websocket_to_pty(websocket, master_fd))
+        log_ctx = log_for_ids(user_id, session_id)
+        await start_container_log_follower(user_id, session_id)
+        pty_task = asyncio.create_task(
+            _pty_to_websocket(master_fd, websocket, log_ctx=log_ctx)
+        )
+        ws_task = asyncio.create_task(
+            _websocket_to_pty(websocket, master_fd, log_ctx=log_ctx)
+        )
 
         done, pending = await asyncio.wait(
             [pty_task, ws_task],

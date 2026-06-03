@@ -40,6 +40,20 @@ class Settings(BaseSettings):
     compact_ratio: float = Field(default=0.85, ge=0.1, le=1.0)
     graph_recursion_limit: int = Field(default=50, ge=1)
     mempalace_auto_inject: bool = Field(default=False)
+    # 上下文压缩触发后，将压缩要点写入 Chroma 长期记忆（需配置 EMBEDDING_*）
+    mempalace_compact_persist: bool = Field(default=True)
+    # 每轮对话结束后用 LLM 根据会话内容生成侧栏标题（替代首条消息截断）
+    session_title_auto: bool = Field(default=True)
+    user_profile_enabled: bool = Field(default=True)
+    user_profile_max_entries: int = Field(default=50, ge=5)
+    file_watch_poll_interval_default: float = Field(default=1.0, ge=0.5, le=60)
+    daemon_max_per_session: int = Field(default=10, ge=1)
+    session_log_enabled: bool = Field(default=True)
+    session_agent_log_enabled: bool = Field(default=False)
+    session_log_max_bytes: int = Field(default=2 * 1024 * 1024, ge=0)
+    session_log_blob_threshold: int = Field(default=1024, ge=256)
+    session_llm_preview_enabled: bool = Field(default=False)
+    session_llm_preview_max_chars: int = Field(default=1500, ge=200)
     stream_emit_tool_status: bool = Field(default=True)
 
     # CEER V2 — Sandbox terminal + venue shell

@@ -69,6 +69,50 @@
       .message-content.md-body p:first-child {
         margin-top: 0;
       }
+      .message-content.md-body table {
+        display: block;
+        width: 100%;
+        max-width: 100%;
+        margin: 0.75em 0;
+        overflow-x: auto;
+        border-collapse: collapse;
+        border: 1px solid rgb(229 229 229);
+        border-radius: 0.5rem;
+      }
+      .message-content.md-body th,
+      .message-content.md-body td {
+        padding: 0.45rem 0.6rem;
+        text-align: left;
+        vertical-align: top;
+        border-bottom: 1px solid rgb(229 229 229);
+        border-right: 1px solid rgb(229 229 229);
+      }
+      .message-content.md-body th:last-child,
+      .message-content.md-body td:last-child {
+        border-right: none;
+      }
+      .message-content.md-body tr:last-child td {
+        border-bottom: none;
+      }
+      .message-content.md-body th {
+        background: rgb(245 245 245);
+        font-weight: 600;
+        white-space: nowrap;
+      }
+      .message-content.md-body tr:nth-child(even) td {
+        background: rgb(250 250 250);
+      }
+      .dark .message-content.md-body table,
+      .dark .message-content.md-body th,
+      .dark .message-content.md-body td {
+        border-color: rgb(64 64 64);
+      }
+      .dark .message-content.md-body th {
+        background: rgb(38 38 38);
+      }
+      .dark .message-content.md-body tr:nth-child(even) td {
+        background: rgb(23 23 23);
+      }
       .message-content.md-body pre {
         margin: 0.5em 0;
         overflow-x: auto;
@@ -124,6 +168,14 @@
           退出工作台
         </button>
         <h1 class="min-w-0 flex-1 truncate text-sm font-medium" id="sandbox-title">执行环境</h1>
+        <button
+          type="button"
+          id="btn-logs"
+          class="shrink-0 rounded-lg px-2.5 py-1 text-xs font-medium text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-850"
+          title="查看会话观测日志"
+        >
+          日志
+        </button>
         <span id="terminal-status" class="shrink-0 text-xs text-gray-500">连接中…</span>
       </header>
       <div id="sandbox-main" class="flex min-h-0 flex-1">
@@ -217,6 +269,6 @@
     <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.18/mode/shell/shell.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/lib/xterm.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@xterm/addon-fit@0.10.0/lib/addon-fit.min.js"></script>
-    <script type="module" src="/js/sandbox.js"></script>
+    <script type="module" src="/js/sandbox.js?v=20260603"></script>
   </body>
 </html>

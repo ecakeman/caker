@@ -79,6 +79,21 @@ class RunPyScriptTool(BaseTool):
         except OSError as e:
             return json.dumps({"error": str(e)}, ensure_ascii=False)
 
+        from app.observability.session_log import append_skills, log_for_ids
+
+        log_ctx = log_for_ids(user_id, session_id)
+        append_skills(
+            log_ctx,
+            "run_py_script",
+            rel,
+            level="ERROR" if proc.returncode != 0 else "INFO",
+            meta={
+                "exit": proc.returncode,
+                "stdout": (proc.stdout or "")[-2000:],
+                "stderr": (proc.stderr or "")[-2000:],
+            },
+        )
+
         return json.dumps(
             {
                 "exit": proc.returncode,

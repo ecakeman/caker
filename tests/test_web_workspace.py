@@ -48,3 +48,29 @@ def test_workspace_reveal_returns_ok(tmp_path, monkeypatch):
     body = r.json()
     assert body["opened_with"] == "mock"
     assert "wsl.localhost" in body["session_path_windows"]
+
+
+def test_workspace_file_missing_ok_for_logs(tmp_path, monkeypatch):
+    from app.workspace.manager import WorkspaceManager
+
+    mgr = WorkspaceManager(str(tmp_path / "ws"))
+    monkeypatch.setattr("app.workspace.manager.manager", mgr)
+    monkeypatch.setattr("app.workspace.paths.manager", mgr)
+    mgr.session_dir("u1", "s1")
+
+    with TestClient(app) as client:
+        r = client.get(
+            "/api/v2/web/sessions/s1/workspace/file",
+            params={"user_id": "u1", "path": "logs/sandbox.log", "missing_ok": True},
+        )
+    assert r.status_code == 200
+    body = r.json()
+    assert body["missing"] is True
+    assert body["content"] == ""
+
+    with TestClient(app) as client:
+        r404 = client.get(
+            "/api/v2/web/sessions/s1/workspace/file",
+            params={"user_id": "u1", "path": "logs/sandbox.log"},
+        )
+    assert r404.status_code == 404

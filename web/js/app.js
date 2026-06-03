@@ -1,10 +1,11 @@
-import { checkHealth, chatGraph, deleteSessionRemote, deleteUserRemote, streamChat } from "./api.js";
+import { checkHealth, chatGraph, deleteSessionRemote, deleteUserRemote, regenerateSession, streamChat } from "./api.js";
 import {
   bindWorkspaceDrag,
   createComposerFileRefs,
 } from "./composer-file-ref.js";
 import {
   autoResizeComposer as resizeComposer,
+  createStreamingMarkdownPainter,
   renderMessages as renderChatMessages,
   setStreamStatus as setChatStreamStatus,
 } from "./chat-ui.js";
@@ -19,7 +20,7 @@ import {
   removeSessionFromCache,
   saveSettings,
   setActiveSessionForUser,
-  titleFromMessage,
+  refreshSessionTitle,
   upsertSession,
 } from "./sessions.js";
 import {
@@ -32,6 +33,7 @@ import {
   uploadSessionFiles,
 } from "./store-api.js";
 import { addUser, loadUsers, refreshUsers, removeUserLocal } from "./users.js";
+import { openSessionLogsViewer } from "./logs-viewer.js";
 
 /** @type {AbortController | null} */
 let abortController = null;
@@ -50,6 +52,9 @@ let pendingAttachments = [];
 /** @type {ReturnType<typeof createComposerFileRefs> | null} */
 let composerFileRefs = null;
 
+/** @type {HTMLElement | null} */
+let assistantBubbleEl = null;
+
 const $ = (id) => document.getElementById(id);
 
 const els = {
@@ -66,12 +71,11 @@ const els = {
   btnNewChat: $("btn-new-chat"),
   btnOpenSidebar: $("btn-open-sidebar"),
   btnCloseSidebar: $("btn-close-sidebar"),
-  toggleStreaming: $("toggle-streaming"),
+  btnLogs: $("btn-logs"),
   statusDot: $("status-dot"),
   settingsModal: $("settings-modal"),
   btnSettings: $("btn-settings"),
   btnSettingsClose: $("btn-settings-close"),
-  settingsStreaming: $("settings-streaming"),
   settingsTheme: $("settings-theme"),
   btnToggleUsers: $("btn-toggle-users"),
   usersChevron: $("users-chevron"),
@@ -81,9 +85,6 @@ const els = {
   addUserRow: $("add-user-row"),
   btnAttach: $("btn-attach"),
   fileInput: $("file-input"),
-  attachmentBar: $("attachment-bar"),
-  attachmentChips: $("attachment-chips"),
-  attachmentHint: $("attachment-hint"),
   streamStatus: $("stream-status"),
   workspaceStatus: $("workspace-status"),
   workspaceMeta: $("workspace-meta"),
@@ -140,10 +141,87 @@ function setStreamStatus(text) {
 
 /** @param {import('./sessions.js').Message[]} messages */
 function renderMessages(messages) {
-  renderChatMessages(els.messages, messages, {
-    outerWrapClass: "mx-auto max-w-3xl",
+  assistantBubbleEl = renderChatMessages(els.messages, messages, {
+    outerWrapClass: "mx-auto max-w-4xl",
     emptyStateEl: els.emptyState,
+    onAssistantBubble: (el) => {
+      assistantBubbleEl = el;
+    },
+    onCopyAssistant: (_index, msg) => {
+      const text = msg.content || "";
+      if (navigator.clipboard?.writeText) {
+        void navigator.clipboard.writeText(text);
+      }
+    },
+    onRegenerateAssistant: (index) => {
+      void regenerateAssistant(index);
+    },
   });
+}
+
+async function regenerateAssistant(assistantIndex) {
+  if (!currentSession || !activeUserId?.trim()) return;
+  if (!window.confirm("重新生成将删除此条助手回复及之后的消息，是否继续？")) return;
+
+  setGenerating(true);
+  try {
+    const data = await regenerateSession(currentSession.id, activeUserId, assistantIndex);
+    currentSession.messages = data.messages || [];
+    currentSession.messages.push({ role: "assistant", content: "", ts: Date.now() });
+    const assistantIdx = currentSession.messages.length - 1;
+    renderMessages(currentSession.messages);
+    await persistCurrent();
+
+    const streaming = isStreamingEnabled();
+    const body = {
+      message: data.regenerate_input || "",
+      session_id: currentSession.id,
+      attachments: [],
+      regenerate: true,
+    };
+
+    abortController = new AbortController();
+    const assistant = () => currentSession.messages[assistantIdx];
+    let streamPainter = null;
+    if (streaming && assistantBubbleEl) {
+      streamPainter = createStreamingMarkdownPainter(assistantBubbleEl, els.messages);
+    }
+
+    if (streaming) {
+      await streamChat(body, {
+        userId: activeUserId,
+        signal: abortController.signal,
+        onStatus: (payload) => {
+          const detail = payload?.detail || payload?.tool || payload?.phase || "";
+          setStreamStatus(detail);
+        },
+        onDelta: (chunk) => {
+          setStreamStatus("");
+          assistant().content += chunk;
+          streamPainter?.update(assistant().content || "");
+        },
+      });
+    } else {
+      assistant().content = await chatGraph(body, {
+        userId: activeUserId,
+        signal: abortController.signal,
+      });
+      renderMessages(currentSession.messages);
+    }
+
+    if (streamPainter) {
+      streamPainter.flush(assistant().content || "");
+      streamPainter.destroy();
+    }
+    renderMessages(currentSession.messages);
+    await persistCurrent();
+  } catch (err) {
+    alert(`重新生成失败：${err.message || "未知错误"}`);
+    renderMessages(currentSession.messages || []);
+  } finally {
+    abortController = null;
+    setGenerating(false);
+  }
 }
 
 function renderUserList() {
@@ -406,7 +484,7 @@ async function refreshWorkspacePanel() {
     if (els.btnCopyWorkspace) els.btnCopyWorkspace.disabled = !path;
     if (els.btnOpenWorkspace) els.btnOpenWorkspace.disabled = !path;
     if (els.btnEnterSandbox) els.btnEnterSandbox.disabled = false;
-    syncPendingFromWorkspaceFiles(uploads);
+    pruneStaleComposerAttachments(files);
   } catch (err) {
     workspaceInfo = null;
     if (els.workspaceStatus) {
@@ -476,23 +554,45 @@ async function openWorkspaceFolder() {
   }
 }
 
-/** @param {{ rel_path: string, filename: string }[]} serverFiles */
-function syncPendingFromWorkspaceFiles(serverFiles) {
-  const uploads = serverFiles.filter((f) => f.rel_path.startsWith("data/uploads/"));
-  if (!uploads.length) return;
-  for (const f of uploads) {
-    if (!pendingAttachments.some((a) => a.relPath === f.rel_path)) {
-      pendingAttachments.push({ relPath: f.rel_path, filename: f.filename });
-    }
-  }
+function clearComposerAttachments() {
+  pendingAttachments = [];
+  composerFileRefs?.clear();
   renderAttachmentBar();
 }
 
+/** @param {{ rel_path: string }[]} serverFiles */
+function pruneStaleComposerAttachments(serverFiles) {
+  const allowed = new Set((serverFiles || []).map((f) => f.rel_path));
+  const before = pendingAttachments.length;
+  pendingAttachments = pendingAttachments.filter((a) => allowed.has(a.relPath));
+  composerFileRefs?.pruneRelPaths?.(allowed);
+  if (pendingAttachments.length !== before) {
+    renderAttachmentBar();
+  }
+}
+
 async function selectSession(id) {
-  const s = await fetchSession(activeUserId, id);
-  if (!s || s.userId !== activeUserId) return;
+  let s;
+  try {
+    s = await fetchSession(activeUserId, id);
+  } catch (err) {
+    console.error("load session failed", err);
+    setStreamStatus(`加载会话失败：${err.message || "未知错误"}`);
+    await refreshSessionsForUser(activeUserId);
+    renderChatList();
+    clearCurrentChat();
+    return;
+  }
+  if (!s || s.userId !== activeUserId) {
+    console.warn("session missing or user mismatch", id, s?.userId, activeUserId);
+    await refreshSessionsForUser(activeUserId);
+    renderChatList();
+    clearCurrentChat();
+    return;
+  }
   currentSession = s;
   await setActiveSessionForUser(activeUserId, id);
+  clearComposerAttachments();
   if (els.chatTitle) els.chatTitle.textContent = s.title;
   renderMessages(s.messages || []);
   renderChatList();
@@ -502,8 +602,7 @@ async function selectSession(id) {
 
 function clearCurrentChat() {
   currentSession = null;
-  pendingAttachments = [];
-  renderAttachmentBar();
+  clearComposerAttachments();
   void setActiveSessionForUser(activeUserId, null);
   if (els.chatTitle) els.chatTitle.textContent = "新对话";
   renderMessages([]);
@@ -514,6 +613,7 @@ function clearCurrentChat() {
 async function startNewChat() {
   currentSession = await createSession(activeUserId);
   await setActiveSessionForUser(activeUserId, currentSession.id);
+  clearComposerAttachments();
   if (els.chatTitle) els.chatTitle.textContent = "新对话";
   renderMessages([]);
   renderChatList();
@@ -607,6 +707,19 @@ async function submitAddUser() {
   await selectUser(result.user.id);
 }
 
+/** 对话固定使用流式输出 */
+function isStreamingEnabled() {
+  return true;
+}
+
+function openLogsPanel() {
+  if (!activeUserId?.trim() || !currentSession?.id) {
+    alert("请先选择或新建会话");
+    return;
+  }
+  openSessionLogsViewer(activeUserId, currentSession.id);
+}
+
 function setAttachBusy(busy) {
   if (els.btnAttach) {
     els.btnAttach.disabled = busy;
@@ -615,52 +728,7 @@ function setAttachBusy(busy) {
 }
 
 function renderAttachmentBar() {
-  if (!els.attachmentBar || !els.attachmentChips) return;
-  els.attachmentChips.innerHTML = "";
-  if (!pendingAttachments.length) {
-    els.attachmentBar.classList.add("hidden");
-    return;
-  }
-  els.attachmentBar.classList.remove("hidden");
-  if (els.attachmentHint) {
-    els.attachmentHint.textContent =
-      `已保存到工作区（${pendingAttachments.length} 个文件），发送后 Agent 可用 read 读取`;
-  }
-
-  for (const att of pendingAttachments) {
-    const chip = document.createElement("div");
-    chip.className =
-      "attachment-chip inline-flex max-w-full items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 py-1.5 pl-2 pr-1 text-left dark:border-gray-700 dark:bg-gray-850/80";
-    chip.innerHTML = FILE_ICON_SVG;
-
-    const textWrap = document.createElement("div");
-    textWrap.className = "min-w-0 flex-1";
-    const name = document.createElement("div");
-    name.className = "truncate text-sm font-medium text-gray-800 dark:text-gray-100";
-    name.textContent = att.filename;
-    name.title = att.filename;
-    const path = document.createElement("div");
-    path.className = "truncate text-xs text-gray-500 dark:text-gray-400";
-    path.textContent = att.relPath;
-    path.title = att.relPath;
-    textWrap.appendChild(name);
-    textWrap.appendChild(path);
-    chip.appendChild(textWrap);
-
-    const rm = document.createElement("button");
-    rm.type = "button";
-    rm.className =
-      "shrink-0 rounded-lg p-1 text-gray-400 hover:bg-gray-200 hover:text-gray-700 dark:hover:bg-gray-800 dark:hover:text-gray-200";
-    rm.setAttribute("aria-label", `移除 ${att.filename}`);
-    rm.innerHTML =
-      '<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>';
-    rm.addEventListener("click", () => {
-      pendingAttachments = pendingAttachments.filter((a) => a.relPath !== att.relPath);
-      renderAttachmentBar();
-    });
-    chip.appendChild(rm);
-    els.attachmentChips.appendChild(chip);
-  }
+  /* 附件仅随下一次发送附带，不在输入区展示 */
 }
 
 async function handleFilesSelected(fileList) {
@@ -693,6 +761,9 @@ async function handleFilesSelected(fileList) {
       }
     }
     renderAttachmentBar();
+    if (added > 0) {
+      setStreamStatus(`已上传 ${added} 个文件，仅随下一次发送附带`);
+    }
     await refreshWorkspacePanel();
     if (data.verify && !data.verify.ok && (data.files?.length ?? 0) > 0) {
       alert(`上传校验失败，以下路径不可用：\n${(data.verify.missing || []).join("\n")}`);
@@ -736,34 +807,6 @@ async function sendMessage() {
 
   currentSession.userId = activeUserId;
 
-  let displayContent = text;
-  if (allAttachments.length) {
-    const lines = allAttachments.map((p) => `[文件] ${p}`);
-    displayContent = text ? `${text}\n${lines.join("\n")}` : lines.join("\n");
-  }
-
-  const userMsg = { role: "user", content: displayContent, ts: Date.now() };
-  currentSession.messages = currentSession.messages || [];
-  currentSession.messages.push(userMsg);
-  if (currentSession.messages.filter((m) => m.role === "user").length === 1) {
-    currentSession.title = titleFromMessage(text || attachmentPaths[0] || "附件");
-    if (els.chatTitle) els.chatTitle.textContent = currentSession.title;
-  }
-
-  currentSession.messages.push({
-    role: "assistant",
-    content: "",
-    ts: Date.now(),
-  });
-  const assistantIdx = currentSession.messages.length - 1;
-  els.composer.value = "";
-  pendingAttachments = [];
-  composerFileRefs?.clear();
-  renderAttachmentBar();
-  autoResizeComposer();
-  renderMessages(currentSession.messages);
-  await persistCurrent();
-
   if (allAttachments.length) {
     try {
       const ws = await fetchWorkspace(activeUserId, currentSession.id);
@@ -782,18 +825,46 @@ async function sendMessage() {
     }
   }
 
+  let displayContent = text;
+  if (allAttachments.length) {
+    const lines = allAttachments.map((p) => `[文件] ${p}`);
+    displayContent = text ? `${text}\n${lines.join("\n")}` : lines.join("\n");
+  }
+
+  const userMsg = { role: "user", content: displayContent, ts: Date.now() };
+  currentSession.messages = currentSession.messages || [];
+  currentSession.messages.push(userMsg);
+
+  currentSession.messages.push({
+    role: "assistant",
+    content: "",
+    ts: Date.now(),
+  });
+  const assistantIdx = currentSession.messages.length - 1;
+  els.composer.value = "";
+  pendingAttachments = [];
+  composerFileRefs?.clear();
+  renderAttachmentBar();
+  autoResizeComposer();
+  renderMessages(currentSession.messages);
+  await persistCurrent();
+
   const body = {
     message: text,
     session_id: currentSession.id,
     attachments: allAttachments,
   };
-  const settings = loadSettings();
-  const streaming = els.toggleStreaming?.checked ?? settings.streaming;
+  const streaming = isStreamingEnabled();
 
   abortController = new AbortController();
   setGenerating(true);
 
   const assistant = () => currentSession.messages[assistantIdx];
+  /** @type {ReturnType<typeof createStreamingMarkdownPainter> | null} */
+  let streamPainter = null;
+  if (streaming && assistantBubbleEl) {
+    streamPainter = createStreamingMarkdownPainter(assistantBubbleEl, els.messages);
+  }
 
   try {
     if (streaming) {
@@ -807,7 +878,7 @@ async function sendMessage() {
         onDelta: (chunk) => {
           setStreamStatus("");
           assistant().content += chunk;
-          renderMessages(currentSession.messages);
+          streamPainter?.update(assistant().content || "");
         },
       });
     } else {
@@ -826,9 +897,21 @@ async function sendMessage() {
     }
     renderMessages(currentSession.messages);
   } finally {
+    if (streamPainter) {
+      streamPainter.flush(assistant().content || "");
+      streamPainter.destroy();
+      streamPainter = null;
+    }
+    renderMessages(currentSession.messages);
     abortController = null;
     setGenerating(false);
     await persistCurrent();
+    const newTitle = await refreshSessionTitle(activeUserId, currentSession.id);
+    if (newTitle) {
+      currentSession.title = newTitle;
+      if (els.chatTitle) els.chatTitle.textContent = newTitle;
+      renderChatList();
+    }
     els.composer?.focus();
   }
 }
@@ -889,7 +972,6 @@ async function refreshLlmModelList() {
 
 function openSettings() {
   const s = loadSettings();
-  if (els.settingsStreaming) els.settingsStreaming.checked = s.streaming;
   if (els.settingsTheme) els.settingsTheme.value = s.theme;
   void loadLlmSettingsIntoModal();
   els.settingsModal?.classList.remove("hidden");
@@ -902,12 +984,10 @@ function closeSettings() {
 }
 
 async function syncSettingsFromModal() {
-  const streaming = els.settingsStreaming?.checked ?? true;
   const theme = /** @type {'system'|'light'|'dark'} */ (
     els.settingsTheme?.value || "system"
   );
-  await saveSettings({ streaming, theme });
-  if (els.toggleStreaming) els.toggleStreaming.checked = streaming;
+  await saveSettings({ streaming: true, theme });
   applyTheme(theme);
 
   const baseUrl = els.settingsLlmBaseUrl?.value?.trim();
@@ -953,13 +1033,21 @@ async function importLegacyFromBrowserIfNeeded() {
   const sessionsKey = "caker.web.sessions";
   const usersKey = "caker.web.users";
   const settingsKey = "caker.web.settings";
-  if (!localStorage.getItem(sessionsKey) && !localStorage.getItem(usersKey)) {
+  const sessionsRaw = localStorage.getItem(sessionsKey);
+  const usersRaw = localStorage.getItem(usersKey);
+  if (!sessionsRaw && !usersRaw) {
     return;
   }
   try {
-    const sessions = JSON.parse(localStorage.getItem(sessionsKey) || "[]");
-    const users = JSON.parse(localStorage.getItem(usersKey) || "[]");
+    const sessions = JSON.parse(sessionsRaw || "[]");
+    const users = JSON.parse(usersRaw || "[]");
     const settings = JSON.parse(localStorage.getItem(settingsKey) || "null");
+    if (!sessions.length && !users.length) {
+      localStorage.removeItem(sessionsKey);
+      localStorage.removeItem(usersKey);
+      localStorage.removeItem(settingsKey);
+      return;
+    }
     await importLegacy({ sessions, users, settings: settings || undefined });
     localStorage.removeItem(sessionsKey);
     localStorage.removeItem(usersKey);
@@ -969,15 +1057,34 @@ async function importLegacyFromBrowserIfNeeded() {
   }
 }
 
+function showBootError(message) {
+  const text = message || "无法连接服务端";
+  if (els.healthBanner) {
+    els.healthBanner.textContent = `${text}。请确认已运行：uv run uvicorn app.main:app`;
+    els.healthBanner.classList.remove("hidden");
+  }
+  if (els.chatList) {
+    els.chatList.innerHTML = `<p class="px-3 py-2 text-xs text-red-500">${text}</p>`;
+  }
+}
+
 async function boot() {
   try {
+    if (els.chatList) {
+      els.chatList.innerHTML =
+        '<p class="px-3 py-2 text-xs text-gray-400">正在加载会话…</p>';
+    }
+    if (els.userList) {
+      els.userList.innerHTML =
+        '<p class="px-2 py-1.5 text-xs text-gray-400">正在加载用户…</p>';
+    }
+
     await importLegacyFromBrowserIfNeeded();
     await refreshSettings();
     await refreshUsers();
 
     const settings = loadSettings();
     applyTheme(settings.theme);
-    if (els.toggleStreaming) els.toggleStreaming.checked = settings.streaming;
 
     activeUserId = settings.activeUserId;
     const users = loadUsers();
@@ -987,6 +1094,8 @@ async function boot() {
     }
 
     await refreshSessionsForUser(activeUserId);
+    renderUserList();
+    renderChatList();
 
     els.btnNewChat?.addEventListener("click", () => void startNewChat());
     els.btnSend?.addEventListener("click", () => void sendMessage());
@@ -1016,8 +1125,10 @@ async function boot() {
 
     const composerShell = document.querySelector(".composer-shell");
     if (composerShell) {
-      composerFileRefs = createComposerFileRefs(composerShell);
+      composerFileRefs = createComposerFileRefs(composerShell, { silent: true });
     }
+
+    els.btnLogs?.addEventListener("click", openLogsPanel);
 
     els.composer?.addEventListener("input", autoResizeComposer);
     els.composer?.addEventListener("keydown", (e) => {
@@ -1025,14 +1136,6 @@ async function boot() {
         e.preventDefault();
         void sendMessage();
       }
-    });
-
-    els.toggleStreaming?.addEventListener("change", () => {
-      void saveSettings({ streaming: els.toggleStreaming.checked }).then(() => {
-        if (els.settingsStreaming) {
-          els.settingsStreaming.checked = els.toggleStreaming.checked;
-        }
-      });
     });
 
     els.btnEnterSandbox?.addEventListener("click", enterSandbox);
@@ -1043,16 +1146,12 @@ async function boot() {
     els.btnSettingsClose?.addEventListener("click", () => {
       void syncSettingsFromModal().then(closeSettings);
     });
-    els.settingsStreaming?.addEventListener("change", () => void syncSettingsFromModal());
     els.settingsTheme?.addEventListener("change", () => void syncSettingsFromModal());
     els.settingsModal?.addEventListener("click", (e) => {
       if (e.target === els.settingsModal) {
         void syncSettingsFromModal().then(closeSettings);
       }
     });
-
-    renderUserList();
-    void refreshWorkspacePanel();
 
     const savedSessionId = getActiveSessionIdForUser(activeUserId);
     if (savedSessionId) {
@@ -1072,9 +1171,13 @@ async function boot() {
     initHealth();
     setInterval(initHealth, 30000);
   } catch (err) {
+    console.error("boot failed", err);
+    showBootError(err.message || "无法连接服务端");
     alert(`加载失败：${err.message || "无法连接服务端"}`);
-    console.error(err);
   }
 }
 
-void boot();
+void boot().catch((err) => {
+  console.error("boot unhandled", err);
+  showBootError(err.message || "无法连接服务端");
+});

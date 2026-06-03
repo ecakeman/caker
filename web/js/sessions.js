@@ -3,6 +3,7 @@ import {
   fetchSettings,
   getSession as getSessionRemote,
   listSessions,
+  generateSessionTitle as generateSessionTitleRemote,
   saveSession as saveSessionRemote,
   saveSettingsRemote,
 } from "./store-api.js";
@@ -116,6 +117,32 @@ export async function upsertSession(session) {
   sessionDetailCache.set(sessionKey(session.userId, session.id), saved);
   await refreshSessionsForUser(session.userId);
   return saved;
+}
+
+/**
+ * Ask server to LLM-summarize session title from messages (best-effort).
+ * @param {string} userId
+ * @param {string} sessionId
+ */
+export async function refreshSessionTitle(userId, sessionId) {
+  try {
+    const key = sessionKey(userId, sessionId);
+    const cached = sessionDetailCache.get(key);
+    const title = (cached?.title || "").trim();
+    if (title && title !== "新对话") return null;
+
+    const data = await generateSessionTitleRemote(userId, sessionId);
+    if (data.skipped || !data.session?.title) return null;
+    if (cached) {
+      cached.title = data.session.title;
+      sessionDetailCache.set(key, cached);
+    }
+    await refreshSessionsForUser(userId);
+    return data.session.title;
+  } catch (e) {
+    console.warn("generate session title", e);
+    return null;
+  }
 }
 
 /** @param {string} userId @param {string} id */

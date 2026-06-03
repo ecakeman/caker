@@ -2,13 +2,14 @@ import {
   approveExec,
   chatGraph,
   fetchExecPending,
+  regenerateSession,
   rejectExec,
   streamChat,
 } from "./api.js";
 import {
   autoResizeComposer,
+  createStreamingMarkdownPainter,
   mountComposer,
-  renderMessageContent,
   renderMessages,
   setStreamStatus,
 } from "./chat-ui.js";
@@ -17,7 +18,8 @@ import {
   createComposerFileRefs,
 } from "./composer-file-ref.js";
 import { createWorkspaceContextMenu } from "./workspace-context-menu.js";
-import { fetchSession, loadSettings, refreshSettings, upsertSession } from "./sessions.js";
+import { openSessionLogsViewer } from "./logs-viewer.js";
+import { fetchSession, loadSettings, refreshSessionTitle, refreshSettings, upsertSession } from "./sessions.js";
 import {
   composeDown,
   composeUp,
@@ -45,6 +47,7 @@ const btnSaveFile = document.getElementById("btn-save-file");
 const editorHostEl = document.getElementById("code-editor-host");
 const messagesEl = document.getElementById("chat-messages");
 const btnExit = document.getElementById("btn-exit");
+const btnLogs = document.getElementById("btn-logs");
 const btnComposeUp = document.getElementById("btn-compose-up");
 const btnComposeDown = document.getElementById("btn-compose-down");
 const composeStatusEl = document.getElementById("compose-status");
@@ -220,16 +223,84 @@ function paintMessages() {
     onAssistantBubble: (el) => {
       assistantBubbleEl = el;
     },
+    onCopyAssistant: (_index, msg) => {
+      const text = msg.content || "";
+      if (navigator.clipboard?.writeText) {
+        void navigator.clipboard.writeText(text);
+      }
+    },
+    onRegenerateAssistant: (index) => {
+      void regenerateAssistant(index);
+    },
   });
 }
 
-function updateAssistantBubble(text) {
-  if (assistantBubbleEl) {
-    renderMessageContent(assistantBubbleEl, { role: "assistant", content: text });
-    messagesEl.scrollTop = messagesEl.scrollHeight;
-    return;
+async function regenerateAssistant(assistantIndex) {
+  if (!currentSession || !sessionId || !userId?.trim() || agentTurnBusy) return;
+  if (!window.confirm("重新生成将删除此条助手回复及之后的消息，是否继续？")) return;
+
+  agentTurnBusy = true;
+  setGenerating(true);
+  try {
+    const data = await regenerateSession(sessionId, userId, assistantIndex);
+    currentSession.messages = data.messages || [];
+    currentSession.messages.push({ role: "assistant", content: "", ts: Date.now() });
+    const assistantIdx = currentSession.messages.length - 1;
+    paintMessages();
+    await persistSession();
+
+    const streaming = true;
+    const body = {
+      message: data.regenerate_input || "",
+      session_id: sessionId,
+      attachments: [],
+      regenerate: true,
+    };
+
+    abortController = new AbortController();
+    const assistant = () => currentSession.messages[assistantIdx];
+    let streamPainter = null;
+    if (streaming && assistantBubbleEl) {
+      streamPainter = createStreamingMarkdownPainter(assistantBubbleEl, messagesEl);
+    }
+
+    const chatOpts = {
+      userId,
+      sandbox: true,
+      signal: abortController.signal,
+    };
+
+    if (streaming) {
+      await streamChat(body, {
+        ...chatOpts,
+        onStatus: (payload) => {
+          setStreamStatus(composerUi?.streamStatus ?? null, payload?.detail || payload?.tool || "");
+        },
+        onDelta: (chunk) => {
+          setStreamStatus(composerUi?.streamStatus ?? null, "");
+          assistant().content += chunk;
+          streamPainter?.update(assistant().content || "");
+        },
+      });
+    } else {
+      assistant().content = await chatGraph(body, chatOpts);
+      paintMessages();
+    }
+
+    if (streamPainter) {
+      streamPainter.flush(assistant().content || "");
+      streamPainter.destroy();
+    }
+    paintMessages();
+    await persistSession();
+  } catch (err) {
+    alert(`重新生成失败：${err.message || "未知错误"}`);
+    paintMessages();
+  } finally {
+    abortController = null;
+    agentTurnBusy = false;
+    setGenerating(false);
   }
-  paintMessages();
 }
 
 async function loadSession() {
@@ -523,14 +594,18 @@ async function runAgentTurn(message, opts = {}) {
   setGenerating(true);
   setStreamStatus(composerUi?.streamStatus ?? null, "");
 
-  const settings = loadSettings();
-  const streaming = settings.streaming !== false;
+  const streaming = true;
   const body = { message: message || "", session_id: sessionId, attachments: fileRefs };
   const chatOpts = {
     userId,
     sandbox: true,
     signal: abortController.signal,
   };
+  /** @type {ReturnType<typeof createStreamingMarkdownPainter> | null} */
+  let streamPainter = null;
+  if (streaming && assistantBubbleEl) {
+    streamPainter = createStreamingMarkdownPainter(assistantBubbleEl, messagesEl);
+  }
 
   try {
     if (streaming) {
@@ -539,7 +614,7 @@ async function runAgentTurn(message, opts = {}) {
         onDelta: (chunk) => {
           const msg = currentSession.messages[assistantIdx];
           msg.content = (msg.content || "") + chunk;
-          updateAssistantBubble(msg.content);
+          streamPainter?.update(msg.content || "");
         },
         onStatus: (payload) => {
           opts.onStatus?.(payload);
@@ -567,11 +642,19 @@ async function runAgentTurn(message, opts = {}) {
       paintMessages();
     }
   } finally {
+    if (streamPainter) {
+      const finalText = currentSession?.messages?.[assistantIdx]?.content || "";
+      streamPainter.flush(finalText);
+      streamPainter.destroy();
+      streamPainter = null;
+    }
+    paintMessages();
     abortController = null;
     agentTurnBusy = false;
     setGenerating(false);
     setStreamStatus(composerUi?.streamStatus ?? null, "");
     await persistSession();
+    await refreshSessionTitle(userId, sessionId);
     await refreshAfterAgent();
     await pollExecPending();
   }
@@ -848,8 +931,15 @@ function initComposer() {
   });
   const shell = composerMount.querySelector(".composer-shell");
   if (shell) {
-    composerFileRefs = createComposerFileRefs(shell);
+    composerFileRefs = createComposerFileRefs(shell, { silent: true });
   }
+  btnLogs?.addEventListener("click", () => {
+    if (!sessionId) {
+      alert("缺少会话 ID");
+      return;
+    }
+    openSessionLogsViewer(userId, sessionId);
+  });
   initWorkspaceContextMenu();
 }
 

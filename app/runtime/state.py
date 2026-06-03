@@ -9,6 +9,7 @@ class GraphState(TypedDict):
     input: str
     result: str
     skip_inject_system: bool
+    skip_inject_user: bool
     result_set_handled: bool
     streaming: bool
     sandbox_context: str
