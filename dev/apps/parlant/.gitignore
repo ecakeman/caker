@@ -1,0 +1,8 @@
+.env
+.venv/
+var/
+parlant-data/
+__pycache__/
+*.pyc
+.pytest_cache/
+deprecated/

@@ -1,0 +1,797 @@
+[
+  {
+    "type": "exclusion",
+    "source_id": "ag_764a447935457d00",
+    "target_id": "ag_d3e447c7891dbd56",
+    "reason": "compliance_over_promo",
+    "confidence": 0.85,
+    "inference": "heuristic_risk_vs_promo"
+  },
+  {
+    "type": "exclusion",
+    "source_id": "ag_764a447935457d00",
+    "target_id": "ag_eba0145b0d82ba7f",
+    "reason": "compliance_over_promo",
+    "confidence": 0.85,
+    "inference": "heuristic_risk_vs_promo"
+  },
+  {
+    "type": "exclusion",
+    "source_id": "ag_764a447935457d00",
+    "target_id": "ag_e87af637ca4aa52c",
+    "reason": "compliance_over_promo",
+    "confidence": 0.85,
+    "inference": "heuristic_risk_vs_promo"
+  },
+  {
+    "type": "exclusion",
+    "source_id": "ag_764a447935457d00",
+    "target_id": "ag_837ea106dab8e47a",
+    "reason": "compliance_over_promo",
+    "confidence": 0.85,
+    "inference": "heuristic_risk_vs_promo"
+  },
+  {
+    "type": "exclusion",
+    "source_id": "ag_764a447935457d00",
+    "target_id": "ag_725cd0c3a5e7d643",
+    "reason": "compliance_over_promo",
+    "confidence": 0.85,
+    "inference": "heuristic_risk_vs_promo"
+  },
+  {
+    "type": "exclusion",
+    "source_id": "ag_764a447935457d00",
+    "target_id": "ag_bc30c1609fd47829",
+    "reason": "compliance_over_promo",
+    "confidence": 0.85,
+    "inference": "heuristic_risk_vs_promo"
+  },
+  {
+    "type": "exclusion",
+    "source_id": "ag_764a447935457d00",
+    "target_id": "ag_03d2acf339268e89",
+    "reason": "compliance_over_promo",
+    "confidence": 0.85,
+    "inference": "heuristic_risk_vs_promo"
+  },
+  {
+    "type": "exclusion",
+    "source_id": "ag_764a447935457d00",
+    "target_id": "ag_563511579db67a0a",
+    "reason": "compliance_over_promo",
+    "confidence": 0.85,
+    "inference": "heuristic_risk_vs_promo"
+  },
+  {
+    "type": "exclusion",
+    "source_id": "ag_764a447935457d00",
+    "target_id": "ag_5c323fcd670f4b25",
+    "reason": "compliance_over_promo",
+    "confidence": 0.85,
+    "inference": "heuristic_risk_vs_promo"
+  },
+  {
+    "type": "exclusion",
+    "source_id": "ag_764a447935457d00",
+    "target_id": "ag_9ab7490de7e30156",
+    "reason": "compliance_over_promo",
+    "confidence": 0.85,
+    "inference": "heuristic_risk_vs_promo"
+  },
+  {
+    "type": "exclusion",
+    "source_id": "ag_764a447935457d00",
+    "target_id": "ag_d5423bb2432f9e4e",
+    "reason": "compliance_over_promo",
+    "confidence": 0.85,
+    "inference": "heuristic_risk_vs_promo"
+  },
+  {
+    "type": "exclusion",
+    "source_id": "ag_764a447935457d00",
+    "target_id": "ag_97971fd7d05e97eb",
+    "reason": "compliance_over_promo",
+    "confidence": 0.85,
+    "inference": "heuristic_risk_vs_promo"
+  },
+  {
+    "type": "exclusion",
+    "source_id": "ag_b59b823eb73adc61",
+    "target_id": "ag_d3e447c7891dbd56",
+    "reason": "compliance_over_promo",
+    "confidence": 0.85,
+    "inference": "heuristic_risk_vs_promo"
+  },
+  {
+    "type": "exclusion",
+    "source_id": "ag_b59b823eb73adc61",
+    "target_id": "ag_eba0145b0d82ba7f",
+    "reason": "compliance_over_promo",
+    "confidence": 0.85,
+    "inference": "heuristic_risk_vs_promo"
+  },
+  {
+    "type": "exclusion",
+    "source_id": "ag_b59b823eb73adc61",
+    "target_id": "ag_e87af637ca4aa52c",
+    "reason": "compliance_over_promo",
+    "confidence": 0.85,
+    "inference": "heuristic_risk_vs_promo"
+  },
+  {
+    "type": "exclusion",
+    "source_id": "ag_b59b823eb73adc61",
+    "target_id": "ag_837ea106dab8e47a",
+    "reason": "compliance_over_promo",
+    "confidence": 0.85,
+    "inference": "heuristic_risk_vs_promo"
+  },
+  {
+    "type": "exclusion",
+    "source_id": "ag_b59b823eb73adc61",
+    "target_id": "ag_725cd0c3a5e7d643",
+    "reason": "compliance_over_promo",
+    "confidence": 0.85,
+    "inference": "heuristic_risk_vs_promo"
+  },
+  {
+    "type": "exclusion",
+    "source_id": "ag_b59b823eb73adc61",
+    "target_id": "ag_bc30c1609fd47829",
+    "reason": "compliance_over_promo",
+    "confidence": 0.85,
+    "inference": "heuristic_risk_vs_promo"
+  },
+  {
+    "type": "exclusion",
+    "source_id": "ag_b59b823eb73adc61",
+    "target_id": "ag_03d2acf339268e89",
+    "reason": "compliance_over_promo",
+    "confidence": 0.85,
+    "inference": "heuristic_risk_vs_promo"
+  },
+  {
+    "type": "exclusion",
+    "source_id": "ag_b59b823eb73adc61",
+    "target_id": "ag_563511579db67a0a",
+    "reason": "compliance_over_promo",
+    "confidence": 0.85,
+    "inference": "heuristic_risk_vs_promo"
+  },
+  {
+    "type": "exclusion",
+    "source_id": "ag_b59b823eb73adc61",
+    "target_id": "ag_5c323fcd670f4b25",
+    "reason": "compliance_over_promo",
+    "confidence": 0.85,
+    "inference": "heuristic_risk_vs_promo"
+  },
+  {
+    "type": "exclusion",
+    "source_id": "ag_b59b823eb73adc61",
+    "target_id": "ag_9ab7490de7e30156",
+    "reason": "compliance_over_promo",
+    "confidence": 0.85,
+    "inference": "heuristic_risk_vs_promo"
+  },
+  {
+    "type": "exclusion",
+    "source_id": "ag_b59b823eb73adc61",
+    "target_id": "ag_d5423bb2432f9e4e",
+    "reason": "compliance_over_promo",
+    "confidence": 0.85,
+    "inference": "heuristic_risk_vs_promo"
+  },
+  {
+    "type": "exclusion",
+    "source_id": "ag_b59b823eb73adc61",
+    "target_id": "ag_97971fd7d05e97eb",
+    "reason": "compliance_over_promo",
+    "confidence": 0.85,
+    "inference": "heuristic_risk_vs_promo"
+  },
+  {
+    "type": "exclusion",
+    "source_id": "ag_e667a6fe9d6796c0",
+    "target_id": "ag_d3e447c7891dbd56",
+    "reason": "compliance_over_promo",
+    "confidence": 0.85,
+    "inference": "heuristic_risk_vs_promo"
+  },
+  {
+    "type": "exclusion",
+    "source_id": "ag_e667a6fe9d6796c0",
+    "target_id": "ag_eba0145b0d82ba7f",
+    "reason": "compliance_over_promo",
+    "confidence": 0.85,
+    "inference": "heuristic_risk_vs_promo"
+  },
+  {
+    "type": "exclusion",
+    "source_id": "ag_e667a6fe9d6796c0",
+    "target_id": "ag_e87af637ca4aa52c",
+    "reason": "compliance_over_promo",
+    "confidence": 0.85,
+    "inference": "heuristic_risk_vs_promo"
+  },
+  {
+    "type": "exclusion",
+    "source_id": "ag_e667a6fe9d6796c0",
+    "target_id": "ag_837ea106dab8e47a",
+    "reason": "compliance_over_promo",
+    "confidence": 0.85,
+    "inference": "heuristic_risk_vs_promo"
+  },
+  {
+    "type": "exclusion",
+    "source_id": "ag_e667a6fe9d6796c0",
+    "target_id": "ag_725cd0c3a5e7d643",
+    "reason": "compliance_over_promo",
+    "confidence": 0.85,
+    "inference": "heuristic_risk_vs_promo"
+  },
+  {
+    "type": "exclusion",
+    "source_id": "ag_e667a6fe9d6796c0",
+    "target_id": "ag_bc30c1609fd47829",
+    "reason": "compliance_over_promo",
+    "confidence": 0.85,
+    "inference": "heuristic_risk_vs_promo"
+  },
+  {
+    "type": "exclusion",
+    "source_id": "ag_e667a6fe9d6796c0",
+    "target_id": "ag_03d2acf339268e89",
+    "reason": "compliance_over_promo",
+    "confidence": 0.85,
+    "inference": "heuristic_risk_vs_promo"
+  },
+  {
+    "type": "exclusion",
+    "source_id": "ag_e667a6fe9d6796c0",
+    "target_id": "ag_563511579db67a0a",
+    "reason": "compliance_over_promo",
+    "confidence": 0.85,
+    "inference": "heuristic_risk_vs_promo"
+  },
+  {
+    "type": "exclusion",
+    "source_id": "ag_e667a6fe9d6796c0",
+    "target_id": "ag_5c323fcd670f4b25",
+    "reason": "compliance_over_promo",
+    "confidence": 0.85,
+    "inference": "heuristic_risk_vs_promo"
+  },
+  {
+    "type": "exclusion",
+    "source_id": "ag_e667a6fe9d6796c0",
+    "target_id": "ag_9ab7490de7e30156",
+    "reason": "compliance_over_promo",
+    "confidence": 0.85,
+    "inference": "heuristic_risk_vs_promo"
+  },
+  {
+    "type": "exclusion",
+    "source_id": "ag_e667a6fe9d6796c0",
+    "target_id": "ag_d5423bb2432f9e4e",
+    "reason": "compliance_over_promo",
+    "confidence": 0.85,
+    "inference": "heuristic_risk_vs_promo"
+  },
+  {
+    "type": "exclusion",
+    "source_id": "ag_e667a6fe9d6796c0",
+    "target_id": "ag_97971fd7d05e97eb",
+    "reason": "compliance_over_promo",
+    "confidence": 0.85,
+    "inference": "heuristic_risk_vs_promo"
+  },
+  {
+    "type": "exclusion",
+    "source_id": "ag_39ff38b91ceb68f8",
+    "target_id": "ag_d3e447c7891dbd56",
+    "reason": "compliance_over_promo",
+    "confidence": 0.85,
+    "inference": "heuristic_risk_vs_promo"
+  },
+  {
+    "type": "exclusion",
+    "source_id": "ag_39ff38b91ceb68f8",
+    "target_id": "ag_eba0145b0d82ba7f",
+    "reason": "compliance_over_promo",
+    "confidence": 0.85,
+    "inference": "heuristic_risk_vs_promo"
+  },
+  {
+    "type": "exclusion",
+    "source_id": "ag_39ff38b91ceb68f8",
+    "target_id": "ag_e87af637ca4aa52c",
+    "reason": "compliance_over_promo",
+    "confidence": 0.85,
+    "inference": "heuristic_risk_vs_promo"
+  },
+  {
+    "type": "exclusion",
+    "source_id": "ag_39ff38b91ceb68f8",
+    "target_id": "ag_837ea106dab8e47a",
+    "reason": "compliance_over_promo",
+    "confidence": 0.85,
+    "inference": "heuristic_risk_vs_promo"
+  },
+  {
+    "type": "exclusion",
+    "source_id": "ag_39ff38b91ceb68f8",
+    "target_id": "ag_725cd0c3a5e7d643",
+    "reason": "compliance_over_promo",
+    "confidence": 0.85,
+    "inference": "heuristic_risk_vs_promo"
+  },
+  {
+    "type": "exclusion",
+    "source_id": "ag_39ff38b91ceb68f8",
+    "target_id": "ag_bc30c1609fd47829",
+    "reason": "compliance_over_promo",
+    "confidence": 0.85,
+    "inference": "heuristic_risk_vs_promo"
+  },
+  {
+    "type": "exclusion",
+    "source_id": "ag_39ff38b91ceb68f8",
+    "target_id": "ag_03d2acf339268e89",
+    "reason": "compliance_over_promo",
+    "confidence": 0.85,
+    "inference": "heuristic_risk_vs_promo"
+  },
+  {
+    "type": "exclusion",
+    "source_id": "ag_39ff38b91ceb68f8",
+    "target_id": "ag_563511579db67a0a",
+    "reason": "compliance_over_promo",
+    "confidence": 0.85,
+    "inference": "heuristic_risk_vs_promo"
+  },
+  {
+    "type": "exclusion",
+    "source_id": "ag_39ff38b91ceb68f8",
+    "target_id": "ag_5c323fcd670f4b25",
+    "reason": "compliance_over_promo",
+    "confidence": 0.85,
+    "inference": "heuristic_risk_vs_promo"
+  },
+  {
+    "type": "exclusion",
+    "source_id": "ag_39ff38b91ceb68f8",
+    "target_id": "ag_9ab7490de7e30156",
+    "reason": "compliance_over_promo",
+    "confidence": 0.85,
+    "inference": "heuristic_risk_vs_promo"
+  },
+  {
+    "type": "exclusion",
+    "source_id": "ag_39ff38b91ceb68f8",
+    "target_id": "ag_d5423bb2432f9e4e",
+    "reason": "compliance_over_promo",
+    "confidence": 0.85,
+    "inference": "heuristic_risk_vs_promo"
+  },
+  {
+    "type": "exclusion",
+    "source_id": "ag_39ff38b91ceb68f8",
+    "target_id": "ag_97971fd7d05e97eb",
+    "reason": "compliance_over_promo",
+    "confidence": 0.85,
+    "inference": "heuristic_risk_vs_promo"
+  },
+  {
+    "type": "exclusion",
+    "source_id": "ag_d5423bb2432f9e4e",
+    "target_id": "ag_d3e447c7891dbd56",
+    "reason": "compliance_over_promo",
+    "confidence": 0.85,
+    "inference": "heuristic_risk_vs_promo"
+  },
+  {
+    "type": "exclusion",
+    "source_id": "ag_d5423bb2432f9e4e",
+    "target_id": "ag_eba0145b0d82ba7f",
+    "reason": "compliance_over_promo",
+    "confidence": 0.85,
+    "inference": "heuristic_risk_vs_promo"
+  },
+  {
+    "type": "exclusion",
+    "source_id": "ag_d5423bb2432f9e4e",
+    "target_id": "ag_e87af637ca4aa52c",
+    "reason": "compliance_over_promo",
+    "confidence": 0.85,
+    "inference": "heuristic_risk_vs_promo"
+  },
+  {
+    "type": "exclusion",
+    "source_id": "ag_d5423bb2432f9e4e",
+    "target_id": "ag_837ea106dab8e47a",
+    "reason": "compliance_over_promo",
+    "confidence": 0.85,
+    "inference": "heuristic_risk_vs_promo"
+  },
+  {
+    "type": "exclusion",
+    "source_id": "ag_d5423bb2432f9e4e",
+    "target_id": "ag_725cd0c3a5e7d643",
+    "reason": "compliance_over_promo",
+    "confidence": 0.85,
+    "inference": "heuristic_risk_vs_promo"
+  },
+  {
+    "type": "exclusion",
+    "source_id": "ag_d5423bb2432f9e4e",
+    "target_id": "ag_bc30c1609fd47829",
+    "reason": "compliance_over_promo",
+    "confidence": 0.85,
+    "inference": "heuristic_risk_vs_promo"
+  },
+  {
+    "type": "exclusion",
+    "source_id": "ag_d5423bb2432f9e4e",
+    "target_id": "ag_03d2acf339268e89",
+    "reason": "compliance_over_promo",
+    "confidence": 0.85,
+    "inference": "heuristic_risk_vs_promo"
+  },
+  {
+    "type": "exclusion",
+    "source_id": "ag_d5423bb2432f9e4e",
+    "target_id": "ag_563511579db67a0a",
+    "reason": "compliance_over_promo",
+    "confidence": 0.85,
+    "inference": "heuristic_risk_vs_promo"
+  },
+  {
+    "type": "exclusion",
+    "source_id": "ag_d5423bb2432f9e4e",
+    "target_id": "ag_5c323fcd670f4b25",
+    "reason": "compliance_over_promo",
+    "confidence": 0.85,
+    "inference": "heuristic_risk_vs_promo"
+  },
+  {
+    "type": "exclusion",
+    "source_id": "ag_d5423bb2432f9e4e",
+    "target_id": "ag_9ab7490de7e30156",
+    "reason": "compliance_over_promo",
+    "confidence": 0.85,
+    "inference": "heuristic_risk_vs_promo"
+  },
+  {
+    "type": "exclusion",
+    "source_id": "ag_d5423bb2432f9e4e",
+    "target_id": "ag_d5423bb2432f9e4e",
+    "reason": "compliance_over_promo",
+    "confidence": 0.85,
+    "inference": "heuristic_risk_vs_promo"
+  },
+  {
+    "type": "exclusion",
+    "source_id": "ag_d5423bb2432f9e4e",
+    "target_id": "ag_97971fd7d05e97eb",
+    "reason": "compliance_over_promo",
+    "confidence": 0.85,
+    "inference": "heuristic_risk_vs_promo"
+  },
+  {
+    "type": "entailment",
+    "source_id": "ag_1b44c1eb6a4193dd",
+    "target_id": "ag_e8a9d38efbcc0137",
+    "reason": "baseline_entails_detail_underwriting",
+    "confidence": 0.65,
+    "inference": "derived_from_dependency"
+  },
+  {
+    "type": "priority",
+    "source_id": "ag_0b5978a234a0e0d5",
+    "target_id": "ag_9b9bc66be279ef88",
+    "reason": "针对 60 岁以上老人，'劝退商业医疗险转惠民保'的特定建议优先级高于通用的'高龄医疗险分析'。",
+    "confidence": 0.9,
+    "inference": "raw_relations_json",
+    "broker_source": "ag_0001",
+    "broker_target": "ag_0212"
+  },
+  {
+    "type": "priority",
+    "source_id": "ag_39ff38b91ceb68f8",
+    "target_id": "ag_1b65557daee76f88",
+    "reason": "涉及身故责任的人脸识别是监管红线，优先级高于普通手机号实名验证问题。",
+    "confidence": 0.9,
+    "inference": "raw_relations_json",
+    "broker_source": "ag_0200",
+    "broker_target": "ag_0199"
+  },
+  {
+    "type": "priority",
+    "source_id": "ag_33bab67bb60039ec",
+    "target_id": "ag_d7450c650f4762a1",
+    "reason": "处理旧保单时，先分析'是否退保'的决策优先级高于具体的'补充新单'执行方案。",
+    "confidence": 0.9,
+    "inference": "raw_relations_json",
+    "broker_source": "ag_0135",
+    "broker_target": "ag_0172"
+  },
+  {
+    "type": "priority",
+    "source_id": "ag_5c323fcd670f4b25",
+    "target_id": "ag_725cd0c3a5e7d643",
+    "reason": "针对系统拥堵的具体避险操作（避开高峰）优先级高于通用的'临近截止提醒'。",
+    "confidence": 0.9,
+    "inference": "raw_relations_json",
+    "broker_source": "ag_0055",
+    "broker_target": "ag_0154"
+  },
+  {
+    "type": "priority",
+    "source_id": "ag_d5423bb2432f9e4e",
+    "target_id": "ag_5116f055f07493b5",
+    "reason": "澄清'捆绑销售误导'的优先级高于解释'医保与商保区别'，先破除错误认知再建立正确概念。",
+    "confidence": 0.9,
+    "inference": "raw_relations_json",
+    "broker_source": "ag_0034",
+    "broker_target": "ag_0033"
+  },
+  {
+    "type": "priority",
+    "source_id": "ag_b6aa8dcd84518f8f",
+    "target_id": "ag_c653adc46ac99194",
+    "reason": "犹豫期内发现健康异常需'补充告知或撤单'的紧急处理优先级高于常规的'保单查询指导'。",
+    "confidence": 0.9,
+    "inference": "raw_relations_json",
+    "broker_source": "ag_0193",
+    "broker_target": "ag_0030"
+  },
+  {
+    "type": "priority",
+    "source_id": "ag_7b854c3c5e6d74cf",
+    "target_id": "ag_83a3d5a94d512210",
+    "reason": "客户质疑链接、支付或隐私安全时，先处理全局安全边界；不要被投保流程内的普通链接安全说明带回发链接或推进投保。",
+    "confidence": 0.9,
+    "inference": "raw_relations_json",
+    "broker_source": "manual_link_safety_text_first",
+    "broker_target": "ag_0098"
+  },
+  {
+    "type": "priority",
+    "source_id": "ag_7b854c3c5e6d74cf",
+    "target_id": "ag_e28c84c7ccc35151",
+    "reason": "客户不是要普通产品链接，而是在质疑链接、支付或隐私安全时，先处理安全边界，不直接发送投保链接。",
+    "confidence": 0.9,
+    "inference": "raw_relations_json",
+    "broker_source": "manual_link_safety_text_first",
+    "broker_target": "manual_material_request_link_first"
+  },
+  {
+    "type": "priority",
+    "source_id": "ag_764a447935457d00",
+    "target_id": "ag_d3e447c7891dbd56",
+    "reason": "客户提出返佣、红包或返钱等违规诉求时，合规拒绝并停住优先于任何停售窗口推进。",
+    "confidence": 0.9,
+    "inference": "raw_relations_json",
+    "broker_source": "ag_0144",
+    "broker_target": "ag_0054"
+  },
+  {
+    "type": "priority",
+    "source_id": "ag_764a447935457d00",
+    "target_id": "ag_e28c84c7ccc35151",
+    "reason": "客户以返佣、返钱作为条件索要链接时，先拒绝违规利益输送，不直接发投保链接。",
+    "confidence": 0.9,
+    "inference": "raw_relations_json",
+    "broker_source": "ag_0144",
+    "broker_target": "manual_material_request_link_first"
+  },
+  {
+    "type": "priority",
+    "source_id": "ag_ce4a59a5bafe9eaf",
+    "target_id": "ag_8c47fd78551d0af4",
+    "reason": "客户明确要报价图、测算图或截图时，先按素材请求处理；不要继续口头解释报价边界或收集多个测算条件。",
+    "confidence": 0.9,
+    "inference": "raw_relations_json",
+    "broker_source": "manual_material_request_image_first",
+    "broker_target": "manual_quote_number_boundary"
+  },
+  {
+    "type": "priority",
+    "source_id": "ag_ce4a59a5bafe9eaf",
+    "target_id": "ag_e8a9d38efbcc0137",
+    "reason": "客户当前轮已经明确要求素材时，先发可用素材，不把请求降级成普通单问题问答或额外追问。",
+    "confidence": 0.9,
+    "inference": "raw_relations_json",
+    "broker_source": "manual_material_request_image_first",
+    "broker_target": "manual_one_question_per_turn"
+  },
+  {
+    "type": "priority",
+    "source_id": "ag_ce4a59a5bafe9eaf",
+    "target_id": "ag_03d2acf339268e89",
+    "reason": "客户要报价图或方案截图时，不能用'先低保额占位'替代当前素材动作。",
+    "confidence": 0.9,
+    "inference": "raw_relations_json",
+    "broker_source": "manual_material_request_image_first",
+    "broker_target": "ag_0016"
+  },
+  {
+    "type": "priority",
+    "source_id": "ag_22e330ab62315d1b",
+    "target_id": "ag_e8a9d38efbcc0137",
+    "reason": "客户明确要求条款、责任或赔付规则截图时，优先用素材承载结构化信息，不转成长篇文字解释。",
+    "confidence": 0.9,
+    "inference": "raw_relations_json",
+    "broker_source": "manual_material_request_clause_image",
+    "broker_target": "manual_one_question_per_turn"
+  },
+  {
+    "type": "priority",
+    "source_id": "ag_e28c84c7ccc35151",
+    "target_id": "ag_e8a9d38efbcc0137",
+    "reason": "客户明确要求产品链接时，优先发送链接卡片，不先进入普通追问或方案收集。",
+    "confidence": 0.9,
+    "inference": "raw_relations_json",
+    "broker_source": "manual_material_request_link_first",
+    "broker_target": "manual_one_question_per_turn"
+  },
+  {
+    "type": "priority",
+    "source_id": "ag_e28c84c7ccc35151",
+    "target_id": "ag_d3e447c7891dbd56",
+    "reason": "客户明确要链接且没有安全质疑时，链接请求优先于停售窗口话术；不要先转成投保推进。",
+    "confidence": 0.9,
+    "inference": "raw_relations_json",
+    "broker_source": "manual_material_request_link_first",
+    "broker_target": "ag_0054"
+  },
+  {
+    "type": "priority",
+    "source_id": "ag_7678019b30ba3603",
+    "target_id": "ag_d3e447c7891dbd56",
+    "reason": "客户只说'发我看看/资料发我'但素材类型不清时，只问一个定位问题，不把模糊素材请求转成停售推进。",
+    "confidence": 0.9,
+    "inference": "raw_relations_json",
+    "broker_source": "manual_material_request_ambiguous_one_question",
+    "broker_target": "ag_0054"
+  },
+  {
+    "type": "priority",
+    "source_id": "ag_d0461bd5dab511a1",
+    "target_id": "ag_f149ebb5ba3e117b",
+    "reason": "没有明确可调用素材或最终不会展示素材标记时，不应承诺发图；素材一致性边界优先于主动结构化发图。",
+    "confidence": 0.9,
+    "inference": "raw_relations_json",
+    "broker_source": "manual_material_promise_consistency",
+    "broker_target": "manual_proactive_structured_image"
+  },
+  {
+    "type": "priority",
+    "source_id": "ag_b846583a06bebe71",
+    "target_id": "ag_ab61ad9891c0f06e",
+    "reason": "客户质疑佣金/动机时，先处理信任和商业模式边界，不能直接转成产品对比或线下佣金拆解。",
+    "confidence": 0.9,
+    "inference": "raw_relations_json",
+    "broker_source": "ag_0108",
+    "broker_target": "ag_0101"
+  },
+  {
+    "type": "priority",
+    "source_id": "ag_f149ebb5ba3e117b",
+    "target_id": "ag_8c47fd78551d0af4",
+    "reason": "结构化素材承载的图表信息不等同于现场口算报价；应优先发图再短解释。",
+    "confidence": 0.9,
+    "inference": "raw_relations_json",
+    "broker_source": "manual_proactive_structured_image",
+    "broker_target": "manual_quote_number_boundary"
+  },
+  {
+    "type": "priority",
+    "source_id": "ag_c2de1cbd3db8dcd5",
+    "target_id": "ag_d3e447c7891dbd56",
+    "reason": "客户只是好/收到/嗯嗯等弱确认时，停住优先于停售窗口推进。",
+    "confidence": 0.9,
+    "inference": "raw_relations_json",
+    "broker_source": "manual_weak_ack_stop",
+    "broker_target": "ag_0054"
+  },
+  {
+    "type": "priority",
+    "source_id": "ag_c2de1cbd3db8dcd5",
+    "target_id": "ag_03d2acf339268e89",
+    "reason": "弱确认不是接受'先占位'策略的信号，应停住等客户主动继续。",
+    "confidence": 0.9,
+    "inference": "raw_relations_json",
+    "broker_source": "manual_weak_ack_stop",
+    "broker_target": "ag_0016"
+  },
+  {
+    "type": "priority",
+    "source_id": "ag_c2de1cbd3db8dcd5",
+    "target_id": "ag_563511579db67a0a",
+    "reason": "弱确认不能被解释为愿意先投保锁定资格；本轮只轻确认并停住。",
+    "confidence": 0.9,
+    "inference": "raw_relations_json",
+    "broker_source": "manual_weak_ack_stop",
+    "broker_target": "ag_0076"
+  },
+  {
+    "type": "priority",
+    "source_id": "ag_4cc300a9392cf001",
+    "target_id": "ag_d3e447c7891dbd56",
+    "reason": "客户明确先忙、晚点或暂缓沟通时，暂停边界优先于停售/下架提醒。",
+    "confidence": 0.9,
+    "inference": "raw_relations_json",
+    "broker_source": "ag_0052",
+    "broker_target": "ag_0054"
+  },
+  {
+    "type": "priority",
+    "source_id": "ag_4cc300a9392cf001",
+    "target_id": "ag_03d2acf339268e89",
+    "reason": "客户明确先忙、晚点或暂缓沟通时，不建议低保额占位或利用犹豫期。",
+    "confidence": 0.9,
+    "inference": "raw_relations_json",
+    "broker_source": "ag_0052",
+    "broker_target": "ag_0016"
+  },
+  {
+    "type": "priority",
+    "source_id": "ag_837ea106dab8e47a",
+    "target_id": "ag_d3e447c7891dbd56",
+    "reason": "客户明确拒绝或不考虑时，收尾不打扰优先于任何窗口期推进。",
+    "confidence": 0.9,
+    "inference": "raw_relations_json",
+    "broker_source": "ag_0085",
+    "broker_target": "ag_0054"
+  },
+  {
+    "type": "priority",
+    "source_id": "ag_837ea106dab8e47a",
+    "target_id": "ag_03d2acf339268e89",
+    "reason": "客户明确不考虑时，收尾优先于低保额占位建议。",
+    "confidence": 0.9,
+    "inference": "raw_relations_json",
+    "broker_source": "ag_0085",
+    "broker_target": "ag_0016"
+  },
+  {
+    "type": "dependency",
+    "source_id": "ag_b7589a28d9f058ee",
+    "target_id": "ag_ebd80a1939664a03",
+    "reason": "推荐替代产品依赖于先判断孩子既往住院史是否属于健康告知范围；这是核保判断依赖，不是投保推进链。",
+    "confidence": 0.9,
+    "inference": "raw_relations_json",
+    "broker_source": "ag_0197",
+    "broker_target": "ag_0049"
+  },
+  {
+    "type": "dependency",
+    "source_id": "ag_5a75f4b59d4bab44",
+    "target_id": "ag_2768b2e2080891fd",
+    "reason": "纸质保单申请指导依赖于客户已能查询或确认电子保单；这是保单服务顺序，不触发销售推进。",
+    "confidence": 0.9,
+    "inference": "raw_relations_json",
+    "broker_source": "ag_0242",
+    "broker_target": "ag_0077"
+  },
+  {
+    "type": "disambiguation",
+    "source_id": "obs_product_intent_ambiguous",
+    "target_ids": [
+      "ag_21fa788c86941ca1",
+      "ag_309e633ae21beaa4",
+      "ag_40968eca6e66d085",
+      "ag_51fdccc106707889",
+      "ag_53357150555be3af",
+      "ag_c776ea5622d659cd",
+      "ag_e87af637ca4aa52c",
+      "ag_f149ebb5ba3e117b"
+    ],
+    "reason": "multi_product_intent",
+    "confidence": 0.75,
+    "inference": "heuristic_multi_product"
+  }
+]

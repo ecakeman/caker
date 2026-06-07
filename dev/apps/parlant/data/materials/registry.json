@@ -1,0 +1,483 @@
+{
+  "by_topic": {
+    "send_image::保险经纪人身份/执业资质查询截图": [
+      "image264"
+    ],
+    "send_image::保险公司监管与保单权益保护说明图": [
+      "image50"
+    ],
+    "send_quoted_chat::客户理赔/赔付案例聊天记录截图": [
+      "chat1",
+      "chat5"
+    ],
+    "send_image::理赔流程/材料清单/赔付案例说明图": [
+      "image4",
+      "image8",
+      "image37",
+      "image59"
+    ],
+    "send_link::保险产品或服务说明链接卡片": [
+      "link5",
+      "link24",
+      "link32",
+      "link50"
+    ],
+    "send_image::保费测算/报价页面截图": [
+      "image1",
+      "image15",
+      "image27",
+      "image48",
+      "image53",
+      "image75",
+      "image164",
+      "image233",
+      "image242"
+    ],
+    "send_image::保障责任/赔付规则说明图": [
+      "image402"
+    ],
+    "send_shareuser::经纪人同事/团队成员名片（专业咨询补位）": [
+      "shareuser1"
+    ],
+    "send_image::健康告知/核保宽松度产品对比图": [
+      "image494"
+    ],
+    "send_image::统一定义的 N 种重大疾病及 N 种轻度疾病列表图（行业标准化参考）": [
+      "image2"
+    ]
+  },
+  "by_reuse_id": {
+    "image242": {
+      "type": "image",
+      "content": "一张“保单利益演示表”截图，列出了从1岁到100岁各年龄段的已投入保费与现金价值，并用红框标出了70岁和80岁时的现金价值数据。",
+      "material_slot_id": "image_slot_0024",
+      "slot_canonical_topic": "保费测算/报价页面截图"
+    },
+    "image2": {
+      "type": "image",
+      "content": "这张图片展示了由中国保险行业协会和中国医师协会统一制定的28种重大疾病列表，以及3种轻度重大疾病列表。",
+      "material_slot_id": "image_slot_0147",
+      "slot_canonical_topic": "统一定义的 N 种重大疾病及 N 种轻度疾病列表图（行业标准化参考）"
+    },
+    "image4": {
+      "type": "image",
+      "content": "这是一张平安人寿2024年重疾理赔数据长图，展示了全年赔付金额207亿元。图中通过饼状图分析了理赔原因，并用红圈特别标注了“原位癌”占比2%的数据。",
+      "material_slot_id": "image_slot_0036",
+      "slot_canonical_topic": "理赔流程/材料清单/赔付案例说明图"
+    },
+    "image8": {
+      "type": "image",
+      "content": "一张“2021年保险高发重疾数据一览”表格，列出了多家保险公司恶性肿瘤的理赔占比及高发的具体癌症类型，其中德华安顾人寿占比最高。",
+      "material_slot_id": "image_slot_0023",
+      "slot_canonical_topic": "理赔流程/材料清单/赔付案例说明图"
+    },
+    "image1": {
+      "type": "image",
+      "content": "一张保费测算页面的截图，展示了一份包含多行数字的表格，其中一列数值被红框圈出，底部显示总额6,843.00元及“下一步”按钮。",
+      "material_slot_id": "image_slot_0004",
+      "slot_canonical_topic": "保费测算/报价页面截图"
+    },
+    "image15": {
+      "type": "image",
+      "content": "一张成人终身重疾险产品对比表，列出了五款保险在重疾、中症、轻症及癌症津贴等方面的保障细节与保费数据。",
+      "material_slot_id": "image_slot_0017",
+      "slot_canonical_topic": "保费测算/报价页面截图"
+    },
+    "link24": {
+      "type": "link",
+      "content": "标题：大圣1号防癌险（互联网）",
+      "material_slot_id": "link_slot_0432",
+      "slot_canonical_topic": "保险产品或服务说明链接卡片"
+    },
+    "image37": {
+      "type": "image",
+      "content": "海保人寿理赔决定通知书，显示对《海保人寿互联网臻享生活终身重大疾病保险》正常给付保险金 60000.00 元，保险责任继续有效。",
+      "material_slot_id": "image_slot_0250",
+      "slot_canonical_topic": "理赔流程/材料清单/赔付案例说明图"
+    },
+    "link5": {
+      "type": "link",
+      "content": "标题：君龙人寿超级玛丽15号重大疾病保险 摘要：王牌重疾",
+      "material_slot_id": "link_slot_0408",
+      "slot_canonical_topic": "保险产品或服务说明链接卡片"
+    },
+    "link32": {
+      "type": "link",
+      "content": "标题：中国人保大护甲7号意外险（旗舰版）",
+      "material_slot_id": "link_slot_0403",
+      "slot_canonical_topic": "保险产品或服务说明链接卡片"
+    },
+    "image48": {
+      "type": "image",
+      "content": "少儿终身重疾险基础主险对比表，涵盖大黄蜂16号、青云卫6号、达尔文保贝计划、小青龙7号四款产品，对比重疾/中症/轻症赔付比例、少儿特定疾病保障、保费豁免等核心条款。",
+      "material_slot_id": "image_slot_0007",
+      "slot_canonical_topic": "保费测算/报价页面截图"
+    },
+    "image27": {
+      "type": "image",
+      "content": "这张图片展示了“超级玛丽15号”保险产品的两种投保方案对比。图中详细列明了30岁男性和女性的年缴保费，并分别解释了在不同确诊情况下的赔付逻辑及最终获得的赔付金额。",
+      "material_slot_id": "image_slot_0062",
+      "slot_canonical_topic": "保费测算/报价页面截图"
+    },
+    "image402": {
+      "type": "image",
+      "content": "这是一张关于“恶性肿瘤--重度拓展保险金”的保险宣传图，展示了在确诊原位癌或恶性肿瘤-轻度后，若再次确诊恶性肿瘤-重度，可无间隔期额外赔付50%基本保额的保障内容。",
+      "material_slot_id": "image_slot_0018",
+      "slot_canonical_topic": "保障责任/赔付规则说明图"
+    },
+    "shareuser1": {
+      "type": "shareuser",
+      "content": "「和泰人寿」个人名片",
+      "material_slot_id": "shareuser_slot_0509",
+      "slot_canonical_topic": "经纪人同事/团队成员名片（专业咨询补位）"
+    },
+    "image264": {
+      "type": "image",
+      "content": "这是一张保险销售从业人员执业信息的查询截图，显示了姓名、所属公司及执业区域，下方附有二维码及有效期至2025年7月30日。",
+      "material_slot_id": "image_slot_0187",
+      "slot_canonical_topic": "保险经纪人身份/执业资质查询截图"
+    },
+    "image75": {
+      "type": "image",
+      "content": "这张图片是一张详细的保险产品保费对比表，展示了不同年龄段（从28岁到75岁）的投保人在购买“好医保（旗舰版）”、“蓝医保（20年）”、“金医保3号”和“星相守”四种保险产品时的首保和续保费用。表格中特别标注了“费率可调30%”的情况。",
+      "material_slot_id": "image_slot_0393",
+      "slot_canonical_topic": "保费测算/报价页面截图"
+    },
+    "image59": {
+      "type": "image",
+      "content": "这张图片是一张微信聊天界面截图，内容展示了一个理赔案件的时间轴，包括出险、报案、索赔申请、达成协议和结案时间。下方显示招商银行账户收到50万元保险赔付金的短信通知。",
+      "material_slot_id": "image_slot_0372",
+      "slot_canonical_topic": "理赔流程/材料清单/赔付案例说明图"
+    },
+    "image50": {
+      "type": "image",
+      "content": "这是一张关于“海港人寿”五大股东构成的资料截图，文中列出了中国保险保障基金、太平人寿等主要股东及其背景信息。",
+      "material_slot_id": "image_slot_0053",
+      "slot_canonical_topic": "保险公司监管与保单权益保护说明图"
+    },
+    "chat1": {
+      "type": "quoted_chat",
+      "content": "Helia 向优选保@于庆朝咨询线下保险「捆绑销售」的含义，对方通过 0 岁宝宝重疾险案例，详细拆解了附加身故责任导致保费翻倍但仅赔付一次且保费不退的弊端。双方最终达成共识，确认此类捆绑身故、返还或分红型产品性价比低，相当于无息占用资金，建议避免购买。",
+      "material_slot_id": "quoted_chat_slot_0483",
+      "slot_canonical_topic": "客户理赔/赔付案例聊天记录截图"
+    },
+    "image53": {
+      "type": "image",
+      "content": "一张对比四款成人终身重疾险（超级玛丽15号、达尔文12号、华佗1号、吉瑞保5.0）的表格图，列出保障内容、赔付比例及30岁投保时的年缴保费。",
+      "material_slot_id": "image_slot_0003",
+      "slot_canonical_topic": "保费测算/报价页面截图"
+    },
+    "image494": {
+      "type": "image",
+      "content": "核保结论页面显示绿色对勾及“可以投保”字样，下方设有“回到产品详情页”和“返回修改”两个操作按钮。",
+      "material_slot_id": "image_slot_0073",
+      "slot_canonical_topic": "健康告知/核保宽松度产品对比图"
+    },
+    "chat5": {
+      "type": "quoted_chat",
+      "content": "经纪人高涛向客户推荐「小太阳 2 号防癌险」搭配「大黄蜂 16 号重疾险」的组合方案，旨在解决传统重疾险癌症保额不足且保费偏高的问题。通过对比理赔数据与治疗成本，高涛论证了癌症高发且费用高昂，而心脑血管疾病理赔门槛高、费用受控，因此建议用「防癌险 + 低保额重疾」替代「单一高保额重疾」。该方案在总保费相近的前提下，将癌症赔付额从 50 万提升至 80 万以上，同时保留非癌疾病的多重赔付机会，客户最终认可该「分级重疾险」配置逻辑的合理性。",
+      "material_slot_id": "quoted_chat_slot_0485",
+      "slot_canonical_topic": "客户理赔/赔付案例聊天记录截图"
+    },
+    "image233": {
+      "type": "image",
+      "content": "一张“成人重疾险基础责任 + 癌症津贴对比表”，列出君龙人寿、复兴联合健康、海保人寿、和泰人寿四家公司的重疾险产品（超级玛丽13号、达尔文11号、哪吒1号、太阳神2号），涵盖重疾/中症/轻症保障、癌症津贴、其他保障及30岁男/女保费测算。",
+      "material_slot_id": "image_slot_0052",
+      "slot_canonical_topic": "保费测算/报价页面截图"
+    },
+    "image164": {
+      "type": "image",
+      "content": "保险计划明细表，列明主险、附加险、缴费年期、保额及保费，下方注明首期保费合计与特别约定，表格下方留白。",
+      "material_slot_id": "image_slot_0045",
+      "slot_canonical_topic": "保费测算/报价页面截图"
+    },
+    "link50": {
+      "type": "link",
+      "content": "标题：中国平安小顽童7号少儿意外险 摘要：0免赔，私立医院也可报",
+      "material_slot_id": "link_slot_0465",
+      "slot_canonical_topic": "保险产品或服务说明链接卡片"
+    }
+  },
+  "by_slot": {
+    "image_slot_0024": {
+      "type": "image",
+      "tool": "send_image",
+      "topic": "保费测算/报价页面截图",
+      "representative_reuse_id": "image242"
+    },
+    "image_slot_0147": {
+      "type": "image",
+      "tool": "send_image",
+      "topic": "统一定义的 N 种重大疾病及 N 种轻度疾病列表图（行业规范标准）",
+      "representative_reuse_id": "image2"
+    },
+    "image_slot_0036": {
+      "type": "image",
+      "tool": "send_image",
+      "topic": "理赔流程/材料清单/赔付案例说明图",
+      "representative_reuse_id": "image4"
+    },
+    "image_slot_0023": {
+      "type": "image",
+      "tool": "send_image",
+      "topic": "理赔流程/材料清单/赔付案例说明图",
+      "representative_reuse_id": "image8"
+    },
+    "image_slot_0004": {
+      "type": "image",
+      "tool": "send_image",
+      "topic": "保费测算/报价页面截图",
+      "representative_reuse_id": "image1"
+    },
+    "image_slot_0017": {
+      "type": "image",
+      "tool": "send_image",
+      "topic": "保费测算/报价页面截图",
+      "representative_reuse_id": "image15"
+    },
+    "link_slot_0432": {
+      "type": "link",
+      "tool": "send_link",
+      "topic": "保险产品或服务说明链接卡片",
+      "representative_reuse_id": "link24"
+    },
+    "image_slot_0250": {
+      "type": "image",
+      "tool": "send_image",
+      "topic": "理赔流程/材料清单/赔付案例说明图",
+      "representative_reuse_id": "image37"
+    },
+    "link_slot_0408": {
+      "type": "link",
+      "tool": "send_link",
+      "topic": "保险产品或服务说明链接卡片",
+      "representative_reuse_id": "link5"
+    },
+    "link_slot_0403": {
+      "type": "link",
+      "tool": "send_link",
+      "topic": "保险产品或服务说明链接卡片",
+      "representative_reuse_id": "link32"
+    },
+    "image_slot_0007": {
+      "type": "image",
+      "tool": "send_image",
+      "topic": "保费测算/报价页面截图",
+      "representative_reuse_id": "image48"
+    },
+    "image_slot_0062": {
+      "type": "image",
+      "tool": "send_image",
+      "topic": "保费测算/报价页面截图",
+      "representative_reuse_id": "image27"
+    },
+    "image_slot_0018": {
+      "type": "image",
+      "tool": "send_image",
+      "topic": "保障责任/赔付规则说明图",
+      "representative_reuse_id": "image402"
+    },
+    "shareuser_slot_0509": {
+      "type": "shareuser",
+      "tool": "send_shareuser",
+      "topic": "经纪人同事/团队成员名片（专业咨询补位）",
+      "representative_reuse_id": "shareuser1"
+    },
+    "image_slot_0187": {
+      "type": "image",
+      "tool": "send_image",
+      "topic": "保险经纪人身份/执业资质查询截图",
+      "representative_reuse_id": "image264"
+    },
+    "image_slot_0393": {
+      "type": "image",
+      "tool": "send_image",
+      "topic": "保费测算/报价页面截图",
+      "representative_reuse_id": "image75"
+    },
+    "image_slot_0372": {
+      "type": "image",
+      "tool": "send_image",
+      "topic": "理赔流程/材料清单/赔付案例说明图",
+      "representative_reuse_id": "image59"
+    },
+    "image_slot_0053": {
+      "type": "image",
+      "tool": "send_image",
+      "topic": "保险公司监管与保单权益保护说明图",
+      "representative_reuse_id": "image50"
+    },
+    "quoted_chat_slot_0483": {
+      "type": "quoted_chat",
+      "tool": "send_quoted_chat",
+      "topic": "客户理赔/赔付案例聊天记录截图",
+      "representative_reuse_id": "chat1"
+    },
+    "image_slot_0003": {
+      "type": "image",
+      "tool": "send_image",
+      "topic": "保费测算/报价页面截图",
+      "representative_reuse_id": "image53"
+    },
+    "image_slot_0073": {
+      "type": "image",
+      "tool": "send_image",
+      "topic": "健康告知/核保宽松度产品对比图",
+      "representative_reuse_id": "image494"
+    },
+    "quoted_chat_slot_0485": {
+      "type": "quoted_chat",
+      "tool": "send_quoted_chat",
+      "topic": "客户理赔/赔付案例聊天记录截图",
+      "representative_reuse_id": "chat5"
+    },
+    "image_slot_0052": {
+      "type": "image",
+      "tool": "send_image",
+      "topic": "保费测算/报价页面截图",
+      "representative_reuse_id": "image233"
+    },
+    "image_slot_0045": {
+      "type": "image",
+      "tool": "send_image",
+      "topic": "保费测算/报价页面截图",
+      "representative_reuse_id": "image164"
+    },
+    "link_slot_0465": {
+      "type": "link",
+      "tool": "send_link",
+      "topic": "保险产品或服务说明链接卡片",
+      "representative_reuse_id": "link50"
+    }
+  },
+  "aliases": {
+    "send_image": {
+      "保险公司监管与保单权益保护": {
+        "reuse_id": "image50",
+        "material_slot_id": "image_slot_0053",
+        "canonical_topic": "保险公司监管与保单权益保护说明图",
+        "confidence": 0.98
+      },
+      "保险公司监管与保单权益保护说明": {
+        "reuse_id": "image50",
+        "material_slot_id": "image_slot_0053",
+        "canonical_topic": "保险公司监管与保单权益保护说明图",
+        "confidence": 0.98
+      },
+      "线上理赔流程与服务连续性说明": {
+        "reuse_id": "image59",
+        "material_slot_id": "image_slot_0372",
+        "canonical_topic": "理赔流程/材料清单/赔付案例说明图",
+        "confidence": 0.92
+      },
+      "理赔案例": {
+        "reuse_id": "image59",
+        "material_slot_id": "image_slot_0372",
+        "canonical_topic": "理赔流程/材料清单/赔付案例说明图",
+        "confidence": 0.92
+      },
+      "理赔流程截图": {
+        "reuse_id": "image59",
+        "material_slot_id": "image_slot_0372",
+        "canonical_topic": "理赔流程/材料清单/赔付案例说明图",
+        "confidence": 0.95
+      },
+      "理赔流程": {
+        "reuse_id": "image59",
+        "material_slot_id": "image_slot_0372",
+        "canonical_topic": "理赔流程/材料清单/赔付案例说明图",
+        "confidence": 0.9
+      },
+      "理赔流程与材料清单": {
+        "reuse_id": "image59",
+        "material_slot_id": "image_slot_0372",
+        "canonical_topic": "理赔流程/材料清单/赔付案例说明图",
+        "confidence": 0.95
+      },
+      "理赔材料清单": {
+        "reuse_id": "image59",
+        "material_slot_id": "image_slot_0372",
+        "canonical_topic": "理赔流程/材料清单/赔付案例说明图",
+        "confidence": 0.95
+      },
+      "结节理赔案例与沟通记录": {
+        "reuse_id": "image37",
+        "material_slot_id": "image_slot_0250",
+        "canonical_topic": "理赔流程/材料清单/赔付案例说明图",
+        "confidence": 0.9
+      },
+      "理赔案例聊天记录截图": {
+        "reuse_id": "image59",
+        "material_slot_id": "image_slot_0372",
+        "canonical_topic": "理赔流程/材料清单/赔付案例说明图",
+        "confidence": 0.9
+      },
+      "小公司理赔案例截图（含金额）": {
+        "reuse_id": "image37",
+        "material_slot_id": "image_slot_0250",
+        "canonical_topic": "理赔流程/材料清单/赔付案例说明图",
+        "confidence": 0.92
+      },
+      "小公司理赔案例截图(含金额)": {
+        "reuse_id": "image37",
+        "material_slot_id": "image_slot_0250",
+        "canonical_topic": "理赔流程/材料清单/赔付案例说明图",
+        "confidence": 0.92
+      },
+      "小公司理赔案例截图": {
+        "reuse_id": "image37",
+        "material_slot_id": "image_slot_0250",
+        "canonical_topic": "理赔流程/材料清单/赔付案例说明图",
+        "confidence": 0.92
+      },
+      "小公司实际赔下来的案例截图": {
+        "reuse_id": "image37",
+        "material_slot_id": "image_slot_0250",
+        "canonical_topic": "理赔流程/材料清单/赔付案例说明图",
+        "confidence": 0.92
+      },
+      "实际赔下来的案例截图": {
+        "reuse_id": "image37",
+        "material_slot_id": "image_slot_0250",
+        "canonical_topic": "理赔流程/材料清单/赔付案例说明图",
+        "confidence": 0.92
+      },
+      "带金额的理赔案例截图": {
+        "reuse_id": "image37",
+        "material_slot_id": "image_slot_0250",
+        "canonical_topic": "理赔流程/材料清单/赔付案例说明图",
+        "confidence": 0.92
+      },
+      "小公司理赔案例": {
+        "reuse_id": "image37",
+        "material_slot_id": "image_slot_0250",
+        "canonical_topic": "理赔流程/材料清单/赔付案例说明图",
+        "confidence": 0.92
+      },
+      "理赔协助与服务连续性说明": {
+        "reuse_id": "image59",
+        "material_slot_id": "image_slot_0372",
+        "canonical_topic": "理赔流程/材料清单/赔付案例说明图",
+        "confidence": 0.9
+      },
+      "理赔协助服务连续性说明": {
+        "reuse_id": "image59",
+        "material_slot_id": "image_slot_0372",
+        "canonical_topic": "理赔流程/材料清单/赔付案例说明图",
+        "confidence": 0.9
+      },
+      "服务连续性说明": {
+        "reuse_id": "image59",
+        "material_slot_id": "image_slot_0372",
+        "canonical_topic": "理赔流程/材料清单/赔付案例说明图",
+        "confidence": 0.9
+      },
+      "理赔协助说明": {
+        "reuse_id": "image59",
+        "material_slot_id": "image_slot_0372",
+        "canonical_topic": "理赔流程/材料清单/赔付案例说明图",
+        "confidence": 0.9
+      }
+    }
+  }
+}

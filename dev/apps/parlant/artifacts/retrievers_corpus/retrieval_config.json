@@ -1,0 +1,27 @@
+{
+  "version": "1",
+  "retrieval": {
+    "bm25": {
+      "enabled": true,
+      "tokenize": "zh_en_mixed"
+    },
+    "vector": {
+      "enabled": true,
+      "field": "condition_text"
+    },
+    "fusion": {
+      "method": "rrf",
+      "rrf_k": 60
+    },
+    "rerank": {
+      "enabled": true,
+      "blend": "vector_rrf"
+    },
+    "top_k_default": 5,
+    "adaptive_k_max": 12
+  },
+  "alignment": {
+    "embedding_source_field": "embedding_text",
+    "must_match_normalized_guideline_id": true
+  }
+}

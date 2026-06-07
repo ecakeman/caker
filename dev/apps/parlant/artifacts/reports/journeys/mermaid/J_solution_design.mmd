@@ -1,0 +1,32 @@
+flowchart TD
+  J_solution_design_gather_needs_and_budget["gather_needs_and_budget\n(chat_state)"]
+  J_solution_design_fork_target_audience[/"fork_target_audience\n(tool)"/]
+  J_solution_design_adult_product_compare[/"adult_product_compare\n(tool)"/]
+  J_solution_design_child_product_compare[/"child_product_compare\n(tool)"/]
+  J_solution_design_explain_adult_strategy["explain_adult_strategy\n(chat_state)"]
+  J_solution_design_explain_child_strategy["explain_child_strategy\n(chat_state)"]
+  J_solution_design_show_cancer_data[/"show_cancer_data\n(tool)"/]
+  J_solution_design_explain_cancer_focus["explain_cancer_focus\n(chat_state)"]
+  J_solution_design_compare_cancer_clauses[/"compare_cancer_clauses\n(tool)"/]
+  J_solution_design_explain_clause_trap["explain_clause_trap\n(chat_state)"]
+  J_solution_design_budget_allocation_chat["budget_allocation_chat\n(chat_state)"]
+  J_solution_design_show_combo_case[/"show_combo_case\n(tool)"/]
+  J_solution_design_final_wrap_up["final_wrap_up\n(chat_state)"]
+  J_solution_design_INITIAL(["INITIAL"])
+  J_solution_design_INITIAL --> J_solution_design_gather_needs_and_budget
+  J_solution_design_gather_needs_and_budget -->|客户已明确被保人对象，且仍在推进完整方案设计或精确测算| J_solution_design_fork_target_audience
+  J_solution_design_fork_target_audience -->|客户为自己或成人家庭成员配置方案| J_solution_design_adult_product_compare
+  J_solution_design_fork_target_audience -->|客户为孩子配置少儿重疾或意外医疗方案| J_solution_design_child_product_compare
+  J_solution_design_adult_product_compare --> J_solution_design_explain_adult_strategy
+  J_solution_design_child_product_compare --> J_solution_design_explain_child_strategy
+  J_solution_design_explain_adult_strategy -->|客户继续追问癌症责任、理赔数据或要求看依据素材| J_solution_design_show_cancer_data
+  J_solution_design_explain_child_strategy -->|客户继续追问少儿高发疾病、癌症责任或要求看依据素材| J_solution_design_show_cancer_data
+  J_solution_design_show_cancer_data --> J_solution_design_explain_cancer_focus
+  J_solution_design_explain_cancer_focus -->|客户要求继续比较癌症津贴、赔付门槛或具体条款差异| J_solution_design_compare_cancer_clauses
+  J_solution_design_compare_cancer_clauses --> J_solution_design_explain_clause_trap
+  J_solution_design_explain_clause_trap -->|客户回到预算、保额或方案取舍问题，并要求继续配置| J_solution_design_budget_allocation_chat
+  J_solution_design_budget_allocation_chat -->|客户预算有限或希望提高癌症保额| J_solution_design_show_combo_case
+  J_solution_design_budget_allocation_chat -->|客户方案已清晰或需时间考虑| J_solution_design_final_wrap_up
+  J_solution_design_show_combo_case --> J_solution_design_final_wrap_up
+  J_solution_design_final_wrap_up --> END_NODE
+  END_NODE(["END"])

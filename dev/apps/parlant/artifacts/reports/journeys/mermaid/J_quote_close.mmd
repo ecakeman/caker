@@ -1,0 +1,34 @@
+flowchart TD
+  J_quote_close_confirm_quote_prerequisites["confirm_quote_prerequisites\n(chat_state)"]
+  J_quote_close_send_quote_visual[/"send_quote_visual\n(tool)"/]
+  J_quote_close_explain_quote_details["explain_quote_details\n(chat_state)"]
+  J_quote_close_handle_budget_objection["handle_budget_objection\n(chat_state)"]
+  J_quote_close_send_policy_link[/"send_policy_link\n(tool)"/]
+  J_quote_close_guide_health_declaration["guide_health_declaration\n(chat_state)"]
+  J_quote_close_send_operation_guide[/"send_operation_guide\n(tool)"/]
+  J_quote_close_handle_payment_issue["handle_payment_issue\n(chat_state)"]
+  J_quote_close_guide_policy_review["guide_policy_review\n(chat_state)"]
+  J_quote_close_send_official_account_card[/"send_official_account_card\n(tool)"/]
+  J_quote_close_explain_waiting_period["explain_waiting_period\n(chat_state)"]
+  J_quote_close_confirm_purchase_intent["confirm_purchase_intent\n(chat_state)"]
+  J_quote_close_pause_and_remind["pause_and_remind\n(chat_state)"]
+  J_quote_close_INITIAL(["INITIAL"])
+  J_quote_close_INITIAL --> J_quote_close_confirm_quote_prerequisites
+  J_quote_close_confirm_quote_prerequisites -->|客户明确要求报价、测算、保费图或已经给足测算入口条件并询问价格| J_quote_close_send_quote_visual
+  J_quote_close_confirm_quote_prerequisites -->|客户已明确认可方案并表示现在投保、先占上、进入页面或获取投保入口| J_quote_close_send_policy_link
+  J_quote_close_send_quote_visual --> J_quote_close_explain_quote_details
+  J_quote_close_explain_quote_details -->|客户反馈保费超出预算或需要调整方案| J_quote_close_handle_budget_objection
+  J_quote_close_explain_quote_details -->|客户对报价无异议，准备进入投保环节| J_quote_close_send_policy_link
+  J_quote_close_handle_budget_objection -->|客户接受调整后的保额或保费，并明确表示继续进入投保| J_quote_close_send_policy_link
+  J_quote_close_send_policy_link -->|客户已打开投保页面、准备填写健康告知，或询问页面责任选项怎么选| J_quote_close_guide_health_declaration
+  J_quote_close_guide_health_declaration -->|客户要求操作截图、流程指引，或反馈页面仍不会操作| J_quote_close_send_operation_guide
+  J_quote_close_send_operation_guide -->|客户反馈支付失败、超额或遇到系统报错| J_quote_close_handle_payment_issue
+  J_quote_close_send_operation_guide -->|客户表示已完成支付或询问后续流程| J_quote_close_guide_policy_review
+  J_quote_close_handle_payment_issue -->|客户已完成支付或继续询问支付成功后的回访、保单申请流程| J_quote_close_guide_policy_review
+  J_quote_close_guide_policy_review -->|客户需要公众号、回访入口或保单申请入口| J_quote_close_send_official_account_card
+  J_quote_close_send_official_account_card -->|客户继续询问等待期、生效时间或保障何时开始| J_quote_close_explain_waiting_period
+  J_quote_close_explain_waiting_period -->|客户表示需与家人商量或暂时无法决定| J_quote_close_confirm_purchase_intent
+  J_quote_close_explain_waiting_period -->|客户确认已完成所有操作且无其他疑问| END_NODE
+  J_quote_close_confirm_purchase_intent -->|客户表示暂缓需考虑或当前不便继续| J_quote_close_pause_and_remind
+  J_quote_close_pause_and_remind -->|客户商量后决定继续购买，重新获取链接| J_quote_close_send_policy_link
+  END_NODE(["END"])

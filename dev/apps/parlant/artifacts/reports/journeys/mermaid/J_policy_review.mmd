@@ -1,0 +1,34 @@
+flowchart TD
+  J_policy_review_collect_policy_docs["collect_policy_docs\n(chat_state)"]
+  J_policy_review_analyze_policy_structure[/"analyze_policy_structure\n(tool)"/]
+  J_policy_review_explain_structure_details["explain_structure_details\n(chat_state)"]
+  J_policy_review_calc_surrender_loss[/"calc_surrender_loss\n(tool)"/]
+  J_policy_review_explain_loss_concept["explain_loss_concept\n(chat_state)"]
+  J_policy_review_fork_decision_path[/"fork_decision_path\n(tool)"/]
+  J_policy_review_path_keep_supplement["path_keep_supplement\n(chat_state)"]
+  J_policy_review_show_supplement_gap["show_supplement_gap\n(chat_state)"]
+  J_policy_review_path_replace_plan["path_replace_plan\n(chat_state)"]
+  J_policy_review_compare_old_new["compare_old_new\n(chat_state)"]
+  J_policy_review_explain_replace_logic[/"explain_replace_logic\n(tool)"/]
+  J_policy_review_handle_objection_cash["handle_objection_cash\n(chat_state)"]
+  J_policy_review_wrap_up_next_step["wrap_up_next_step\n(chat_state)"]
+  J_policy_review__after_tool_0["_after_tool_0\n(chat_state)"]
+  J_policy_review_INITIAL(["INITIAL"])
+  J_policy_review_INITIAL --> J_policy_review_collect_policy_docs
+  J_policy_review_collect_policy_docs -->|客户已提供保单图片、责任页、现金价值页或关键保单数字，并要求继续完整诊断| J_policy_review_analyze_policy_structure
+  J_policy_review_analyze_policy_structure --> J_policy_review_explain_structure_details
+  J_policy_review_explain_structure_details -->|客户继续询问退保、现金价值、已交保费或需要计算损失| J_policy_review_calc_surrender_loss
+  J_policy_review_calc_surrender_loss --> J_policy_review_explain_loss_concept
+  J_policy_review_explain_loss_concept -->|客户已理解退保损失，并要求继续判断保留、补充或置换路径| J_policy_review_fork_decision_path
+  J_policy_review_fork_decision_path -->|退保损失过大或旧单仍有核心价值，客户倾向于保留| J_policy_review_path_keep_supplement
+  J_policy_review_fork_decision_path -->|旧单坑大且损失可接受，客户健康允许，倾向于置换| J_policy_review_path_replace_plan
+  J_policy_review_fork_decision_path -->|客户对现金价值或退保损失仍有疑虑需要进一步解释| J_policy_review_handle_objection_cash
+  J_policy_review_path_keep_supplement -->|客户接受保留补充方向，并要求继续看保障缺口或补充方案| J_policy_review_show_supplement_gap
+  J_policy_review_show_supplement_gap -->|客户已理解保障缺口，并要求继续确认保留补充或后续配置动作| J_policy_review_wrap_up_next_step
+  J_policy_review_path_replace_plan -->|客户明确要评估置换方案，并需要继续比较新旧保障和保费| J_policy_review_compare_old_new
+  J_policy_review_compare_old_new -->|客户要求继续解释新旧方案对比图、现金价值表或保障责任对比| J_policy_review__after_tool_0
+  J_policy_review__after_tool_0 -->|客户要求继续看新旧责任差异、疾病定义或置换依据素材| J_policy_review_explain_replace_logic
+  J_policy_review_explain_replace_logic --> J_policy_review_wrap_up_next_step
+  J_policy_review_handle_objection_cash -->|客户已理解现金价值与退保损失，并要求回到调整方案选择| J_policy_review_wrap_up_next_step
+  J_policy_review_wrap_up_next_step --> END_NODE
+  END_NODE(["END"])

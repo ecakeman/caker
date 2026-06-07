@@ -1,0 +1,486 @@
+{
+  "always_on": [
+    "ag_39ff38b91ceb68f8",
+    "ag_764a447935457d00",
+    "ag_7b854c3c5e6d74cf",
+    "ag_b59b823eb73adc61",
+    "ag_d5423bb2432f9e4e",
+    "ag_e28c84c7ccc35151",
+    "ag_e667a6fe9d6796c0"
+  ],
+  "global": [
+    "ag_026caa5169e283f7",
+    "ag_126244f1be624080",
+    "ag_22e330ab62315d1b",
+    "ag_4cc300a9392cf001",
+    "ag_725cd0c3a5e7d643",
+    "ag_7678019b30ba3603",
+    "ag_76aac58cbd4be3f6",
+    "ag_837ea106dab8e47a",
+    "ag_8c47fd78551d0af4",
+    "ag_8ff20638e0538ef6",
+    "ag_99745ef095f9c9d9",
+    "ag_b846583a06bebe71",
+    "ag_c021a85b2d08d907",
+    "ag_c2de1cbd3db8dcd5",
+    "ag_ce4a59a5bafe9eaf",
+    "ag_d0461bd5dab511a1",
+    "ag_d3e447c7891dbd56",
+    "ag_d98366ac526f7a31",
+    "ag_e87af637ca4aa52c",
+    "ag_e8a9d38efbcc0137",
+    "ag_eba0145b0d82ba7f",
+    "ag_f149ebb5ba3e117b"
+  ],
+  "journey_scoped": {
+    "J_solution_design": [
+      "ag_02dede13caab8334",
+      "ag_049e211507c19473",
+      "ag_0a5d8ac6cc5cb21f",
+      "ag_0f032f7f1e3afa8c",
+      "ag_18fc75167ba05d4c",
+      "ag_21fa788c86941ca1",
+      "ag_2612a41fc6955ed9",
+      "ag_2a6981bd2174f593",
+      "ag_2deb89ddddc8cca4",
+      "ag_2eddfff901cd8154",
+      "ag_309e633ae21beaa4",
+      "ag_35e8efb05a5000f1",
+      "ag_3dc0118bae11c2bc",
+      "ag_3f341387887ed44d",
+      "ag_40968eca6e66d085",
+      "ag_4465b9b444a7f46d",
+      "ag_5116f055f07493b5",
+      "ag_51fdccc106707889",
+      "ag_5219c084478f265f",
+      "ag_524e93b0b862cc00",
+      "ag_53357150555be3af",
+      "ag_5845148788127b38",
+      "ag_597b4b44be4a256d",
+      "ag_5ba2f2ece2b1f441",
+      "ag_60e7af8f3315aef3",
+      "ag_6f150b587fa7b078",
+      "ag_810fce4d92241acb",
+      "ag_81762f455b5553a3",
+      "ag_823fb8b616bee1a7",
+      "ag_902f646588e4ca3d",
+      "ag_954f9a20dccaa6ed",
+      "ag_980eb7a7df4b9234",
+      "ag_986ac40654987ddf",
+      "ag_a6abe99fc6de91ec",
+      "ag_ab4e776686636d12",
+      "ag_ab61ad9891c0f06e",
+      "ag_b1e84126b7418033",
+      "ag_c03b1f5eaa3a19f9",
+      "ag_c0d0bbba66c8154f",
+      "ag_c776ea5622d659cd",
+      "ag_da100c22f8a923c4",
+      "ag_e19d5624447c9749",
+      "ag_e797b19a876028ec",
+      "ag_f376f975770f8c23",
+      "ag_f68cc87605c8576d",
+      "ag_fa29b1e6b40108b5"
+    ],
+    "J_quote_close": [
+      "ag_03d2acf339268e89",
+      "ag_061ce24a00a5b46e",
+      "ag_0c1b937195428b89",
+      "ag_2abd23341a5bb793",
+      "ag_2de9cc8383033dde",
+      "ag_3847b1bbac8392a2",
+      "ag_4459b4784c765b29",
+      "ag_4607200f6ea1240a",
+      "ag_4aee8d04c728b781",
+      "ag_516d25e6e9cfc419",
+      "ag_58e5782ad1b9ac1c",
+      "ag_5c44c845fc849264",
+      "ag_7405e9d8f6b85dab",
+      "ag_8155cb60c1d27111",
+      "ag_8b4c31af9d560c14",
+      "ag_8c47fd78551d0af4",
+      "ag_ad90ece569623d87",
+      "ag_b10b7c3044f3fa07",
+      "ag_b8d41b6c2c91ddc2",
+      "ag_bbb18ec51bf06565",
+      "ag_bc30c1609fd47829",
+      "ag_d447e687e31c9156",
+      "ag_e45ed2ebaf7fc5e7",
+      "ag_ee3cb9f249eef823"
+    ],
+    "J_underwriting": [
+      "ag_0a4aad8942aa5548",
+      "ag_0d0ad308559614fb",
+      "ag_1b44c1eb6a4193dd",
+      "ag_1ee14c2c4e2a2f4d",
+      "ag_224786ab9a80d6bc",
+      "ag_24a02d97c6a1b3bb",
+      "ag_2755c7981d2f81c0",
+      "ag_2cffe90bf56ea447",
+      "ag_3186a19717d66817",
+      "ag_3219e21a745a47d3",
+      "ag_39d33e7b7405aec0",
+      "ag_3a841aefc97af0ba",
+      "ag_3b6ce5847ef5948b",
+      "ag_4f56eeee5caaa263",
+      "ag_516d25e6e9cfc419",
+      "ag_52c8c1b00fe381a1",
+      "ag_563511579db67a0a",
+      "ag_5c323fcd670f4b25",
+      "ag_6663bbe88c7be4db",
+      "ag_6ba5a38bfffc456c",
+      "ag_871cdbb5913caa05",
+      "ag_8d57e1be0dea3cba",
+      "ag_8ebc1426d0b19161",
+      "ag_94d288be8759d314",
+      "ag_9b3b6216df737079",
+      "ag_9b935fff8dd16a1c",
+      "ag_a04fd9730853f31e",
+      "ag_a51f404fafd601db",
+      "ag_b48144c90aea3a20",
+      "ag_b7589a28d9f058ee",
+      "ag_c5ddb3f2d6f613a9",
+      "ag_cb0a106c0ef52516",
+      "ag_d14245b0ca69689e",
+      "ag_d5b2a23e91a6bc99",
+      "ag_e25664b1c98ca9d3",
+      "ag_e834c8def89ad74d",
+      "ag_ea0e93d11b9f078e",
+      "ag_ebd80a1939664a03",
+      "ag_f22e449b40887a88",
+      "ag_f4af0ccff5a32cf6",
+      "ag_f52a8e1c21800756",
+      "ag_ffb771845a69f5ad"
+    ],
+    "J_policy_review": [
+      "ag_25724f11ecd4f646",
+      "ag_51d9a081cf868820",
+      "ag_52e7810dd451a037",
+      "ag_5e0a4ed7364f4e28",
+      "ag_62d21a368a5706ca",
+      "ag_689f91f35b56523c",
+      "ag_703e4252d775a95c",
+      "ag_84a8cb22906383b2",
+      "ag_9ee58c30043961eb",
+      "ag_a3623c9b40b9322d",
+      "ag_b392102a3a86dd43",
+      "ag_c844bcd1fcf95fe0",
+      "ag_cb9559ece21f2577",
+      "ag_ce38204587524e9e",
+      "ag_d7450c650f4762a1"
+    ],
+    "J_claim_service": [
+      "ag_061ce24a00a5b46e",
+      "ag_0c10a373044b5a64",
+      "ag_1b65557daee76f88",
+      "ag_2768b2e2080891fd",
+      "ag_311ecf960d279214",
+      "ag_46ef39b2a2bb9e68",
+      "ag_5a75f4b59d4bab44",
+      "ag_83a3d5a94d512210",
+      "ag_96581f6449485ac1",
+      "ag_a1afedf483e0b2a3",
+      "ag_af1c8fa63d9fad86",
+      "ag_b6aa8dcd84518f8f",
+      "ag_bea3dca0242987f3",
+      "ag_c653adc46ac99194",
+      "ag_e390b1a03b3b7fa1",
+      "ag_e90ee2dbd031ec32"
+    ],
+    "J_senior_parent": [
+      "ag_0b5978a234a0e0d5",
+      "ag_1df859234334abcd",
+      "ag_2c557bf852122062",
+      "ag_33bab67bb60039ec",
+      "ag_57fc464268d69c6f",
+      "ag_97971fd7d05e97eb",
+      "ag_9ab7490de7e30156",
+      "ag_9b9bc66be279ef88",
+      "ag_a7cd2a1ccf57dd0a",
+      "ag_afed52bdbcf755ea",
+      "ag_bd1d4f098b31efff",
+      "ag_c6802cef39957143",
+      "ag_d5b2a23e91a6bc99",
+      "ag_e25664b1c98ca9d3",
+      "ag_ef311bfe45b20d75",
+      "ag_f344c8be85ebd65f"
+    ]
+  },
+  "state_scoped": {
+    "J_solution_design::gather_needs_and_budget": [
+      "ag_f376f975770f8c23"
+    ],
+    "J_solution_design::fork_target_audience": [],
+    "J_solution_design::adult_product_compare": [],
+    "J_solution_design::child_product_compare": [],
+    "J_solution_design::explain_adult_strategy": [
+      "ag_35e8efb05a5000f1"
+    ],
+    "J_solution_design::explain_child_strategy": [],
+    "J_solution_design::show_cancer_data": [],
+    "J_solution_design::explain_cancer_focus": [],
+    "J_solution_design::compare_cancer_clauses": [],
+    "J_solution_design::explain_clause_trap": [],
+    "J_solution_design::budget_allocation_chat": [],
+    "J_solution_design::show_combo_case": [],
+    "J_solution_design::final_wrap_up": [],
+    "J_quote_close::confirm_quote_prerequisites": [
+      "ag_4459b4784c765b29",
+      "ag_8c47fd78551d0af4"
+    ],
+    "J_quote_close::send_quote_visual": [],
+    "J_quote_close::explain_quote_details": [],
+    "J_quote_close::handle_budget_objection": [],
+    "J_quote_close::send_policy_link": [],
+    "J_quote_close::guide_health_declaration": [],
+    "J_quote_close::send_operation_guide": [],
+    "J_quote_close::handle_payment_issue": [],
+    "J_quote_close::guide_policy_review": [],
+    "J_quote_close::send_official_account_card": [],
+    "J_quote_close::explain_waiting_period": [],
+    "J_quote_close::confirm_purchase_intent": [],
+    "J_quote_close::pause_and_remind": [
+      "ag_061ce24a00a5b46e",
+      "ag_516d25e6e9cfc419",
+      "ag_bc30c1609fd47829"
+    ],
+    "J_underwriting::collect_health_anomaly_details": [
+      "ag_d5b2a23e91a6bc99"
+    ],
+    "J_underwriting::fork_anomaly_type": [
+      "ag_b7589a28d9f058ee",
+      "ag_f52a8e1c21800756"
+    ],
+    "J_underwriting::assess_nodule_specifics": [
+      "ag_1b44c1eb6a4193dd",
+      "ag_b7589a28d9f058ee",
+      "ag_f52a8e1c21800756"
+    ],
+    "J_underwriting::assess_chronic_disease": [
+      "ag_0a4aad8942aa5548",
+      "ag_1b44c1eb6a4193dd",
+      "ag_3186a19717d66817",
+      "ag_b7589a28d9f058ee",
+      "ag_d5b2a23e91a6bc99"
+    ],
+    "J_underwriting::assess_surgery_history": [
+      "ag_3186a19717d66817",
+      "ag_b7589a28d9f058ee",
+      "ag_ebd80a1939664a03",
+      "ag_f52a8e1c21800756"
+    ],
+    "J_underwriting::assess_child_anomaly": [
+      "ag_1b44c1eb6a4193dd",
+      "ag_b7589a28d9f058ee",
+      "ag_d14245b0ca69689e",
+      "ag_f52a8e1c21800756"
+    ],
+    "J_underwriting::explain_health_disclosure_rules": [
+      "ag_224786ab9a80d6bc",
+      "ag_b7589a28d9f058ee",
+      "ag_f52a8e1c21800756"
+    ],
+    "J_underwriting::guide_medical_report_prep": [
+      "ag_6ba5a38bfffc456c",
+      "ag_d14245b0ca69689e",
+      "ag_f52a8e1c21800756"
+    ],
+    "J_underwriting::send_health_disclosure_sample": [
+      "ag_f52a8e1c21800756"
+    ],
+    "J_underwriting::explain_smart_underwriting_flow": [],
+    "J_underwriting::send_smart_underwriting_result": [
+      "ag_b7589a28d9f058ee",
+      "ag_f52a8e1c21800756"
+    ],
+    "J_underwriting::explain_exclusion_logic": [
+      "ag_1ee14c2c4e2a2f4d",
+      "ag_b7589a28d9f058ee",
+      "ag_f52a8e1c21800756"
+    ],
+    "J_underwriting::compare_underwriting_products": [
+      "ag_b7589a28d9f058ee",
+      "ag_f52a8e1c21800756"
+    ],
+    "J_underwriting::send_nodule_comparison_chart": [
+      "ag_b7589a28d9f058ee",
+      "ag_f52a8e1c21800756"
+    ],
+    "J_underwriting::recommend_alternative_plan": [
+      "ag_f52a8e1c21800756"
+    ],
+    "J_underwriting::wrap_up_underwriting_path": [
+      "ag_3186a19717d66817",
+      "ag_f52a8e1c21800756"
+    ],
+    "J_policy_review::collect_policy_docs": [
+      "ag_5e0a4ed7364f4e28",
+      "ag_689f91f35b56523c",
+      "ag_703e4252d775a95c"
+    ],
+    "J_policy_review::analyze_policy_structure": [
+      "ag_62d21a368a5706ca",
+      "ag_689f91f35b56523c",
+      "ag_703e4252d775a95c"
+    ],
+    "J_policy_review::explain_structure_details": [
+      "ag_689f91f35b56523c",
+      "ag_703e4252d775a95c"
+    ],
+    "J_policy_review::calc_surrender_loss": [
+      "ag_62d21a368a5706ca",
+      "ag_689f91f35b56523c",
+      "ag_703e4252d775a95c"
+    ],
+    "J_policy_review::explain_loss_concept": [
+      "ag_689f91f35b56523c",
+      "ag_703e4252d775a95c"
+    ],
+    "J_policy_review::fork_decision_path": [
+      "ag_62d21a368a5706ca",
+      "ag_689f91f35b56523c",
+      "ag_703e4252d775a95c"
+    ],
+    "J_policy_review::path_keep_supplement": [
+      "ag_62d21a368a5706ca",
+      "ag_689f91f35b56523c",
+      "ag_703e4252d775a95c"
+    ],
+    "J_policy_review::show_supplement_gap": [
+      "ag_689f91f35b56523c"
+    ],
+    "J_policy_review::path_replace_plan": [
+      "ag_62d21a368a5706ca",
+      "ag_689f91f35b56523c",
+      "ag_703e4252d775a95c"
+    ],
+    "J_policy_review::compare_old_new": [
+      "ag_62d21a368a5706ca",
+      "ag_689f91f35b56523c",
+      "ag_703e4252d775a95c"
+    ],
+    "J_policy_review::explain_replace_logic": [
+      "ag_689f91f35b56523c"
+    ],
+    "J_policy_review::handle_objection_cash": [
+      "ag_25724f11ecd4f646",
+      "ag_62d21a368a5706ca",
+      "ag_689f91f35b56523c",
+      "ag_703e4252d775a95c"
+    ],
+    "J_policy_review::wrap_up_next_step": [
+      "ag_62d21a368a5706ca",
+      "ag_689f91f35b56523c"
+    ],
+    "J_policy_review::_after_tool_0": [
+      "ag_689f91f35b56523c",
+      "ag_703e4252d775a95c"
+    ],
+    "J_claim_service::claim_materials_guide": [],
+    "J_claim_service::online_claim_demo": [],
+    "J_claim_service::send_claim_timeline": [],
+    "J_claim_service::claim_timeline_explain": [],
+    "J_claim_service::policy_query_guide": [],
+    "J_claim_service::paper_policy_info": [],
+    "J_claim_service::service_menu_guide": [
+      "ag_e390b1a03b3b7fa1"
+    ],
+    "J_claim_service::supplement_disclosure_guide": [],
+    "J_claim_service::auto_renew_guide": [],
+    "J_claim_service::claim_concern_handle": [],
+    "J_senior_parent::collect_parent_basic_info": [],
+    "J_senior_parent::confirm_medical_location": [],
+    "J_senior_parent::fork_health_budget_path": [],
+    "J_senior_parent::explain_huiminbao_limits": [],
+    "J_senior_parent::show_huiminbao_accident_combo": [],
+    "J_senior_parent::chat_after_combo_link": [],
+    "J_senior_parent::explain_medical_premium_inversion": [],
+    "J_senior_parent::show_premium_comparison_chart": [],
+    "J_senior_parent::chat_after_premium_chart": [],
+    "J_senior_parent::assess_cancer_insurance_option": [],
+    "J_senior_parent::show_cancer_insurance_link": [],
+    "J_senior_parent::chat_after_cancer_link": [
+      "ag_e25664b1c98ca9d3"
+    ],
+    "J_senior_parent::handle_cross_region_query": []
+  },
+  "review_required": [
+    "ag_22e330ab62315d1b",
+    "ag_725cd0c3a5e7d643",
+    "ag_7678019b30ba3603",
+    "ag_8c47fd78551d0af4",
+    "ag_99745ef095f9c9d9",
+    "ag_c2de1cbd3db8dcd5",
+    "ag_ce4a59a5bafe9eaf",
+    "ag_d0461bd5dab511a1",
+    "ag_d3e447c7891dbd56",
+    "ag_e8a9d38efbcc0137",
+    "ag_eba0145b0d82ba7f",
+    "ag_f149ebb5ba3e117b"
+  ],
+  "fallback_rules": {
+    "unknown_state_scope": {
+      "active": true,
+      "missing_state_keys": [
+        "J_claim_service::auto_renew_guide",
+        "J_claim_service::claim_concern_handle",
+        "J_claim_service::claim_materials_guide",
+        "J_claim_service::claim_timeline_explain",
+        "J_claim_service::online_claim_demo",
+        "J_claim_service::paper_policy_info",
+        "J_claim_service::policy_query_guide",
+        "J_claim_service::send_claim_timeline",
+        "J_claim_service::supplement_disclosure_guide",
+        "J_quote_close::confirm_purchase_intent",
+        "J_quote_close::explain_quote_details",
+        "J_quote_close::explain_waiting_period",
+        "J_quote_close::guide_health_declaration",
+        "J_quote_close::guide_policy_review",
+        "J_quote_close::handle_budget_objection",
+        "J_quote_close::handle_payment_issue",
+        "J_quote_close::send_official_account_card",
+        "J_quote_close::send_operation_guide",
+        "J_quote_close::send_policy_link",
+        "J_quote_close::send_quote_visual",
+        "J_senior_parent::assess_cancer_insurance_option",
+        "J_senior_parent::chat_after_combo_link",
+        "J_senior_parent::chat_after_premium_chart",
+        "J_senior_parent::collect_parent_basic_info",
+        "J_senior_parent::confirm_medical_location",
+        "J_senior_parent::explain_huiminbao_limits",
+        "J_senior_parent::explain_medical_premium_inversion",
+        "J_senior_parent::fork_health_budget_path",
+        "J_senior_parent::handle_cross_region_query",
+        "J_senior_parent::show_cancer_insurance_link",
+        "J_senior_parent::show_huiminbao_accident_combo",
+        "J_senior_parent::show_premium_comparison_chart",
+        "J_solution_design::adult_product_compare",
+        "J_solution_design::budget_allocation_chat",
+        "J_solution_design::child_product_compare",
+        "J_solution_design::compare_cancer_clauses",
+        "J_solution_design::explain_cancer_focus",
+        "J_solution_design::explain_child_strategy",
+        "J_solution_design::explain_clause_trap",
+        "J_solution_design::final_wrap_up",
+        "J_solution_design::fork_target_audience",
+        "J_solution_design::show_cancer_data",
+        "J_solution_design::show_combo_case",
+        "J_underwriting::explain_smart_underwriting_flow"
+      ],
+      "fallback_chain": [
+        "state_scoped",
+        "journey_scoped",
+        "global",
+        "always_on"
+      ],
+      "note": "When state_scoped has no candidates, relax to journey_scoped then global"
+    }
+  },
+  "stats": {
+    "always_on": 7,
+    "global": 22,
+    "journey_buckets": 6,
+    "state_buckets": 79,
+    "state_unknown": 44,
+    "review_required": 12
+  }
+}

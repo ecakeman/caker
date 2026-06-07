@@ -1,0 +1,146 @@
+{
+  "manifest_path": "/home/zhangyifan/dev/apps/parlant/artifacts/manifest.json",
+  "manifest_sha256": "954064aa058b0c0e55d6fc37afe2aac3e69f4324ea0dec4f54435ba1ce728274",
+  "pipeline_version": "2",
+  "generated_at": "2026-06-07T09:10:21.951705+00:00",
+  "source_hashes": {
+    "guidelines_hash": "b769f7a54c908889ddf1e8235e7f4060e271928f328abac8e08c6f773fa9c32e",
+    "journeys_hash": "a7036b78772ad9797adc6238f670c1bf13df8287390458593f1177fe0a026ef1",
+    "relations_hash": "0d28a5a5856ece0a35cafcbc4ee8803b4de59c1103c3954c218f3ae134e8a412"
+  },
+  "artifacts": {
+    "normalized_guidelines": {
+      "path": "artifacts/normalized/guidelines.json",
+      "sha256": "2004796aa476448dad6e75f859184deaba17970e65b02117ac8524e03ff6bf4c",
+      "bytes": "219767"
+    },
+    "normalized_journeys": {
+      "path": "artifacts/normalized/journeys.json",
+      "sha256": "bf6bf73d2680ced43cb030c665817b6bfb3ce418d3088891f101275d094fde0f",
+      "bytes": "59174"
+    },
+    "scope_map": {
+      "path": "artifacts/scope_map.json",
+      "sha256": "217cdd7395a3abc60ff7ca69a1f3850f663fcde2c343e46e9ddae4273c3a6689",
+      "bytes": "15283"
+    },
+    "relationships": {
+      "path": "artifacts/relationships.json",
+      "sha256": "9bfa8a6311736ae68d6c15ae1169f6f795f3de4e18b662e178077c42f89a431d",
+      "bytes": "25127"
+    },
+    "variables": {
+      "path": "artifacts/variables.json",
+      "sha256": "9c8dc57a8738df1f6df14311e273165e98847719186d11f5553b172def4877e8",
+      "bytes": "33653"
+    },
+    "glossary": {
+      "path": "artifacts/glossary.json",
+      "sha256": "a0df59488fcf2c7318a442113269ca831a383cb518a1f04bd68005d499dd0e86",
+      "bytes": "61938"
+    },
+    "canned_responses": {
+      "path": "artifacts/canned_responses.json",
+      "sha256": "3329859c2c99721c177577e0bbd3b6d9a933dfd13f574bc4c8c29dd61dfeb3ca",
+      "bytes": "5653"
+    },
+    "scenario_expectations": {
+      "path": "data/sim_scenarios/expectations.json",
+      "sha256": "5cebe78b4a743aeb61c6eb3a30b8924bc693e59e2acbe622ddecf88d3ed321e8",
+      "bytes": "11178"
+    },
+    "retriever_corpus": {
+      "path": "artifacts/retrievers_corpus/corpus.jsonl",
+      "sha256": "0f6ca16d1699f37d3ea2a27adfb80ec7493bddcd25747c97055c8cf51ee5c873",
+      "bytes": "144275"
+    },
+    "retrieval_config": {
+      "path": "artifacts/retrievers_corpus/retrieval_config.json",
+      "sha256": "18e01e88aebb887c65a8e65d6d1674fa38dbb54ef85b739073fcc75fb4952a5c",
+      "bytes": "500"
+    },
+    "index_meta": {
+      "path": "artifacts/indexes/index_meta.json",
+      "sha256": "7cce73139e2040b41692dcd7644d617a1817add841914c058dd46e4b60801bd8",
+      "bytes": "654"
+    },
+    "index_records": {
+      "path": "artifacts/indexes/records.jsonl",
+      "sha256": "ee84562c63ed5487fbd9f6fa45430a47459b976a35f9a37cf921d257634ea266",
+      "bytes": "179525"
+    },
+    "index_vectors": {
+      "path": "artifacts/indexes/condition_vectors.npy",
+      "sha256": "25f2b0c027663e76d5bbdb31fb061e7c43a664f3ae5bd53a98343ef5f37b2772",
+      "bytes": "749696"
+    },
+    "index_bm25": {
+      "path": "artifacts/indexes/bm25_corpus.json",
+      "sha256": "e2c2e6491981cb6d2a32cad1164b33e3b0a70b97de396d8f56e976151f18a1f7",
+      "bytes": "254387"
+    }
+  },
+  "missing_required_artifacts": [],
+  "index_rebuild_proof": {
+    "normalized_guidelines_sha256": "2004796aa476448dad6e75f859184deaba17970e65b02117ac8524e03ff6bf4c",
+    "retriever_corpus_sha256": "0f6ca16d1699f37d3ea2a27adfb80ec7493bddcd25747c97055c8cf51ee5c873",
+    "index_records_sha256": "ee84562c63ed5487fbd9f6fa45430a47459b976a35f9a37cf921d257634ea266",
+    "index_vectors_sha256": "25f2b0c027663e76d5bbdb31fb061e7c43a664f3ae5bd53a98343ef5f37b2772",
+    "index_bm25_sha256": "e2c2e6491981cb6d2a32cad1164b33e3b0a70b97de396d8f56e976151f18a1f7"
+  },
+  "stats": {
+    "pipeline_version": "2",
+    "guidelines": 183,
+    "journeys": 6,
+    "archived_legacy": null,
+    "scope_map_path": "/home/zhangyifan/dev/apps/parlant/artifacts/scope_map.json",
+    "always_on": 7,
+    "global": 22,
+    "journey_buckets": 6,
+    "state_buckets": 79,
+    "state_unknown": 44,
+    "review_required": 12,
+    "relationships_path": "/home/zhangyifan/dev/apps/parlant/artifacts/relationships.json",
+    "edge_count": 91,
+    "by_type": {
+      "exclusion": 60,
+      "entailment": 1,
+      "priority": 27,
+      "dependency": 2,
+      "disambiguation": 1
+    },
+    "relationship_cycle_count": 0,
+    "cycle_edges_removed": 1,
+    "variables_path": "/home/zhangyifan/dev/apps/parlant/artifacts/variables.json",
+    "total": 86,
+    "profile_vars": 2,
+    "state_vars": 84,
+    "tool_derived": 4,
+    "journey_state_markers": 79,
+    "canned_path": "/home/zhangyifan/dev/apps/parlant/artifacts/canned_responses.json",
+    "count": 7,
+    "strict_count": 7,
+    "glossary_path": "/home/zhangyifan/dev/apps/parlant/artifacts/glossary.json",
+    "term_count": 183,
+    "retriever_corpus_dir": "/home/zhangyifan/dev/apps/parlant/artifacts/retrievers_corpus",
+    "corpus_count": 183,
+    "corpus_path": "/home/zhangyifan/dev/apps/parlant/artifacts/retrievers_corpus/corpus.jsonl",
+    "retrieval_config_path": "/home/zhangyifan/dev/apps/parlant/artifacts/retrievers_corpus/retrieval_config.json",
+    "expectations_path": "/home/zhangyifan/dev/apps/parlant/data/sim_scenarios/expectations.json",
+    "scenario_count": 15,
+    "tool_scenario_count": 15,
+    "high_risk_count": 1,
+    "tool_guideline_pool_size": 9,
+    "journey_governance_path": "/home/zhangyifan/dev/apps/parlant/artifacts/reports/journeys/journey_governance.json",
+    "mermaid_dir": "/home/zhangyifan/dev/apps/parlant/artifacts/reports/journeys/mermaid",
+    "journeys_with_issues": 0,
+    "index_dir": "/home/zhangyifan/dev/apps/parlant/artifacts/indexes",
+    "record_count": 183,
+    "bm25_path": "/home/zhangyifan/dev/apps/parlant/artifacts/indexes/bm25_corpus.json",
+    "vector_path": "/home/zhangyifan/dev/apps/parlant/artifacts/indexes/condition_vectors.npy",
+    "meta_path": "/home/zhangyifan/dev/apps/parlant/artifacts/indexes/index_meta.json",
+    "embedding_field": "governance_embedding_text",
+    "embedding_text_template": "governance_v2_condition_action_tools",
+    "audit_extended_path": "/home/zhangyifan/dev/apps/parlant/artifacts/reports/audit_extended.json"
+  }
+}

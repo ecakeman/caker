@@ -1,0 +1,431 @@
+{
+  "version": "1",
+  "scenarios": {
+    "child_ci_compare": {
+      "expected_tags": [
+        "J_solution_design",
+        "child",
+        "claims",
+        "compare",
+        "critical_illness"
+      ],
+      "expected_guideline_ids": [
+        "ag_026caa5169e283f7",
+        "ag_0b5978a234a0e0d5",
+        "ag_22e330ab62315d1b",
+        "ag_2a6981bd2174f593",
+        "ag_40968eca6e66d085",
+        "ag_53357150555be3af",
+        "ag_597b4b44be4a256d",
+        "ag_5ba2f2ece2b1f441",
+        "ag_76aac58cbd4be3f6",
+        "ag_8ff20638e0538ef6",
+        "ag_902f646588e4ca3d",
+        "ag_986ac40654987ddf"
+      ],
+      "expected_tool_calls": [
+        "send_image",
+        "send_link"
+      ],
+      "tool_scenario": true,
+      "high_risk": false,
+      "target_journey": "J_solution_design"
+    },
+    "adult_ci_budget": {
+      "expected_tags": [
+        "J_solution_design",
+        "compare",
+        "critical_illness"
+      ],
+      "expected_guideline_ids": [
+        "ag_0b5978a234a0e0d5",
+        "ag_22e330ab62315d1b",
+        "ag_40968eca6e66d085",
+        "ag_53357150555be3af",
+        "ag_597b4b44be4a256d",
+        "ag_986ac40654987ddf",
+        "ag_9ab7490de7e30156",
+        "ag_b1e84126b7418033",
+        "ag_b59b823eb73adc61",
+        "ag_b846583a06bebe71",
+        "ag_c776ea5622d659cd",
+        "ag_ce4a59a5bafe9eaf"
+      ],
+      "expected_tool_calls": [
+        "send_image"
+      ],
+      "tool_scenario": true,
+      "high_risk": false,
+      "target_journey": "J_solution_design"
+    },
+    "old_policy_review": {
+      "expected_tags": [
+        "J_policy_review",
+        "policy_review",
+        "underwriting"
+      ],
+      "expected_guideline_ids": [
+        "ag_026caa5169e283f7",
+        "ag_0b5978a234a0e0d5",
+        "ag_22e330ab62315d1b",
+        "ag_2abd23341a5bb793",
+        "ag_4cc300a9392cf001",
+        "ag_563511579db67a0a",
+        "ag_76aac58cbd4be3f6",
+        "ag_7b854c3c5e6d74cf",
+        "ag_99745ef095f9c9d9",
+        "ag_9ab7490de7e30156",
+        "ag_b59b823eb73adc61",
+        "ag_ce4a59a5bafe9eaf"
+      ],
+      "expected_tool_calls": [
+        "send_image"
+      ],
+      "tool_scenario": true,
+      "high_risk": false,
+      "target_journey": "J_policy_review"
+    },
+    "lung_nodule_underwriting": {
+      "expected_tags": [
+        "J_underwriting",
+        "medical",
+        "underwriting"
+      ],
+      "expected_guideline_ids": [
+        "ag_0b5978a234a0e0d5",
+        "ag_22e330ab62315d1b",
+        "ag_2abd23341a5bb793",
+        "ag_51fdccc106707889",
+        "ag_53357150555be3af",
+        "ag_563511579db67a0a",
+        "ag_5845148788127b38",
+        "ag_99745ef095f9c9d9",
+        "ag_9ab7490de7e30156",
+        "ag_b59b823eb73adc61",
+        "ag_ce4a59a5bafe9eaf",
+        "ag_d3e447c7891dbd56"
+      ],
+      "expected_tool_calls": [
+        "send_image",
+        "send_link"
+      ],
+      "tool_scenario": true,
+      "high_risk": false,
+      "target_journey": "J_underwriting"
+    },
+    "thyroid_hpv_health": {
+      "expected_tags": [
+        "J_underwriting",
+        "claims",
+        "underwriting"
+      ],
+      "expected_guideline_ids": [
+        "ag_026caa5169e283f7",
+        "ag_0b5978a234a0e0d5",
+        "ag_22e330ab62315d1b",
+        "ag_2abd23341a5bb793",
+        "ag_563511579db67a0a",
+        "ag_76aac58cbd4be3f6",
+        "ag_8ff20638e0538ef6",
+        "ag_99745ef095f9c9d9",
+        "ag_9ab7490de7e30156",
+        "ag_b59b823eb73adc61",
+        "ag_c021a85b2d08d907",
+        "ag_ce4a59a5bafe9eaf"
+      ],
+      "expected_tool_calls": [
+        "send_image"
+      ],
+      "tool_scenario": true,
+      "high_risk": false,
+      "target_journey": "J_underwriting"
+    },
+    "medical_vs_ci": {
+      "expected_tags": [
+        "J_senior_parent",
+        "critical_illness",
+        "medical",
+        "urgency"
+      ],
+      "expected_guideline_ids": [
+        "ag_0b5978a234a0e0d5",
+        "ag_22e330ab62315d1b",
+        "ag_40968eca6e66d085",
+        "ag_51fdccc106707889",
+        "ag_53357150555be3af",
+        "ag_5845148788127b38",
+        "ag_725cd0c3a5e7d643",
+        "ag_837ea106dab8e47a",
+        "ag_986ac40654987ddf",
+        "ag_9ab7490de7e30156",
+        "ag_b59b823eb73adc61",
+        "ag_bc30c1609fd47829"
+      ],
+      "expected_tool_calls": [
+        "send_image",
+        "send_link"
+      ],
+      "tool_scenario": true,
+      "high_risk": false,
+      "target_journey": "J_senior_parent"
+    },
+    "senior_parent_plan": {
+      "expected_tags": [
+        "J_senior_parent",
+        "medical",
+        "senior"
+      ],
+      "expected_guideline_ids": [
+        "ag_0b5978a234a0e0d5",
+        "ag_22e330ab62315d1b",
+        "ag_51fdccc106707889",
+        "ag_52c8c1b00fe381a1",
+        "ag_53357150555be3af",
+        "ag_5845148788127b38",
+        "ag_8c47fd78551d0af4",
+        "ag_9ab7490de7e30156",
+        "ag_9b9bc66be279ef88",
+        "ag_b59b823eb73adc61",
+        "ag_ce4a59a5bafe9eaf",
+        "ag_d5b2a23e91a6bc99"
+      ],
+      "expected_tool_calls": [
+        "send_image",
+        "send_link"
+      ],
+      "tool_scenario": true,
+      "high_risk": false,
+      "target_journey": "J_senior_parent"
+    },
+    "online_claim_trust": {
+      "expected_tags": [
+        "J_solution_design",
+        "claims",
+        "policy_review"
+      ],
+      "expected_guideline_ids": [
+        "ag_026caa5169e283f7",
+        "ag_0b5978a234a0e0d5",
+        "ag_22e330ab62315d1b",
+        "ag_4cc300a9392cf001",
+        "ag_76aac58cbd4be3f6",
+        "ag_7b854c3c5e6d74cf",
+        "ag_8ff20638e0538ef6",
+        "ag_9ab7490de7e30156",
+        "ag_b59b823eb73adc61",
+        "ag_c021a85b2d08d907",
+        "ag_ce4a59a5bafe9eaf",
+        "ag_d98366ac526f7a31"
+      ],
+      "expected_tool_calls": [
+        "send_image",
+        "send_link"
+      ],
+      "tool_scenario": true,
+      "high_risk": false,
+      "target_journey": "J_solution_design"
+    },
+    "deadline_price_increase": {
+      "expected_tags": [
+        "J_quote_close",
+        "underwriting",
+        "urgency"
+      ],
+      "expected_guideline_ids": [
+        "ag_0b5978a234a0e0d5",
+        "ag_22e330ab62315d1b",
+        "ag_2abd23341a5bb793",
+        "ag_563511579db67a0a",
+        "ag_725cd0c3a5e7d643",
+        "ag_837ea106dab8e47a",
+        "ag_99745ef095f9c9d9",
+        "ag_9ab7490de7e30156",
+        "ag_b59b823eb73adc61",
+        "ag_bc30c1609fd47829",
+        "ag_ce4a59a5bafe9eaf",
+        "ag_d3e447c7891dbd56"
+      ],
+      "expected_tool_calls": [
+        "send_image"
+      ],
+      "tool_scenario": true,
+      "high_risk": false,
+      "target_journey": "J_quote_close"
+    },
+    "family_portfolio": {
+      "expected_tags": [
+        "J_solution_design",
+        "critical_illness",
+        "medical"
+      ],
+      "expected_guideline_ids": [
+        "ag_0b5978a234a0e0d5",
+        "ag_22e330ab62315d1b",
+        "ag_40968eca6e66d085",
+        "ag_51fdccc106707889",
+        "ag_53357150555be3af",
+        "ag_5845148788127b38",
+        "ag_986ac40654987ddf",
+        "ag_9ab7490de7e30156",
+        "ag_b59b823eb73adc61",
+        "ag_c776ea5622d659cd",
+        "ag_ce4a59a5bafe9eaf",
+        "ag_d98366ac526f7a31"
+      ],
+      "expected_tool_calls": [
+        "send_image"
+      ],
+      "tool_scenario": true,
+      "high_risk": false,
+      "target_journey": "J_solution_design"
+    },
+    "intro_cold_start": {
+      "expected_tags": [
+        "J_solution_design",
+        "claims",
+        "policy_review"
+      ],
+      "expected_guideline_ids": [
+        "ag_026caa5169e283f7",
+        "ag_0b5978a234a0e0d5",
+        "ag_22e330ab62315d1b",
+        "ag_4cc300a9392cf001",
+        "ag_76aac58cbd4be3f6",
+        "ag_7b854c3c5e6d74cf",
+        "ag_8ff20638e0538ef6",
+        "ag_9ab7490de7e30156",
+        "ag_b59b823eb73adc61",
+        "ag_c021a85b2d08d907",
+        "ag_ce4a59a5bafe9eaf",
+        "ag_d98366ac526f7a31"
+      ],
+      "expected_tool_calls": [
+        "send_image",
+        "send_link"
+      ],
+      "tool_scenario": true,
+      "high_risk": false,
+      "target_journey": "J_solution_design"
+    },
+    "claim_service_after_purchase": {
+      "expected_tags": [
+        "J_claim_service",
+        "claims",
+        "policy_review"
+      ],
+      "expected_guideline_ids": [
+        "ag_026caa5169e283f7",
+        "ag_0b5978a234a0e0d5",
+        "ag_22e330ab62315d1b",
+        "ag_4cc300a9392cf001",
+        "ag_76aac58cbd4be3f6",
+        "ag_7b854c3c5e6d74cf",
+        "ag_8ff20638e0538ef6",
+        "ag_9ab7490de7e30156",
+        "ag_b59b823eb73adc61",
+        "ag_c021a85b2d08d907",
+        "ag_ce4a59a5bafe9eaf",
+        "ag_d98366ac526f7a31"
+      ],
+      "expected_tool_calls": [
+        "send_image"
+      ],
+      "tool_scenario": true,
+      "high_risk": false,
+      "target_journey": "J_claim_service"
+    },
+    "compliance_rebate_pressure": {
+      "expected_tags": [
+        "J_quote_close",
+        "compliance"
+      ],
+      "expected_guideline_ids": [
+        "ag_0b5978a234a0e0d5",
+        "ag_22e330ab62315d1b",
+        "ag_764a447935457d00",
+        "ag_9ab7490de7e30156",
+        "ag_b59b823eb73adc61",
+        "ag_ce4a59a5bafe9eaf",
+        "ag_d98366ac526f7a31",
+        "ag_e28c84c7ccc35151",
+        "ag_f149ebb5ba3e117b"
+      ],
+      "expected_tool_calls": [
+        "send_image",
+        "send_link"
+      ],
+      "tool_scenario": true,
+      "high_risk": true,
+      "target_journey": "J_quote_close"
+    },
+    "mixed_health_solution_to_pause": {
+      "expected_tags": [
+        "J_solution_design",
+        "child",
+        "claims",
+        "critical_illness",
+        "policy_review",
+        "underwriting"
+      ],
+      "expected_guideline_ids": [
+        "ag_026caa5169e283f7",
+        "ag_0b5978a234a0e0d5",
+        "ag_22e330ab62315d1b",
+        "ag_2a6981bd2174f593",
+        "ag_2abd23341a5bb793",
+        "ag_40968eca6e66d085",
+        "ag_4cc300a9392cf001",
+        "ag_53357150555be3af",
+        "ag_563511579db67a0a",
+        "ag_597b4b44be4a256d",
+        "ag_5ba2f2ece2b1f441",
+        "ag_76aac58cbd4be3f6"
+      ],
+      "expected_tool_calls": [
+        "send_image",
+        "send_link"
+      ],
+      "tool_scenario": true,
+      "high_risk": false,
+      "target_journey": "J_solution_design"
+    },
+    "cross_journey_health_policy_pause": {
+      "expected_tags": [
+        "J_underwriting",
+        "child",
+        "compare",
+        "critical_illness",
+        "medical",
+        "policy_review",
+        "underwriting"
+      ],
+      "expected_guideline_ids": [
+        "ag_026caa5169e283f7",
+        "ag_0b5978a234a0e0d5",
+        "ag_22e330ab62315d1b",
+        "ag_2a6981bd2174f593",
+        "ag_2abd23341a5bb793",
+        "ag_40968eca6e66d085",
+        "ag_4cc300a9392cf001",
+        "ag_51fdccc106707889",
+        "ag_53357150555be3af",
+        "ag_563511579db67a0a",
+        "ag_5845148788127b38",
+        "ag_597b4b44be4a256d"
+      ],
+      "expected_tool_calls": [
+        "send_image",
+        "send_link"
+      ],
+      "tool_scenario": true,
+      "high_risk": false,
+      "target_journey": "J_underwriting"
+    }
+  },
+  "stats": {
+    "scenario_count": 15,
+    "tool_scenario_count": 15,
+    "high_risk_count": 1,
+    "tool_guideline_pool_size": 9
+  }
+}

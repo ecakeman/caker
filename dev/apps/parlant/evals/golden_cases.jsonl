@@ -1,0 +1,10 @@
+{"id": "gc001", "query": "客户担心民营保险公司理赔不靠谱，怕公司倒闭", "expected_guideline_contains": ["理赔", "倒闭"], "active_journey_id": null, "active_state_id": null, "tier": "high_frequency"}
+{"id": "gc002", "query": "客户初次咨询重疾险，想要高性价比产品对比", "expected_guideline_contains": ["重疾险", "对比"], "active_journey_id": null, "active_state_id": null, "tier": "high_frequency"}
+{"id": "gc003", "query": "客户有肺结节，想知道能不能买重疾险", "expected_guideline_contains": ["核保", "结节"], "active_journey_id": null, "active_state_id": null, "tier": "underwriting"}
+{"id": "gc004", "query": "客户问返佣和合规问题", "expected_guideline_contains": ["合规", "返佣"], "active_journey_id": null, "active_state_id": null, "tier": "high_risk"}
+{"id": "gc005", "query": "产品要停售了，客户问要不要马上投保", "expected_guideline_contains": ["停售"], "active_journey_id": null, "active_state_id": null, "tier": "urgency"}
+{"id": "gc006", "query": "客户混淆重疾险和百万医疗险，不知道为什么要一起买", "expected_guideline_contains": ["医疗险", "重疾"], "active_journey_id": null, "active_state_id": null, "tier": "multi_intent"}
+{"id": "gc007", "query": "客户披露有高血压，咨询能不能投保", "expected_guideline_contains": ["健康", "核保"], "active_journey_id": null, "active_state_id": null, "tier": "underwriting"}
+{"id": "gc008", "query": "客户对经纪人服务不满，语气变得激动", "expected_guideline_contains": ["不满", "情绪"], "active_journey_id": null, "active_state_id": null, "tier": "sentiment"}
+{"id": "gc009", "query": "客户想给0岁宝宝配置少儿重疾险，纠结小海豚和大黄蜂", "expected_guideline_contains": ["少儿", "重疾"], "active_journey_id": null, "active_state_id": null, "tier": "product_compare"}
+{"id": "gc010", "query": "客户已有平安福老保单，问要不要退保换新产品", "expected_guideline_contains": ["旧保单", "退保"], "active_journey_id": null, "active_state_id": null, "tier": "portfolio"}

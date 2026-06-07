@@ -1,0 +1,32 @@
+[
+  {
+    "journey_id": "J_solution_design",
+    "title": "标准方案设计与产品选择",
+    "issues": []
+  },
+  {
+    "journey_id": "J_quote_close",
+    "title": "报价与投保闭环",
+    "issues": []
+  },
+  {
+    "journey_id": "J_underwriting",
+    "title": "健康异常与核保评估",
+    "issues": []
+  },
+  {
+    "journey_id": "J_policy_review",
+    "title": "已有保单诊断与调整",
+    "issues": []
+  },
+  {
+    "journey_id": "J_claim_service",
+    "title": "理赔与保单服务讲解",
+    "issues": []
+  },
+  {
+    "journey_id": "J_senior_parent",
+    "title": "父母与高龄老人保障规划",
+    "issues": []
+  }
+]

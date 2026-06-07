@@ -1,0 +1,19 @@
+{
+  "generated_at": "2026-06-07T09:10:21.938517+00:00",
+  "pipeline_version": "2",
+  "record_count": 183,
+  "embedding_model": "openai/text-embedding-v4",
+  "embedding_dimensions": 1024,
+  "embedding_field": "governance_embedding_text",
+  "embedding_text_template": "governance_v2_condition_action_tools",
+  "embedding_text_template_body": "condition/action/scope/risk/tools/condition_markers",
+  "alignment": "1:1_with_normalized_guideline_id",
+  "vector_path": "condition_vectors.npy",
+  "bm25_path": "bm25_corpus.json",
+  "records_path": "records.jsonl",
+  "rrf_k_default": 60,
+  "rerank": {
+    "enabled": true,
+    "method": "vector_rrf_blend"
+  }
+}

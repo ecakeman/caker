@@ -1,0 +1,31 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app", "data_pipeline"]
+
+[project]
+name = "parlant-abm-broker"
+version = "0.1.0"
+description = "Parlant ABM intelligent broker — data pipeline and runtime decoupled"
+requires-python = ">=3.10"
+dependencies = [
+  "parlant>=3.3,<4",
+  "litellm",
+  "openai",
+  "python-dotenv",
+  "pydantic>=2",
+  "numpy",
+  "rank-bm25",
+  "torch",
+  "transformers>=4.40",
+  "parlant-client",
+]
+
+[project.optional-dependencies]
+test = ["pytest"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]

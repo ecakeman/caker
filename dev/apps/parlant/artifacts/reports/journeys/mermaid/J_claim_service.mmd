@@ -1,0 +1,35 @@
+flowchart TD
+  J_claim_service_claim_materials_guide["claim_materials_guide\n(chat_state)"]
+  J_claim_service_online_claim_demo["online_claim_demo\n(chat_state)"]
+  J_claim_service_send_claim_timeline[/"send_claim_timeline\n(tool)"/]
+  J_claim_service_claim_timeline_explain["claim_timeline_explain\n(chat_state)"]
+  J_claim_service_policy_query_guide["policy_query_guide\n(chat_state)"]
+  J_claim_service_paper_policy_info["paper_policy_info\n(chat_state)"]
+  J_claim_service_service_menu_guide["service_menu_guide\n(chat_state)"]
+  J_claim_service_supplement_disclosure_guide["supplement_disclosure_guide\n(chat_state)"]
+  J_claim_service_auto_renew_guide["auto_renew_guide\n(chat_state)"]
+  J_claim_service_claim_concern_handle["claim_concern_handle\n(chat_state)"]
+  J_claim_service_INITIAL(["INITIAL"])
+  J_claim_service_INITIAL -->|客户已出险或准备报案理赔，并需要材料清单、报案流程或理赔协助| J_claim_service_claim_materials_guide
+  J_claim_service_INITIAL -->|客户需要查询电子保单、下载保单或确认保单状态| J_claim_service_policy_query_guide
+  J_claim_service_INITIAL -->|客户需要办理监管回访、纸质保单申请或查看保司服务菜单| J_claim_service_service_menu_guide
+  J_claim_service_INITIAL -->|客户需要补充健康告知、信息变更或其他保全操作| J_claim_service_supplement_disclosure_guide
+  J_claim_service_INITIAL -->|客户需要修改续费方式、关闭自动续保或处理续期缴费| J_claim_service_auto_renew_guide
+  J_claim_service_INITIAL -->|客户对理赔服务、病历真实性或赔付协助有明确顾虑| J_claim_service_claim_concern_handle
+  J_claim_service_claim_materials_guide -->|客户继续要求线上报案、公众号上传资料或具体操作步骤| J_claim_service_online_claim_demo
+  J_claim_service_online_claim_demo -->|客户要求查看理赔流程图、时间轴或材料示例素材| J_claim_service_send_claim_timeline
+  J_claim_service_send_claim_timeline --> J_claim_service_claim_timeline_explain
+  J_claim_service_claim_timeline_explain -->|客户想查询电子保单或了解保单状态| J_claim_service_policy_query_guide
+  J_claim_service_claim_timeline_explain -->|客户需要办理回访或申请纸质保单| J_claim_service_service_menu_guide
+  J_claim_service_claim_timeline_explain -->|客户需要补充健康告知或进行保全变更| J_claim_service_supplement_disclosure_guide
+  J_claim_service_claim_timeline_explain -->|客户想修改续期缴费方式或关闭自动续费| J_claim_service_auto_renew_guide
+  J_claim_service_claim_timeline_explain -->|客户对理赔真实性或病历记录有顾虑| J_claim_service_claim_concern_handle
+  J_claim_service_claim_timeline_explain -->|客户暂无其他服务需求| END_NODE
+  J_claim_service_policy_query_guide -->|客户继续询问纸质保单、邮寄规则或其他保单查询渠道| J_claim_service_paper_policy_info
+  J_claim_service_policy_query_guide -->|客户只需要电子保单查询路径，当前问题已答完| END_NODE
+  J_claim_service_paper_policy_info --> END_NODE
+  J_claim_service_service_menu_guide --> END_NODE
+  J_claim_service_supplement_disclosure_guide --> END_NODE
+  J_claim_service_auto_renew_guide --> END_NODE
+  J_claim_service_claim_concern_handle --> END_NODE
+  END_NODE(["END"])

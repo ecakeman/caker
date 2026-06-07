@@ -1,0 +1,1328 @@
+[
+  {
+    "journey_id": "J_solution_design",
+    "title": "标准方案设计与产品选择",
+    "description": "标准新单方案设计：需求确认→险种定位→成人/少儿/家庭分支→产品对比→责任解释→预算配置→方案取舍",
+    "conditions": [
+      "适用对象限定为本人、配偶或孩子；客户明确要求配置这些对象的完整新单保障方案，并愿意继续提供方案设计所需信息",
+      "适用对象限定为本人、配偶或孩子；客户已给出年龄、预算、保障目标或已有备选产品，并要求据此做完整方案推荐、比较或取舍",
+      "适用对象限定为本人、配偶或孩子；客户明确要求围绕医疗险、重疾险、防癌险等险种做组合配置或保障责任分工决策",
+      "适用对象限定为本人、配偶或孩子；客户正在多个具体产品、保额、缴费期或保障责任之间做投保前决策，需要连续方案设计支持"
+    ],
+    "states": [
+      {
+        "state_id": "gather_needs_and_budget",
+        "state_kind": "chat_state",
+        "summary_cn": "确认方案测算入口信息",
+        "chat_instruction": "客户明确要完整方案或精确测算时，先只问给谁看。若客户只是问产品区别、责任取舍、保额方向、身份安全、链接或素材，先回答当前问题，回答后停住"
+      },
+      {
+        "state_id": "fork_target_audience",
+        "state_kind": "fork_state",
+        "summary_cn": "分流成人或少儿方案"
+      },
+      {
+        "state_id": "adult_product_compare",
+        "state_kind": "tool_state",
+        "summary_cn": "发成人重疾险对比表",
+        "tool_name": "send_image",
+        "tool_instruction": "保费测算/报价页面截图",
+        "evidence_reuse_ids": [
+          "image53",
+          "image15",
+          "image233"
+        ],
+        "material_slot_ids": [
+          "image_slot_0003",
+          "image_slot_0017",
+          "image_slot_0052"
+        ]
+      },
+      {
+        "state_id": "child_product_compare",
+        "state_kind": "tool_state",
+        "summary_cn": "发少儿重疾险对比表",
+        "tool_name": "send_image",
+        "tool_instruction": "保费测算/报价页面截图",
+        "evidence_reuse_ids": [
+          "image27",
+          "image48"
+        ],
+        "material_slot_ids": [
+          "image_slot_0062",
+          "image_slot_0007"
+        ]
+      },
+      {
+        "state_id": "explain_adult_strategy",
+        "state_kind": "chat_state",
+        "summary_cn": "建议成人重疾做减法",
+        "chat_instruction": "建议成人只买主险加癌症多次赔，去掉重疾多次赔等低效责任"
+      },
+      {
+        "state_id": "explain_child_strategy",
+        "state_kind": "chat_state",
+        "summary_cn": "解释少儿重疾保额逻辑",
+        "chat_instruction": "说明提高首次保额比多次赔付更实用，列举少儿高发特定病加倍赔"
+      },
+      {
+        "state_id": "show_cancer_data",
+        "state_kind": "tool_state",
+        "summary_cn": "发高发重疾数据分布图",
+        "tool_name": "send_image",
+        "tool_instruction": "理赔流程/材料清单/赔付案例说明图",
+        "evidence_reuse_ids": [
+          "image8",
+          "image4"
+        ],
+        "material_slot_ids": [
+          "image_slot_0023",
+          "image_slot_0036"
+        ]
+      },
+      {
+        "state_id": "explain_cancer_focus",
+        "state_kind": "chat_state",
+        "summary_cn": "解释癌症高发与核心责任",
+        "chat_instruction": "讲明癌症占理赔七成，选产品要看癌症赔付约定"
+      },
+      {
+        "state_id": "compare_cancer_clauses",
+        "state_kind": "tool_state",
+        "summary_cn": "发癌症津贴条款差异图",
+        "tool_name": "send_image",
+        "tool_instruction": "保障责任/赔付规则说明图",
+        "evidence_reuse_ids": [
+          "image402"
+        ],
+        "material_slot_ids": [
+          "image_slot_0018"
+        ]
+      },
+      {
+        "state_id": "explain_clause_trap",
+        "state_kind": "chat_state",
+        "summary_cn": "解析癌症津贴理赔门槛",
+        "chat_instruction": "讲清小海豚只需持续治疗即可赔，竞品需再次病理确诊的条款陷阱"
+      },
+      {
+        "state_id": "budget_allocation_chat",
+        "state_kind": "chat_state",
+        "summary_cn": "根据预算推荐方案",
+        "chat_instruction": "针对低预算客户，推荐去身故责任的纯重疾主险方案"
+      },
+      {
+        "state_id": "show_combo_case",
+        "state_kind": "tool_state",
+        "summary_cn": "发组合配置案例记录",
+        "tool_name": "send_quoted_chat",
+        "tool_instruction": "客户理赔/赔付案例聊天记录截图",
+        "evidence_reuse_ids": [
+          "chat5"
+        ],
+        "material_slot_ids": [
+          "quoted_chat_slot_0485"
+        ]
+      },
+      {
+        "state_id": "final_wrap_up",
+        "state_kind": "chat_state",
+        "summary_cn": "尊重节奏约定跟进",
+        "chat_instruction": "尊重客户暂缓决定，表示理解并约定等客户空闲时再联系"
+      }
+    ],
+    "transitions": [
+      {
+        "transition_kind": "direct",
+        "from_state": "INITIAL",
+        "to_state": "gather_needs_and_budget"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "gather_needs_and_budget",
+        "to_state": "fork_target_audience",
+        "condition_text": "客户已明确被保人对象，且仍在推进完整方案设计或精确测算"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "fork_target_audience",
+        "to_state": "adult_product_compare",
+        "condition_text": "客户为自己或成人家庭成员配置方案"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "fork_target_audience",
+        "to_state": "child_product_compare",
+        "condition_text": "客户为孩子配置少儿重疾或意外医疗方案"
+      },
+      {
+        "transition_kind": "direct",
+        "from_state": "adult_product_compare",
+        "to_state": "explain_adult_strategy"
+      },
+      {
+        "transition_kind": "direct",
+        "from_state": "child_product_compare",
+        "to_state": "explain_child_strategy"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "explain_adult_strategy",
+        "to_state": "show_cancer_data",
+        "condition_text": "客户继续追问癌症责任、理赔数据或要求看依据素材"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "explain_child_strategy",
+        "to_state": "show_cancer_data",
+        "condition_text": "客户继续追问少儿高发疾病、癌症责任或要求看依据素材"
+      },
+      {
+        "transition_kind": "direct",
+        "from_state": "show_cancer_data",
+        "to_state": "explain_cancer_focus"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "explain_cancer_focus",
+        "to_state": "compare_cancer_clauses",
+        "condition_text": "客户要求继续比较癌症津贴、赔付门槛或具体条款差异"
+      },
+      {
+        "transition_kind": "direct",
+        "from_state": "compare_cancer_clauses",
+        "to_state": "explain_clause_trap"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "explain_clause_trap",
+        "to_state": "budget_allocation_chat",
+        "condition_text": "客户回到预算、保额或方案取舍问题，并要求继续配置"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "budget_allocation_chat",
+        "to_state": "show_combo_case",
+        "condition_text": "客户预算有限或希望提高癌症保额"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "budget_allocation_chat",
+        "to_state": "final_wrap_up",
+        "condition_text": "客户方案已清晰或需时间考虑"
+      },
+      {
+        "transition_kind": "direct",
+        "from_state": "show_combo_case",
+        "to_state": "final_wrap_up"
+      },
+      {
+        "transition_kind": "direct",
+        "from_state": "final_wrap_up",
+        "to_state": "END"
+      }
+    ]
+  },
+  {
+    "journey_id": "J_quote_close",
+    "title": "报价与投保闭环",
+    "description": "成交闭环：报价前置确认→报价测算→投保链接→健康告知填写→支付→回访→电子/纸质保单→犹豫期说明",
+    "conditions": [
+      "客户已基本认可具体方案，并主动要求报价、保费测算、计划书截图、投保链接或进入产品投保页面",
+      "客户已经给出年龄、性别、保额、缴费期等测算入口信息，并要求测算保费、比较版本差价或确认哪版合适",
+      "客户已选定具体产品并正在投保页面或保司流程中，需要协助处理健康告知填写、支付、回访、犹豫期、电子保单或生效操作",
+      "客户处于停售、下架或涨价窗口期，已经明确认可方案，并要求锁定资格或完成投保动作"
+    ],
+    "states": [
+      {
+        "state_id": "confirm_quote_prerequisites",
+        "state_kind": "chat_state",
+        "summary_cn": "确认报价是否已具备入口条件",
+        "chat_instruction": "客户明确要报价或已在投保流程中时，只复核当前报价最缺的一项。若缺少年龄、保额或缴费期，最后一句只能问这个缺口，例如“你要看哪个年龄和保额？”。不要说“我发你截图/计划书/测算图/给你截个图”。若客户只是问操作、安全、等待期或保单规则，先回答当前问题，不追问配置清单"
+      },
+      {
+        "state_id": "send_quote_visual",
+        "state_kind": "tool_state",
+        "summary_cn": "发送保费测算截图",
+        "tool_name": "send_image",
+        "tool_instruction": "保费测算/报价页面截图",
+        "evidence_reuse_ids": [
+          "image1"
+        ],
+        "material_slot_ids": [
+          "image_slot_0004"
+        ]
+      },
+      {
+        "state_id": "explain_quote_details",
+        "state_kind": "chat_state",
+        "summary_cn": "解读报价与保障杠杆",
+        "chat_instruction": "对着报价图解释总保费与癌症累计赔付保额，强调高杠杆特性"
+      },
+      {
+        "state_id": "handle_budget_objection",
+        "state_kind": "chat_state",
+        "summary_cn": "建议调整保额以匹配预算",
+        "chat_instruction": "若保费超预算，建议降低保额至 20 万或 30 万起步"
+      },
+      {
+        "state_id": "send_policy_link",
+        "state_kind": "tool_state",
+        "summary_cn": "发产品介绍与投保链接",
+        "tool_name": "send_link",
+        "tool_instruction": "保险产品或服务说明链接卡片",
+        "evidence_reuse_ids": [
+          "link5"
+        ],
+        "material_slot_ids": [
+          "link_slot_0408"
+        ]
+      },
+      {
+        "state_id": "guide_health_declaration",
+        "state_kind": "chat_state",
+        "summary_cn": "解释投保页面必填责任选项",
+        "chat_instruction": "指着投保页红圈位置，告知只需勾选'重疾多次赔付'这一项核心责任"
+      },
+      {
+        "state_id": "send_operation_guide",
+        "state_kind": "tool_state",
+        "summary_cn": "发送投保流程指引截图",
+        "tool_name": "send_image",
+        "tool_instruction": "保费测算/报价页面截图",
+        "evidence_reuse_ids": [
+          "image1"
+        ],
+        "material_slot_ids": [
+          "image_slot_0004"
+        ]
+      },
+      {
+        "state_id": "handle_payment_issue",
+        "state_kind": "chat_state",
+        "summary_cn": "处理支付超额失败问题",
+        "chat_instruction": "针对支付超额报错，提示首次投保支持微信支付并引导重试"
+      },
+      {
+        "state_id": "guide_policy_review",
+        "state_kind": "chat_state",
+        "summary_cn": "引导完成监管回访与保单申请",
+        "chat_instruction": "指导关注公众号完成在线回访，并说明纸质保单申请路径"
+      },
+      {
+        "state_id": "send_official_account_card",
+        "state_kind": "tool_state",
+        "summary_cn": "发保险公司官微名片指引回访",
+        "tool_name": "send_shareuser",
+        "tool_instruction": "经纪人同事/团队成员名片（专业咨询补位）",
+        "evidence_reuse_ids": [
+          "shareuser1"
+        ],
+        "material_slot_ids": [
+          "shareuser_slot_0509"
+        ]
+      },
+      {
+        "state_id": "explain_waiting_period",
+        "state_kind": "chat_state",
+        "summary_cn": "解答等待期与生效时间规则",
+        "chat_instruction": "告知重疾 180 天医疗 90 天等待期，明确意外导致的疾病不受限"
+      },
+      {
+        "state_id": "confirm_purchase_intent",
+        "state_kind": "chat_state",
+        "summary_cn": "跟进商量结果并确认意向",
+        "chat_instruction": "问跟家人商量没，确认还考不考虑配置重疾险"
+      },
+      {
+        "state_id": "pause_and_remind",
+        "state_kind": "chat_state",
+        "summary_cn": "处理暂缓购买异议",
+        "chat_instruction": "尊重客户节奏。若存在明确停售或健康变化风险，只轻提醒一次，然后停住；不要继续发链接、催投保或追问资料"
+      }
+    ],
+    "transitions": [
+      {
+        "transition_kind": "direct",
+        "from_state": "INITIAL",
+        "to_state": "confirm_quote_prerequisites"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "confirm_quote_prerequisites",
+        "to_state": "send_quote_visual",
+        "condition_text": "客户明确要求报价、测算、保费图或已经给足测算入口条件并询问价格"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "confirm_quote_prerequisites",
+        "to_state": "send_policy_link",
+        "condition_text": "客户已明确认可方案并表示现在投保、先占上、进入页面或获取投保入口"
+      },
+      {
+        "transition_kind": "direct",
+        "from_state": "send_quote_visual",
+        "to_state": "explain_quote_details"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "explain_quote_details",
+        "to_state": "handle_budget_objection",
+        "condition_text": "客户反馈保费超出预算或需要调整方案"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "explain_quote_details",
+        "to_state": "send_policy_link",
+        "condition_text": "客户对报价无异议，准备进入投保环节"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "handle_budget_objection",
+        "to_state": "send_policy_link",
+        "condition_text": "客户接受调整后的保额或保费，并明确表示继续进入投保"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "send_policy_link",
+        "to_state": "guide_health_declaration",
+        "condition_text": "客户已打开投保页面、准备填写健康告知，或询问页面责任选项怎么选"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "guide_health_declaration",
+        "to_state": "send_operation_guide",
+        "condition_text": "客户要求操作截图、流程指引，或反馈页面仍不会操作"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "send_operation_guide",
+        "to_state": "handle_payment_issue",
+        "condition_text": "客户反馈支付失败、超额或遇到系统报错"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "send_operation_guide",
+        "to_state": "guide_policy_review",
+        "condition_text": "客户表示已完成支付或询问后续流程"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "handle_payment_issue",
+        "to_state": "guide_policy_review",
+        "condition_text": "客户已完成支付或继续询问支付成功后的回访、保单申请流程"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "guide_policy_review",
+        "to_state": "send_official_account_card",
+        "condition_text": "客户需要公众号、回访入口或保单申请入口"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "send_official_account_card",
+        "to_state": "explain_waiting_period",
+        "condition_text": "客户继续询问等待期、生效时间或保障何时开始"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "explain_waiting_period",
+        "to_state": "confirm_purchase_intent",
+        "condition_text": "客户表示需与家人商量或暂时无法决定"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "explain_waiting_period",
+        "to_state": "END",
+        "condition_text": "客户确认已完成所有操作且无其他疑问"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "confirm_purchase_intent",
+        "to_state": "pause_and_remind",
+        "condition_text": "客户表示暂缓需考虑或当前不便继续"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "pause_and_remind",
+        "to_state": "send_policy_link",
+        "condition_text": "客户商量后决定继续购买，重新获取链接"
+      }
+    ]
+  },
+  {
+    "journey_id": "J_underwriting",
+    "title": "健康异常与核保评估",
+    "description": "围绕多类健康异常 (结节/慢病/HPV 乙肝/息肉囊肿/住院手术史/少儿异常)、健康告知、资料补充、智能/人工核保、核保结论解释和投保路径选择",
+    "conditions": [
+      "客户披露体检异常、既往症、慢病、住院或手术史，并要求评估能否投保或如何进入核保流程",
+      "客户正在投保前处理健康告知、智能核保、人工核保、标体、除外、加费、延期或拒保等连续核保问题",
+      "客户需要基于具体健康异常判断如何告知、补充哪些资料，或选择核保路径"
+    ],
+    "states": [
+      {
+        "state_id": "collect_health_anomaly_details",
+        "state_kind": "chat_state",
+        "summary_cn": "确认核保判断入口信息",
+        "chat_instruction": "客户明确要判断健康异常能否投保时，先只问当前异常类型。若客户只是问健康告知规则，先解释当前规则，不展开病史清单"
+      },
+      {
+        "state_id": "fork_anomaly_type",
+        "state_kind": "fork_state",
+        "summary_cn": "分流结节、慢病、住院史等类型"
+      },
+      {
+        "state_id": "assess_nodule_specifics",
+        "state_kind": "chat_state",
+        "summary_cn": "询问结节分级与复查时间",
+        "chat_instruction": "问清甲状腺/肺结节分级、最近复查时间及是否手术，判断核保门槛"
+      },
+      {
+        "state_id": "assess_chronic_disease",
+        "state_kind": "chat_state",
+        "summary_cn": "解释健康告知与既往症核保",
+        "chat_instruction": "针对高血压/糖尿病/乙肝等慢病，询问细节并判断是否影响投保"
+      },
+      {
+        "state_id": "assess_surgery_history",
+        "state_kind": "chat_state",
+        "summary_cn": "初步评估手术史对投保的影响",
+        "chat_instruction": "告知小手术通常不影响投保，安抚客户顾虑，确认痊愈时间"
+      },
+      {
+        "state_id": "assess_child_anomaly",
+        "state_kind": "chat_state",
+        "summary_cn": "摸底儿童既往住院史细节",
+        "chat_instruction": "问清住院时间、诊断结论、是否痊愈及有无复查报告"
+      },
+      {
+        "state_id": "explain_health_disclosure_rules",
+        "state_kind": "chat_state",
+        "summary_cn": "解释有限告知与拒赔逻辑",
+        "chat_instruction": "讲清‘问什么答什么’原则，说明已告知就不会因既往症拒赔"
+      },
+      {
+        "state_id": "guide_medical_report_prep",
+        "state_kind": "chat_state",
+        "summary_cn": "指导人工核保资料提交",
+        "chat_instruction": "告知只需提交最近的检查报告，无需提供历年所有资料以免复杂化"
+      },
+      {
+        "state_id": "send_health_disclosure_sample",
+        "state_kind": "chat_state",
+        "summary_cn": "发送健康告知问卷填写样本",
+        "chat_instruction": "口头说明健康告知问卷截图，红圈标出甲状腺结节选项及勾选示例，如需素材由人审核定后补充"
+      },
+      {
+        "state_id": "explain_smart_underwriting_flow",
+        "state_kind": "chat_state",
+        "summary_cn": "引导智能核保操作步骤",
+        "chat_instruction": "指导客户在投保页点击核保按钮，按提示选择疾病条目并如实回答"
+      },
+      {
+        "state_id": "send_smart_underwriting_result",
+        "state_kind": "tool_state",
+        "summary_cn": "发送智能核保通过案例",
+        "tool_name": "send_image",
+        "tool_instruction": "健康告知/核保宽松度产品对比图",
+        "evidence_reuse_ids": [
+          "image494"
+        ],
+        "material_slot_ids": [
+          "image_slot_0073"
+        ]
+      },
+      {
+        "state_id": "explain_exclusion_logic",
+        "state_kind": "chat_state",
+        "summary_cn": "解释除外承保意义",
+        "chat_instruction": "说明除外肺部后其他重疾仍受保，且甲状腺结节恶化治疗费低"
+      },
+      {
+        "state_id": "compare_underwriting_products",
+        "state_kind": "chat_state",
+        "summary_cn": "对比两款产品核保宽松度",
+        "chat_instruction": "说明哪吒核保更宽松，有甲癌病史客户投保成功案例"
+      },
+      {
+        "state_id": "send_nodule_comparison_chart",
+        "state_kind": "chat_state",
+        "summary_cn": "发结节核保宽松度对比",
+        "chat_instruction": "口头说明不同产品对肺结节/甲状腺结节健康告知宽松度对比图，不要承诺发送素材"
+      },
+      {
+        "state_id": "recommend_alternative_plan",
+        "state_kind": "chat_state",
+        "summary_cn": "推荐防癌险作为备选方案",
+        "chat_instruction": "若重疾险全拒保，建议转投防癌险作为癌症专项保障"
+      },
+      {
+        "state_id": "wrap_up_underwriting_path",
+        "state_kind": "chat_state",
+        "summary_cn": "引导尝试人工核保流程",
+        "chat_instruction": "建议先提交人工核保试算，强调不支付不留拒保记录"
+      }
+    ],
+    "transitions": [
+      {
+        "transition_kind": "direct",
+        "from_state": "INITIAL",
+        "to_state": "collect_health_anomaly_details"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "collect_health_anomaly_details",
+        "to_state": "fork_anomaly_type",
+        "condition_text": "客户已说明当前健康异常类型，并要求继续评估投保或核保路径"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "fork_anomaly_type",
+        "to_state": "assess_nodule_specifics",
+        "condition_text": "客户提及肺结节、甲状腺结节或乳腺结节"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "fork_anomaly_type",
+        "to_state": "assess_chronic_disease",
+        "condition_text": "客户提及高血压、糖尿病、乙肝或脂肪肝等慢病"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "fork_anomaly_type",
+        "to_state": "assess_surgery_history",
+        "condition_text": "客户提及住院史、手术史或外伤"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "fork_anomaly_type",
+        "to_state": "assess_child_anomaly",
+        "condition_text": "客户咨询儿童早产、黄疸或发育异常"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "fork_anomaly_type",
+        "to_state": "explain_health_disclosure_rules",
+        "condition_text": "其他健康异常类型或通用告知规则咨询"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "assess_nodule_specifics",
+        "to_state": "guide_medical_report_prep",
+        "condition_text": "客户准备继续人工核保或询问需要提交哪些检查报告"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "assess_chronic_disease",
+        "to_state": "guide_medical_report_prep",
+        "condition_text": "客户准备继续人工核保或询问慢病资料如何补充"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "assess_surgery_history",
+        "to_state": "guide_medical_report_prep",
+        "condition_text": "客户准备继续人工核保或询问手术住院资料如何补充"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "assess_child_anomaly",
+        "to_state": "guide_medical_report_prep",
+        "condition_text": "客户准备继续人工核保或询问儿童异常资料如何补充"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "explain_health_disclosure_rules",
+        "to_state": "guide_medical_report_prep",
+        "condition_text": "客户从通用规则转入具体健康异常评估，并询问资料或核保路径"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "guide_medical_report_prep",
+        "to_state": "send_health_disclosure_sample",
+        "condition_text": "客户要求健康告知填写示例或正在填写问卷"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "send_health_disclosure_sample",
+        "to_state": "explain_smart_underwriting_flow",
+        "condition_text": "客户准备进入智能核保，或询问页面上下一步怎么操作"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "explain_smart_underwriting_flow",
+        "to_state": "send_smart_underwriting_result",
+        "condition_text": "客户要求看核保通过案例，或已完成智能核保并需要结果参照"
+      },
+      {
+        "transition_kind": "direct",
+        "from_state": "send_smart_underwriting_result",
+        "to_state": "explain_exclusion_logic"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "explain_exclusion_logic",
+        "to_state": "compare_underwriting_products",
+        "condition_text": "客户对除外结论接受但希望寻找更优产品"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "explain_exclusion_logic",
+        "to_state": "recommend_alternative_plan",
+        "condition_text": "客户表示无法接受除外或被告知拒保"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "compare_underwriting_products",
+        "to_state": "send_nodule_comparison_chart",
+        "condition_text": "客户要求继续看结节核保宽松度对比或产品差异依据"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "send_nodule_comparison_chart",
+        "to_state": "wrap_up_underwriting_path",
+        "condition_text": "客户已理解核保宽松度对比，并要求继续尝试人工核保或确认投保路径"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "recommend_alternative_plan",
+        "to_state": "wrap_up_underwriting_path",
+        "condition_text": "客户接受防癌险等备选方向，并要求继续确认下一步投保或核保动作"
+      },
+      {
+        "transition_kind": "direct",
+        "from_state": "wrap_up_underwriting_path",
+        "to_state": "END"
+      }
+    ]
+  },
+  {
+    "journey_id": "J_policy_review",
+    "title": "已有保单诊断与调整",
+    "description": "旧保单资料→责任/现金价值/退保损失→保留补充/退保置换/减额交清/给家人新配的路径选择",
+    "conditions": [
+      "客户已提供或准备提供已有保单资料，并明确要求做完整保单诊断、保障缺口分析或调整建议",
+      "客户围绕现有保单的责任、已交保费、现金价值或已交年限，要求判断是否继续缴费、保留补充、退保置换或减额交清",
+      "客户正在基于旧保单处置做连续决策，需要比较长期持有价值、退保损失、置换成本或给家人另配新单"
+    ],
+    "states": [
+      {
+        "state_id": "collect_policy_docs",
+        "state_kind": "chat_state",
+        "summary_cn": "破冰问候并请求重发保单",
+        "chat_instruction": "客户明确要做保单诊断时，只请求本次诊断最需要的保单页或关键数字。若客户只是问退保、现金价值或保单规则概念，先回答当前问题，回答后停住"
+      },
+      {
+        "state_id": "analyze_policy_structure",
+        "state_kind": "tool_state",
+        "summary_cn": "发旧保单结构解析图",
+        "tool_name": "send_image",
+        "tool_instruction": "保费测算/报价页面截图",
+        "evidence_reuse_ids": [
+          "image164"
+        ],
+        "material_slot_ids": [
+          "image_slot_0045"
+        ]
+      },
+      {
+        "state_id": "explain_structure_details",
+        "state_kind": "chat_state",
+        "summary_cn": "诊断捆绑责任与保费倒挂",
+        "chat_instruction": "指出主险捆绑大量无用短险，且总保费已超过保额，解释保障杠杆低的原因"
+      },
+      {
+        "state_id": "calc_surrender_loss",
+        "state_kind": "tool_state",
+        "summary_cn": "发旧保单现金价值分析",
+        "tool_name": "send_image",
+        "tool_instruction": "保费测算/报价页面截图",
+        "evidence_reuse_ids": [
+          "image242"
+        ],
+        "material_slot_ids": [
+          "image_slot_0024"
+        ]
+      },
+      {
+        "state_id": "explain_loss_concept",
+        "state_kind": "chat_state",
+        "summary_cn": "计算旧保单已交保费与退保损失",
+        "chat_instruction": "算清已交总额和当前现金价值，点明直接退保的实际损失金额，确认客户知晓风险"
+      },
+      {
+        "state_id": "fork_decision_path",
+        "state_kind": "fork_state",
+        "summary_cn": "评估旧保单保留价值与置换成本"
+      },
+      {
+        "state_id": "path_keep_supplement",
+        "state_kind": "chat_state",
+        "summary_cn": "建议保留旧单并补充高性价比新单",
+        "chat_instruction": "对于已交多年的旧保单，建议不退保，而是用低保费新单补充保额缺口"
+      },
+      {
+        "state_id": "show_supplement_gap",
+        "state_kind": "chat_state",
+        "summary_cn": "发送旧保单责任分析截图",
+        "chat_instruction": "口头说明旧保单附加险责任列表截图，圈出百万医疗与小额医疗的免赔额互补关系，如需素材由人审核定后补充"
+      },
+      {
+        "state_id": "path_replace_plan",
+        "state_kind": "chat_state",
+        "summary_cn": "建议已购高价保单及时止损",
+        "chat_instruction": "分析已购保单的现金价值损失，建议次年停缴并置换高性价比产品"
+      },
+      {
+        "state_id": "compare_old_new",
+        "state_kind": "chat_state",
+        "summary_cn": "发旧保单与新方案对比图",
+        "chat_instruction": "口头说明旧保单现金价值表与新方案保费测算及保障责任对比图，如需素材由人审核定后补充"
+      },
+      {
+        "state_id": "explain_replace_logic",
+        "state_kind": "tool_state",
+        "summary_cn": "对比新旧方案总保费与保障杠杆",
+        "tool_name": "send_image",
+        "tool_instruction": "统一定义的 N 种重大疾病及 N 种轻度疾病列表图（行业标准化参考）",
+        "evidence_reuse_ids": [
+          "image2"
+        ],
+        "material_slot_ids": [
+          "image_slot_0147"
+        ]
+      },
+      {
+        "state_id": "handle_objection_cash",
+        "state_kind": "chat_state",
+        "summary_cn": "澄清现金价值与退保概念",
+        "chat_instruction": "解释现金价值非返还型，说明中途退保只能退现价及损失风险"
+      },
+      {
+        "state_id": "wrap_up_next_step",
+        "state_kind": "chat_state",
+        "summary_cn": "确认最终调整方案意向",
+        "chat_instruction": "总结诊断结论，确认客户是选择保留补充、置换新单还是给家人配置，约定下一步动作"
+      },
+      {
+        "state_id": "_after_tool_0",
+        "state_kind": "chat_state",
+        "summary_cn": "承接说明：旧保单现金价值表与新方案保费测算及保障责任对比图",
+        "chat_instruction": "用一两句话解释刚发送的旧保单现金价值表与新方案保费测算及保障责任对比图，确认客户是否看懂后再推进"
+      }
+    ],
+    "transitions": [
+      {
+        "transition_kind": "direct",
+        "from_state": "INITIAL",
+        "to_state": "collect_policy_docs"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "collect_policy_docs",
+        "to_state": "analyze_policy_structure",
+        "condition_text": "客户已提供保单图片、责任页、现金价值页或关键保单数字，并要求继续完整诊断"
+      },
+      {
+        "transition_kind": "direct",
+        "from_state": "analyze_policy_structure",
+        "to_state": "explain_structure_details"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "explain_structure_details",
+        "to_state": "calc_surrender_loss",
+        "condition_text": "客户继续询问退保、现金价值、已交保费或需要计算损失"
+      },
+      {
+        "transition_kind": "direct",
+        "from_state": "calc_surrender_loss",
+        "to_state": "explain_loss_concept"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "explain_loss_concept",
+        "to_state": "fork_decision_path",
+        "condition_text": "客户已理解退保损失，并要求继续判断保留、补充或置换路径"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "fork_decision_path",
+        "to_state": "path_keep_supplement",
+        "condition_text": "退保损失过大或旧单仍有核心价值，客户倾向于保留"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "fork_decision_path",
+        "to_state": "path_replace_plan",
+        "condition_text": "旧单坑大且损失可接受，客户健康允许，倾向于置换"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "fork_decision_path",
+        "to_state": "handle_objection_cash",
+        "condition_text": "客户对现金价值或退保损失仍有疑虑需要进一步解释"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "path_keep_supplement",
+        "to_state": "show_supplement_gap",
+        "condition_text": "客户接受保留补充方向，并要求继续看保障缺口或补充方案"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "show_supplement_gap",
+        "to_state": "wrap_up_next_step",
+        "condition_text": "客户已理解保障缺口，并要求继续确认保留补充或后续配置动作"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "path_replace_plan",
+        "to_state": "compare_old_new",
+        "condition_text": "客户明确要评估置换方案，并需要继续比较新旧保障和保费"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "compare_old_new",
+        "to_state": "_after_tool_0",
+        "condition_text": "客户要求继续解释新旧方案对比图、现金价值表或保障责任对比"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "_after_tool_0",
+        "to_state": "explain_replace_logic",
+        "condition_text": "客户要求继续看新旧责任差异、疾病定义或置换依据素材"
+      },
+      {
+        "transition_kind": "direct",
+        "from_state": "explain_replace_logic",
+        "to_state": "wrap_up_next_step"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "handle_objection_cash",
+        "to_state": "wrap_up_next_step",
+        "condition_text": "客户已理解现金价值与退保损失，并要求回到调整方案选择"
+      },
+      {
+        "transition_kind": "direct",
+        "from_state": "wrap_up_next_step",
+        "to_state": "END"
+      }
+    ]
+  },
+  {
+    "journey_id": "J_claim_service",
+    "title": "理赔与保单服务讲解",
+    "description": "科普理赔材料、报案与线上理赔流程，并指导保单查询、保全、续期、回访和服务入口",
+    "conditions": [
+      "客户围绕已经承保的历史保单，已决定办理理赔、报案、续费、电子保单下载、信息变更等售后操作，并需要具体操作路径",
+      "客户已发生住院、门诊、事故或疾病，需要连续协助理赔流程、材料准备、报案路径、时效或赔付进度跟进",
+      "客户需要历史保单的实际服务入口、查询路径或操作说明，例如电子保单查询、自动续费、信息变更、保全或理赔协助"
+    ],
+    "states": [
+      {
+        "state_id": "claim_materials_guide",
+        "state_kind": "chat_state",
+        "summary_cn": "说明理赔材料与线上报案流程",
+        "chat_instruction": "告知出险后联系渠道，列举所需基础理赔材料清单"
+      },
+      {
+        "state_id": "online_claim_demo",
+        "state_kind": "chat_state",
+        "summary_cn": "讲解线上理赔操作流程",
+        "chat_instruction": "演示公众号上传资料流程，强调无需纸质材料且时效快"
+      },
+      {
+        "state_id": "send_claim_timeline",
+        "state_kind": "tool_state",
+        "summary_cn": "发理赔全流程时间轴截图",
+        "tool_name": "send_image",
+        "tool_instruction": "理赔流程/材料清单/赔付案例说明图",
+        "evidence_reuse_ids": [
+          "image59"
+        ],
+        "material_slot_ids": [
+          "image_slot_0372"
+        ]
+      },
+      {
+        "state_id": "claim_timeline_explain",
+        "state_kind": "chat_state",
+        "summary_cn": "说明理赔协助与售后服务",
+        "chat_instruction": "介绍理赔协助流程，承诺提供专业团队支持"
+      },
+      {
+        "state_id": "policy_query_guide",
+        "state_kind": "chat_state",
+        "summary_cn": "引导关注公众号查保单",
+        "chat_instruction": "指导客户搜索人保财险公众号，通过手机号验证码登录查看电子保单"
+      },
+      {
+        "state_id": "paper_policy_info",
+        "state_kind": "chat_state",
+        "summary_cn": "解答保单查询渠道及纸质保单发放规则",
+        "chat_instruction": "告知无需下载 APP，微信公众号或金事通可查电子保单，另会有纸质保单邮寄"
+      },
+      {
+        "state_id": "service_menu_guide",
+        "state_kind": "chat_state",
+        "summary_cn": "讲解保单回访与查询流程",
+        "chat_instruction": "指引客户在官微完成回访，告知纸质保单申请方式及查询入口"
+      },
+      {
+        "state_id": "supplement_disclosure_guide",
+        "state_kind": "chat_state",
+        "summary_cn": "指导补充告知话术与流程",
+        "chat_instruction": "教客户在公众号保全入口填写描述，强调仅写体检发现"
+      },
+      {
+        "state_id": "auto_renew_guide",
+        "state_kind": "chat_state",
+        "summary_cn": "指导关闭自动续保操作",
+        "chat_instruction": "告知在保司官微保单服务中可手动关闭自动续费，改为手动缴费"
+      },
+      {
+        "state_id": "claim_concern_handle",
+        "state_kind": "chat_state",
+        "summary_cn": "解释理赔服务与病历真实性顾虑",
+        "chat_instruction": "说明理赔由专员对接，病历由医生开具无需担心造假"
+      }
+    ],
+    "transitions": [
+      {
+        "transition_kind": "conditional",
+        "from_state": "INITIAL",
+        "to_state": "claim_materials_guide",
+        "condition_text": "客户已出险或准备报案理赔，并需要材料清单、报案流程或理赔协助"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "INITIAL",
+        "to_state": "policy_query_guide",
+        "condition_text": "客户需要查询电子保单、下载保单或确认保单状态"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "INITIAL",
+        "to_state": "service_menu_guide",
+        "condition_text": "客户需要办理监管回访、纸质保单申请或查看保司服务菜单"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "INITIAL",
+        "to_state": "supplement_disclosure_guide",
+        "condition_text": "客户需要补充健康告知、信息变更或其他保全操作"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "INITIAL",
+        "to_state": "auto_renew_guide",
+        "condition_text": "客户需要修改续费方式、关闭自动续保或处理续期缴费"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "INITIAL",
+        "to_state": "claim_concern_handle",
+        "condition_text": "客户对理赔服务、病历真实性或赔付协助有明确顾虑"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "claim_materials_guide",
+        "to_state": "online_claim_demo",
+        "condition_text": "客户继续要求线上报案、公众号上传资料或具体操作步骤"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "online_claim_demo",
+        "to_state": "send_claim_timeline",
+        "condition_text": "客户要求查看理赔流程图、时间轴或材料示例素材"
+      },
+      {
+        "transition_kind": "direct",
+        "from_state": "send_claim_timeline",
+        "to_state": "claim_timeline_explain"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "claim_timeline_explain",
+        "to_state": "policy_query_guide",
+        "condition_text": "客户想查询电子保单或了解保单状态"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "claim_timeline_explain",
+        "to_state": "service_menu_guide",
+        "condition_text": "客户需要办理回访或申请纸质保单"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "claim_timeline_explain",
+        "to_state": "supplement_disclosure_guide",
+        "condition_text": "客户需要补充健康告知或进行保全变更"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "claim_timeline_explain",
+        "to_state": "auto_renew_guide",
+        "condition_text": "客户想修改续期缴费方式或关闭自动续费"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "claim_timeline_explain",
+        "to_state": "claim_concern_handle",
+        "condition_text": "客户对理赔真实性或病历记录有顾虑"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "claim_timeline_explain",
+        "to_state": "END",
+        "condition_text": "客户暂无其他服务需求"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "policy_query_guide",
+        "to_state": "paper_policy_info",
+        "condition_text": "客户继续询问纸质保单、邮寄规则或其他保单查询渠道"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "policy_query_guide",
+        "to_state": "END",
+        "condition_text": "客户只需要电子保单查询路径，当前问题已答完"
+      },
+      {
+        "transition_kind": "direct",
+        "from_state": "paper_policy_info",
+        "to_state": "END"
+      },
+      {
+        "transition_kind": "direct",
+        "from_state": "service_menu_guide",
+        "to_state": "END"
+      },
+      {
+        "transition_kind": "direct",
+        "from_state": "supplement_disclosure_guide",
+        "to_state": "END"
+      },
+      {
+        "transition_kind": "direct",
+        "from_state": "auto_renew_guide",
+        "to_state": "END"
+      },
+      {
+        "transition_kind": "direct",
+        "from_state": "claim_concern_handle",
+        "to_state": "END"
+      }
+    ]
+  },
+  {
+    "journey_id": "J_senior_parent",
+    "title": "父母与高龄老人保障规划",
+    "description": "父母年龄/医保地/健康/预算预筛→惠民保/老人意外/医疗险/防癌险/可投重疾分支取舍，不默认推荐成人重疾",
+    "conditions": [
+      "客户明确要给父母或老人配置完整保障方案，或被保人年龄约 60 岁及以上并要求筛选可投方案",
+      "客户围绕高龄、慢病老人可买险种，要求比较惠民保、防癌医疗、意外险等老人可选方案并做配置决策",
+      "客户正在为老人投保做连续决策，需要评估保费倒挂、既往症限制、健康告知或保障取舍"
+    ],
+    "states": [
+      {
+        "state_id": "collect_parent_basic_info",
+        "state_kind": "chat_state",
+        "summary_cn": "确认父母方案入口信息",
+        "chat_instruction": "客户明确要给父母筛方案时，先只问父母年龄。若客户只是问老人险种、保费倒挂或健康告知取舍，先回答当前问题，不追问病史清单"
+      },
+      {
+        "state_id": "confirm_medical_location",
+        "state_kind": "chat_state",
+        "summary_cn": "确认医保所在地以匹配惠民保",
+        "chat_instruction": "询问客户父母医保缴纳地，指导购买对应城市的惠民保"
+      },
+      {
+        "state_id": "fork_health_budget_path",
+        "state_kind": "fork_state",
+        "summary_cn": "老人保障方案预筛建议"
+      },
+      {
+        "state_id": "explain_huiminbao_limits",
+        "state_kind": "chat_state",
+        "summary_cn": "澄清惠民保免赔额与报销",
+        "chat_instruction": "告知惠民保免赔额较高（通常 2 万），主要防范大病风险，小病用不上"
+      },
+      {
+        "state_id": "show_huiminbao_accident_combo",
+        "state_kind": "tool_state",
+        "summary_cn": "发老人惠民保及意外险推荐",
+        "tool_name": "send_link",
+        "tool_instruction": "保险产品或服务说明链接卡片",
+        "evidence_reuse_ids": [
+          "link32"
+        ],
+        "material_slot_ids": [
+          "link_slot_0403"
+        ]
+      },
+      {
+        "state_id": "chat_after_combo_link",
+        "state_kind": "chat_state",
+        "summary_cn": "推荐惠民保加意外险组合方案",
+        "chat_instruction": "建议老人首选当地惠民保搭配意外险，说明价格低且互补"
+      },
+      {
+        "state_id": "explain_medical_premium_inversion",
+        "state_kind": "chat_state",
+        "summary_cn": "劝退高龄百万医疗险",
+        "chat_instruction": "解释 60 岁后百万医疗险保费倒挂且逐年涨价，性价比通常下降"
+      },
+      {
+        "state_id": "show_premium_comparison_chart",
+        "state_kind": "tool_state",
+        "summary_cn": "展示高龄百万医疗险保费劣势",
+        "tool_name": "send_image",
+        "tool_instruction": "保费测算/报价页面截图",
+        "evidence_reuse_ids": [
+          "image75"
+        ],
+        "material_slot_ids": [
+          "image_slot_0393"
+        ]
+      },
+      {
+        "state_id": "chat_after_premium_chart",
+        "state_kind": "chat_state",
+        "summary_cn": "对比众民保与惠民保优劣",
+        "chat_instruction": "分析众民保等商业普惠险与政府惠民保在续保稳定性和免赔额上的差异"
+      },
+      {
+        "state_id": "assess_cancer_insurance_option",
+        "state_kind": "chat_state",
+        "summary_cn": "建议大龄父母选达尔文",
+        "chat_instruction": "告知超 50 岁超级玛丽停售，推荐年龄宽松的达尔文"
+      },
+      {
+        "state_id": "show_cancer_insurance_link",
+        "state_kind": "tool_state",
+        "summary_cn": "发防癌险产品链接",
+        "tool_name": "send_link",
+        "tool_instruction": "保险产品或服务说明链接卡片",
+        "evidence_reuse_ids": [
+          "link24"
+        ],
+        "material_slot_ids": [
+          "link_slot_0432"
+        ]
+      },
+      {
+        "state_id": "chat_after_cancer_link",
+        "state_kind": "chat_state",
+        "summary_cn": "解释既往症理赔规则与预期",
+        "chat_instruction": "说明惠民保对轻微既往症可赔，严重既往症免责的规则"
+      },
+      {
+        "state_id": "handle_cross_region_query",
+        "state_kind": "chat_state",
+        "summary_cn": "处理异地就医报销疑问",
+        "chat_instruction": "解释惠民保通常支持异地就医，但需办理转诊备案，具体看当地政策"
+      }
+    ],
+    "transitions": [
+      {
+        "transition_kind": "direct",
+        "from_state": "INITIAL",
+        "to_state": "collect_parent_basic_info"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "collect_parent_basic_info",
+        "to_state": "confirm_medical_location",
+        "condition_text": "客户已说明父母年龄，并继续要求匹配惠民保或完整老人保障方案"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "confirm_medical_location",
+        "to_state": "fork_health_budget_path",
+        "condition_text": "客户已说明医保地，且仍需要结合健康、预算或保障目标筛选方案"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "fork_health_budget_path",
+        "to_state": "explain_huiminbao_limits",
+        "condition_text": "健康较差、有既往症或预算有限，优先惠民保"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "fork_health_budget_path",
+        "to_state": "explain_medical_premium_inversion",
+        "condition_text": "健康尚可但担心百万医疗保费倒挂"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "fork_health_budget_path",
+        "to_state": "assess_cancer_insurance_option",
+        "condition_text": "健康一般想补充重疾保障，评估防癌险"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "fork_health_budget_path",
+        "to_state": "handle_cross_region_query",
+        "condition_text": "客户询问异地就医或报销细节"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "explain_huiminbao_limits",
+        "to_state": "show_huiminbao_accident_combo",
+        "condition_text": "客户接受惠民保或意外险方向，并要求产品入口、链接或组合方案"
+      },
+      {
+        "transition_kind": "direct",
+        "from_state": "show_huiminbao_accident_combo",
+        "to_state": "chat_after_combo_link"
+      },
+      {
+        "transition_kind": "direct",
+        "from_state": "chat_after_combo_link",
+        "to_state": "END"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "explain_medical_premium_inversion",
+        "to_state": "show_premium_comparison_chart",
+        "condition_text": "客户要求继续看高龄医疗险保费对比或保费倒挂依据"
+      },
+      {
+        "transition_kind": "direct",
+        "from_state": "show_premium_comparison_chart",
+        "to_state": "chat_after_premium_chart"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "chat_after_premium_chart",
+        "to_state": "show_huiminbao_accident_combo",
+        "condition_text": "客户接受转向惠民保或意外险组合，并要求入口或链接"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "assess_cancer_insurance_option",
+        "to_state": "show_cancer_insurance_link",
+        "condition_text": "客户明确要继续看防癌险产品入口、链接或投保方案"
+      },
+      {
+        "transition_kind": "direct",
+        "from_state": "show_cancer_insurance_link",
+        "to_state": "chat_after_cancer_link"
+      },
+      {
+        "transition_kind": "direct",
+        "from_state": "chat_after_cancer_link",
+        "to_state": "END"
+      },
+      {
+        "transition_kind": "conditional",
+        "from_state": "handle_cross_region_query",
+        "to_state": "show_huiminbao_accident_combo",
+        "condition_text": "客户确认医保地或接受异地规则后，继续要求惠民保或意外险入口"
+      }
+    ]
+  }
+]

@@ -1,0 +1,26 @@
+{
+  "batch_id": "batch_20260607_040153_all_scenarios",
+  "note": "Pre-governance baseline from 15 scenarios x ~20 turns",
+  "aggregate": {
+    "e2e_p50_ms": 28565,
+    "e2e_p95_ms": 49757,
+    "llm_calls_p50": 27,
+    "total_tokens_p50": 605113,
+    "tool_fail_rate": 0.72,
+    "matcher_rejected_all_rate": 0.12,
+    "K_p50": 12,
+    "closure_added_avg": 1.25,
+    "compliance_pass_rate": 0.90
+  },
+  "thresholds": {
+    "e2e_p50_ms": 12000,
+    "e2e_p95_ms": 25000,
+    "llm_calls_p50": 10,
+    "total_tokens_p50_reduction": 0.5,
+    "tool_fail_rate": 0.10,
+    "tool_guideline_matched_rate": 0.80,
+    "matcher_rejected_all_on_tool_scenarios": 0.10,
+    "glossary_injected_count_p50": 15,
+    "relationship_cycle_count": 0
+  }
+}

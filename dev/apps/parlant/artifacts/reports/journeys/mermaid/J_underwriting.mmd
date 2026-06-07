@@ -1,0 +1,41 @@
+flowchart TD
+  J_underwriting_collect_health_anomaly_details["collect_health_anomaly_details\n(chat_state)"]
+  J_underwriting_fork_anomaly_type[/"fork_anomaly_type\n(tool)"/]
+  J_underwriting_assess_nodule_specifics["assess_nodule_specifics\n(chat_state)"]
+  J_underwriting_assess_chronic_disease["assess_chronic_disease\n(chat_state)"]
+  J_underwriting_assess_surgery_history["assess_surgery_history\n(chat_state)"]
+  J_underwriting_assess_child_anomaly["assess_child_anomaly\n(chat_state)"]
+  J_underwriting_explain_health_disclosure_rules["explain_health_disclosure_rules\n(chat_state)"]
+  J_underwriting_guide_medical_report_prep["guide_medical_report_prep\n(chat_state)"]
+  J_underwriting_send_health_disclosure_sample["send_health_disclosure_sample\n(chat_state)"]
+  J_underwriting_explain_smart_underwriting_flow["explain_smart_underwriting_flow\n(chat_state)"]
+  J_underwriting_send_smart_underwriting_result[/"send_smart_underwriting_result\n(tool)"/]
+  J_underwriting_explain_exclusion_logic["explain_exclusion_logic\n(chat_state)"]
+  J_underwriting_compare_underwriting_products["compare_underwriting_products\n(chat_state)"]
+  J_underwriting_send_nodule_comparison_chart["send_nodule_comparison_chart\n(chat_state)"]
+  J_underwriting_recommend_alternative_plan["recommend_alternative_plan\n(chat_state)"]
+  J_underwriting_wrap_up_underwriting_path["wrap_up_underwriting_path\n(chat_state)"]
+  J_underwriting_INITIAL(["INITIAL"])
+  J_underwriting_INITIAL --> J_underwriting_collect_health_anomaly_details
+  J_underwriting_collect_health_anomaly_details -->|客户已说明当前健康异常类型，并要求继续评估投保或核保路径| J_underwriting_fork_anomaly_type
+  J_underwriting_fork_anomaly_type -->|客户提及肺结节、甲状腺结节或乳腺结节| J_underwriting_assess_nodule_specifics
+  J_underwriting_fork_anomaly_type -->|客户提及高血压、糖尿病、乙肝或脂肪肝等慢病| J_underwriting_assess_chronic_disease
+  J_underwriting_fork_anomaly_type -->|客户提及住院史、手术史或外伤| J_underwriting_assess_surgery_history
+  J_underwriting_fork_anomaly_type -->|客户咨询儿童早产、黄疸或发育异常| J_underwriting_assess_child_anomaly
+  J_underwriting_fork_anomaly_type -->|其他健康异常类型或通用告知规则咨询| J_underwriting_explain_health_disclosure_rules
+  J_underwriting_assess_nodule_specifics -->|客户准备继续人工核保或询问需要提交哪些检查报告| J_underwriting_guide_medical_report_prep
+  J_underwriting_assess_chronic_disease -->|客户准备继续人工核保或询问慢病资料如何补充| J_underwriting_guide_medical_report_prep
+  J_underwriting_assess_surgery_history -->|客户准备继续人工核保或询问手术住院资料如何补充| J_underwriting_guide_medical_report_prep
+  J_underwriting_assess_child_anomaly -->|客户准备继续人工核保或询问儿童异常资料如何补充| J_underwriting_guide_medical_report_prep
+  J_underwriting_explain_health_disclosure_rules -->|客户从通用规则转入具体健康异常评估，并询问资料或核保路径| J_underwriting_guide_medical_report_prep
+  J_underwriting_guide_medical_report_prep -->|客户要求健康告知填写示例或正在填写问卷| J_underwriting_send_health_disclosure_sample
+  J_underwriting_send_health_disclosure_sample -->|客户准备进入智能核保，或询问页面上下一步怎么操作| J_underwriting_explain_smart_underwriting_flow
+  J_underwriting_explain_smart_underwriting_flow -->|客户要求看核保通过案例，或已完成智能核保并需要结果参照| J_underwriting_send_smart_underwriting_result
+  J_underwriting_send_smart_underwriting_result --> J_underwriting_explain_exclusion_logic
+  J_underwriting_explain_exclusion_logic -->|客户对除外结论接受但希望寻找更优产品| J_underwriting_compare_underwriting_products
+  J_underwriting_explain_exclusion_logic -->|客户表示无法接受除外或被告知拒保| J_underwriting_recommend_alternative_plan
+  J_underwriting_compare_underwriting_products -->|客户要求继续看结节核保宽松度对比或产品差异依据| J_underwriting_send_nodule_comparison_chart
+  J_underwriting_send_nodule_comparison_chart -->|客户已理解核保宽松度对比，并要求继续尝试人工核保或确认投保路径| J_underwriting_wrap_up_underwriting_path
+  J_underwriting_recommend_alternative_plan -->|客户接受防癌险等备选方向，并要求继续确认下一步投保或核保动作| J_underwriting_wrap_up_underwriting_path
+  J_underwriting_wrap_up_underwriting_path --> END_NODE
+  END_NODE(["END"])

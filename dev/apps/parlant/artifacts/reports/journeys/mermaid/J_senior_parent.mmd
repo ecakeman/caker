@@ -1,0 +1,33 @@
+flowchart TD
+  J_senior_parent_collect_parent_basic_info["collect_parent_basic_info\n(chat_state)"]
+  J_senior_parent_confirm_medical_location["confirm_medical_location\n(chat_state)"]
+  J_senior_parent_fork_health_budget_path[/"fork_health_budget_path\n(tool)"/]
+  J_senior_parent_explain_huiminbao_limits["explain_huiminbao_limits\n(chat_state)"]
+  J_senior_parent_show_huiminbao_accident_combo[/"show_huiminbao_accident_combo\n(tool)"/]
+  J_senior_parent_chat_after_combo_link["chat_after_combo_link\n(chat_state)"]
+  J_senior_parent_explain_medical_premium_inversion["explain_medical_premium_inversion\n(chat_state)"]
+  J_senior_parent_show_premium_comparison_chart[/"show_premium_comparison_chart\n(tool)"/]
+  J_senior_parent_chat_after_premium_chart["chat_after_premium_chart\n(chat_state)"]
+  J_senior_parent_assess_cancer_insurance_option["assess_cancer_insurance_option\n(chat_state)"]
+  J_senior_parent_show_cancer_insurance_link[/"show_cancer_insurance_link\n(tool)"/]
+  J_senior_parent_chat_after_cancer_link["chat_after_cancer_link\n(chat_state)"]
+  J_senior_parent_handle_cross_region_query["handle_cross_region_query\n(chat_state)"]
+  J_senior_parent_INITIAL(["INITIAL"])
+  J_senior_parent_INITIAL --> J_senior_parent_collect_parent_basic_info
+  J_senior_parent_collect_parent_basic_info -->|客户已说明父母年龄，并继续要求匹配惠民保或完整老人保障方案| J_senior_parent_confirm_medical_location
+  J_senior_parent_confirm_medical_location -->|客户已说明医保地，且仍需要结合健康、预算或保障目标筛选方案| J_senior_parent_fork_health_budget_path
+  J_senior_parent_fork_health_budget_path -->|健康较差、有既往症或预算有限，优先惠民保| J_senior_parent_explain_huiminbao_limits
+  J_senior_parent_fork_health_budget_path -->|健康尚可但担心百万医疗保费倒挂| J_senior_parent_explain_medical_premium_inversion
+  J_senior_parent_fork_health_budget_path -->|健康一般想补充重疾保障，评估防癌险| J_senior_parent_assess_cancer_insurance_option
+  J_senior_parent_fork_health_budget_path -->|客户询问异地就医或报销细节| J_senior_parent_handle_cross_region_query
+  J_senior_parent_explain_huiminbao_limits -->|客户接受惠民保或意外险方向，并要求产品入口、链接或组合方案| J_senior_parent_show_huiminbao_accident_combo
+  J_senior_parent_show_huiminbao_accident_combo --> J_senior_parent_chat_after_combo_link
+  J_senior_parent_chat_after_combo_link --> END_NODE
+  J_senior_parent_explain_medical_premium_inversion -->|客户要求继续看高龄医疗险保费对比或保费倒挂依据| J_senior_parent_show_premium_comparison_chart
+  J_senior_parent_show_premium_comparison_chart --> J_senior_parent_chat_after_premium_chart
+  J_senior_parent_chat_after_premium_chart -->|客户接受转向惠民保或意外险组合，并要求入口或链接| J_senior_parent_show_huiminbao_accident_combo
+  J_senior_parent_assess_cancer_insurance_option -->|客户明确要继续看防癌险产品入口、链接或投保方案| J_senior_parent_show_cancer_insurance_link
+  J_senior_parent_show_cancer_insurance_link --> J_senior_parent_chat_after_cancer_link
+  J_senior_parent_chat_after_cancer_link --> END_NODE
+  J_senior_parent_handle_cross_region_query -->|客户确认医保地或接受异地规则后，继续要求惠民保或意外险入口| J_senior_parent_show_huiminbao_accident_combo
+  END_NODE(["END"])

@@ -1,0 +1,91 @@
+{
+  "version": "1",
+  "policy": {
+    "production_mode": "review_required",
+    "strict_scenarios": "require_human_review_before_enable",
+    "default_enable": false
+  },
+  "items": [
+    {
+      "id": "canned_ag_764a447935457d00",
+      "guideline_id": "ag_764a447935457d00",
+      "trigger_hint": "客户提出返佣、红包、内部活动、返钱、让利或其他违规利益输送要求",
+      "response_template": "明确拒绝返佣/返钱，说明这类做法违规。回答后停住，不推进投保，也不追问方案信息。",
+      "review_required": true,
+      "strict_recommended": true,
+      "usage": "candidate_only_not_auto_send",
+      "confidence": 0.6,
+      "inference": "derived_from_high_risk_guideline"
+    },
+    {
+      "id": "canned_ag_b59b823eb73adc61",
+      "guideline_id": "ag_b59b823eb73adc61",
+      "trigger_hint": "客户质疑小保司/线上产品理赔难，或担心保险公司倒闭导致保单失效",
+      "response_template": "简短说明保险公司受严格监管，极端情况下也有接管和保障机制，保单权益按合同延续。客户明确想看依据或说明图时，调用 send_image(reuse_id=\"image50\", material_slot_id=\"image_slot_0053\") 发送已登记图片（canonical_topic=\"保险公司监管与保单权益保护说明图\"）；不要转入产品推荐。图片素材规则：不允许向客户列可选图名/候选列表，也不要问“你想看A还是B”。只有使用本条 tool_actions 中登记的 reuse_id/material_slot_id 成功调用 send_image 后，才可说已发送图片/如下图。如果无法匹配到登记 id 或工具提示 topic_miss/missing_params，直接输出固定文本 [暂无可用图片]，并继续回答客户主要问题；不要口头发图。",
+      "review_required": true,
+      "strict_recommended": true,
+      "usage": "candidate_only_not_auto_send",
+      "confidence": 0.6,
+      "inference": "derived_from_high_risk_guideline"
+    },
+    {
+      "id": "canned_ag_7b854c3c5e6d74cf",
+      "guideline_id": "ag_7b854c3c5e6d74cf",
+      "trigger_hint": "客户质疑投保链接、支付入口、二维码、隐私信息、收款方或电子保单查询的安全性，担心钓鱼网站、资金进入个人账户或个人信息泄露",
+      "response_template": "用 1-3 条气泡解释链接安全：入口来自保司官方或持牌经纪平台，保费不进个人账户，敏感信息提交给保司/持牌平台，并提醒客户可核对域名、收款方和官方客服电话。不要主动发截图、案例或投保链接；客户明确要证明/入口图时再按素材请求规则处理，回答后停住。",
+      "review_required": true,
+      "strict_recommended": true,
+      "usage": "candidate_only_not_auto_send",
+      "confidence": 0.6,
+      "inference": "derived_from_high_risk_guideline"
+    },
+    {
+      "id": "canned_ag_e28c84c7ccc35151",
+      "guideline_id": "ag_e28c84c7ccc35151",
+      "trigger_hint": "客户明确要求发产品链接、投保链接、链接卡片、入口，或表达想自己进入投保页面/产品页面研究，且不是在质疑链接安全、支付安全或隐私风险",
+      "response_template": "产品名或具体产品已明确时，本轮调用 send_link 发送“保险产品或服务说明链接卡片”。如果产品名不明确、只说“那款/刚才那款/一万免赔那款”，本轮只问 1 个定位问题，例如“你记得产品名吗？”。不要说“马上发入口/把链接发你/确认后发你/我马上把准确入口发你”，也不要同时索要截图。",
+      "review_required": true,
+      "strict_recommended": true,
+      "usage": "candidate_only_not_auto_send",
+      "confidence": 0.6,
+      "inference": "derived_from_high_risk_guideline"
+    },
+    {
+      "id": "canned_ag_e667a6fe9d6796c0",
+      "guideline_id": "ag_e667a6fe9d6796c0",
+      "trigger_hint": "客户质疑重疾险病种数量差异，或认为保 100 种/130 种比保 28 种更好",
+      "response_template": "说明重疾险核心病种有统一定义，病种数量不是唯一判断标准；如需引用理赔占比，必须来自条款、监管定义或已提供素材。",
+      "review_required": true,
+      "strict_recommended": true,
+      "usage": "candidate_only_not_auto_send",
+      "confidence": 0.6,
+      "inference": "derived_from_high_risk_guideline"
+    },
+    {
+      "id": "canned_ag_39ff38b91ceb68f8",
+      "guideline_id": "ag_39ff38b91ceb68f8",
+      "trigger_hint": "客户投保含身故责任产品时，家属试图代操作认证或用照片代替真人验证被拒",
+      "response_template": "强调含身故责任产品必须由投保人本人完成人脸识别或认证，解释这是防范道德风险的监管红线",
+      "review_required": true,
+      "strict_recommended": true,
+      "usage": "candidate_only_not_auto_send",
+      "confidence": 0.6,
+      "inference": "derived_from_high_risk_guideline"
+    },
+    {
+      "id": "canned_ag_d5423bb2432f9e4e",
+      "guideline_id": "ag_d5423bb2432f9e4e",
+      "trigger_hint": "客户被线下销售误导，认为必须购买高额主险才能搭配百万医疗险，或误以为捆绑后医疗险不涨价",
+      "response_template": "澄清百万医疗险可单独购买无需捆绑主险，指出捆绑销售往往导致保费倒挂，且医疗险费率独立调整不受主险影响",
+      "review_required": true,
+      "strict_recommended": true,
+      "usage": "candidate_only_not_auto_send",
+      "confidence": 0.6,
+      "inference": "derived_from_high_risk_guideline"
+    }
+  ],
+  "stats": {
+    "count": 7,
+    "strict_count": 7
+  }
+}

@@ -1,0 +1,53 @@
+{
+  "version": "1",
+  "guideline": {
+    "required_fields": [
+      "guideline_id",
+      "condition_text",
+      "action_text",
+      "tools",
+      "scope",
+      "risk_level",
+      "once_or_repeat",
+      "source_hash"
+    ],
+    "optional_fields": [
+      "journey_id",
+      "state_id",
+      "condition",
+      "action"
+    ],
+    "scope_values": [
+      "global",
+      "journey_scoped",
+      "state_scoped"
+    ],
+    "risk_values": [
+      "low",
+      "medium",
+      "high"
+    ],
+    "duration_values": [
+      "one_off",
+      "persistent",
+      "continuous"
+    ]
+  },
+  "journey": {
+    "required_fields": [
+      "journey_id",
+      "title",
+      "activation_conditions",
+      "states",
+      "transitions"
+    ],
+    "state_kinds": [
+      "chat_state",
+      "tool_state"
+    ],
+    "transition_kinds": [
+      "direct",
+      "conditional"
+    ]
+  }
+}

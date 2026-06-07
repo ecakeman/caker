@@ -1,0 +1,152 @@
+{
+  "data_baseline": {
+    "guideline_count": 183,
+    "journey_count": 6,
+    "note": "项目书假设 450 guidelines / 6 journeys；当前原始数据以此为准"
+  },
+  "guideline_schema": {
+    "fields": [
+      "condition",
+      "action",
+      "tools"
+    ],
+    "issues": []
+  },
+  "guideline_count": 183,
+  "journey_count": 6,
+  "tool_distribution": {
+    "send_image": 7,
+    "send_link": 1,
+    "send_quoted_chat": 1
+  },
+  "duplicate_conditions": [],
+  "similar_guideline_pairs": [],
+  "high_risk_guideline_hits": 36,
+  "high_risk_samples": [
+    {
+      "keyword": "返佣",
+      "condition": "客户提出返佣、红包、内部活动、返钱、让利或其他违规利益输送要求"
+    },
+    {
+      "keyword": "监管",
+      "condition": "客户质疑小保司/线上产品理赔难，或担心保险公司倒闭导致保单失效"
+    },
+    {
+      "keyword": "健康告知",
+      "condition": "客户担心理赔不算数、既往病史未告知导致拒赔、买了将来也赔不到，或要求保证一定赔"
+    },
+    {
+      "keyword": "隐私",
+      "condition": "客户质疑投保链接、支付入口、二维码、隐私信息、收款方或电子保单查询的安全性，担心钓鱼网站、资金进入个人账户或个人信息泄露"
+    },
+    {
+      "keyword": "隐私",
+      "condition": "客户明确要求发产品链接、投保链接、链接卡片、入口，或表达想自己进入投保页面/产品页面研究，且不是在质疑链接安全、支付安全或隐私风险"
+    },
+    {
+      "keyword": "监管",
+      "condition": "客户质疑重疾险病种数量差异，或认为保 100 种/130 种比保 28 种更好"
+    },
+    {
+      "keyword": "监管",
+      "condition": "客户投保含身故责任产品时，家属试图代操作认证或用照片代替真人验证被拒"
+    },
+    {
+      "keyword": "投诉",
+      "condition": "客户对核保结论不满，要求退保、投诉保司或自行联系核保部门"
+    },
+    {
+      "keyword": "健康告知",
+      "condition": "客户因产品停售/核保窗口关闭紧迫，或体检报告未出无法即时完成健康告知"
+    },
+    {
+      "keyword": "拒保",
+      "condition": "客户因肺结节等健康异常被多款产品拒保或风控，产生焦虑或放弃念头"
+    },
+    {
+      "keyword": "拒保",
+      "condition": "客户因肺结节/甲状腺结节等健康异常，担心被拒保或不知道能否投保"
+    },
+    {
+      "keyword": "健康告知",
+      "condition": "客户披露儿童既往手术史或住院记录（如鞘膜积液、肺炎），担忧影响投保"
+    },
+    {
+      "keyword": "健康告知",
+      "condition": "客户对健康告知补充告知犹豫不决，或描述病情过于严重导致过度告知风险"
+    },
+    {
+      "keyword": "拒保",
+      "condition": "客户因孩子有哮喘病史被智能核保拒保或延期，询问是否有其他产品可买"
+    },
+    {
+      "keyword": "拒保",
+      "condition": "客户因体检报告结节分级临界（如 3 级变 4 级）或描述模糊，担心无法投保或被拒保"
+    },
+    {
+      "keyword": "拒保",
+      "condition": "客户担心补充告知被拒保会影响后续在其他公司投保，或不清楚拒保记录共享范围"
+    },
+    {
+      "keyword": "拒保",
+      "condition": "客户孩子有既往病史（如早产、发育迟缓），担心无法投保或被永久拒保"
+    },
+    {
+      "keyword": "健康告知",
+      "condition": "客户有甲状腺结节 4A 级既往史，智能核保被拒，询问是否有其他投保机会"
+    },
+    {
+      "keyword": "拒保",
+      "condition": "客户收到人工核保补充资料通知，不清楚如何回复或担心被拒保"
+    },
+    {
+      "keyword": "拒保",
+      "condition": "客户因健康异常（如肺结节）被多家拒保或除外，试图寻找能标体承保的'特例'产品"
+    }
+  ],
+  "journey_graph_issues": 0,
+  "journeys": [
+    {
+      "title": "标准方案设计与产品选择",
+      "state_count": 13,
+      "transition_count": 16,
+      "conditional_transition_count": 9,
+      "issues": []
+    },
+    {
+      "title": "报价与投保闭环",
+      "state_count": 13,
+      "transition_count": 18,
+      "conditional_transition_count": 16,
+      "issues": []
+    },
+    {
+      "title": "健康异常与核保评估",
+      "state_count": 16,
+      "transition_count": 22,
+      "conditional_transition_count": 19,
+      "issues": []
+    },
+    {
+      "title": "已有保单诊断与调整",
+      "state_count": 14,
+      "transition_count": 17,
+      "conditional_transition_count": 12,
+      "issues": []
+    },
+    {
+      "title": "理赔与保单服务讲解",
+      "state_count": 10,
+      "transition_count": 22,
+      "conditional_transition_count": 16,
+      "issues": []
+    },
+    {
+      "title": "父母与高龄老人保障规划",
+      "state_count": 13,
+      "transition_count": 17,
+      "conditional_transition_count": 11,
+      "issues": []
+    }
+  ]
+}
